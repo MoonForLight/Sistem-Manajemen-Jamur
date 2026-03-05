@@ -1,0 +1,19 @@
+const express = require("express");
+const router = express.Router();
+
+const budidayaController = require("../controllers/budidayaController");
+const authMiddleware = require("../middleware/authMiddleware");
+const roleMiddleware = require("../middleware/roleMiddleware");
+
+router.get("/summary", authMiddleware, budidayaController.getSummary);
+
+// umum
+router.get("/", authMiddleware, budidayaController.getAll);
+router.get("/:id", authMiddleware, budidayaController.getById);
+
+// admin-only
+router.post("/", authMiddleware, roleMiddleware("admin"), budidayaController.create);
+router.put("/:id", authMiddleware, roleMiddleware("admin"), budidayaController.update);
+router.delete("/:id", authMiddleware, roleMiddleware("admin"), budidayaController.remove);
+
+module.exports = router;
