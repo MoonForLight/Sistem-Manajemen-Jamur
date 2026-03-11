@@ -1,4 +1,4 @@
-const userModel = require("../models/usersModel");
+const usersModel = require("../models/usersModel");
 
 exports.getPetugasList = async (req, res) => {
   const data = await usersModel.getAllPetugas();
