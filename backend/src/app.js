@@ -11,6 +11,7 @@ const budidayaRoutes = require("./routes/budidayaRoutes");
 const pertumbuhanRoutes = require("./routes/pertumbuhanRoutes");
 const panenRoutes = require("./routes/panenRoutes");
 const errorHandler = require("./middleware/errorHandler");
+const usersRoutes = require("./routes/usersRoutes");
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use("/api/media-tanam", mediaTanamRoutes);
 app.use("/api/budidaya", budidayaRoutes);
 app.use("/api/pertumbuhan", pertumbuhanRoutes);
 app.use("/api/panen", panenRoutes);
+app.use("/api/users", usersRoutes);
 app.use(errorHandler);
 
 module.exports = app;

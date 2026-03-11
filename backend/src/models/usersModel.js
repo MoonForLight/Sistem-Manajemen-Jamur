@@ -38,10 +38,37 @@ async function getRole(id_user) {
   return "unknown";
 }
 
+async function getAllPetugas() {
+  const [rows] = await db.query(
+    `SELECT 
+        u.id_user,
+        u.nama,
+        u.username,
+        p.status,
+        p.id_lokasi,
+        l.nama_lokasi
+     FROM petugas p
+     JOIN users u ON p.id_user = u.id_user
+     LEFT JOIN lokasi l ON p.id_lokasi = l.id_lokasi
+     ORDER BY u.id_user DESC`
+  );
+  return rows;
+}
+
+async function getUserBasicById(id_user) {
+  const [rows] = await db.query(
+    "SELECT id_user, nama, username FROM users WHERE id_user = ?",
+    [id_user]
+  );
+  return rows[0] || null;
+}
+
 module.exports = {
   findUserByUsername,
   createUser,
   setAsAdmin,
   setAsPetugas,
   getRole,
+  getAllPetugas,
+  getUserBasicById,
 };

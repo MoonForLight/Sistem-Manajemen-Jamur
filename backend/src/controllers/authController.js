@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 const { generateToken } = require("../config/jwt");
-const userModel = require("../models/userModel");
+const userModel = require("../models/usersModel");
 const lokasiModel = require("../models/lokasiModel");
 
 exports.register = async (req, res) => {
