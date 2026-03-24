@@ -1,13 +1,3 @@
-/**
- * Mock data yang mengikuti ERD:
- * - lokasi(id_lokasi,nama_lokasi,alamat,jumlah_rak,keterangan)
- * - jenis_jamur(id_jenis,nama_jamur,genus,suhu_optimal,kelembapan_optimal)
- * - media_tanam(id_media,nama_media,kadar_air_optimal,catatan)
- * - budidaya(id_budidaya,id_user,id_lokasi,id_jenis,id_media,tanggal_mulai,status)
- * - pertumbuhan(id_pertumbuhan,id_budidaya,tanggal_pengamatan,suhu,kelembaban,intensitas_cahaya,fase,catatan)
- * - panen(id_panen,id_budidaya,id_user,tanggal_panen,jumlah_panen,catatan)
- */
-
 export const lokasi = [
   {
     id_lokasi: 'LKS-001',

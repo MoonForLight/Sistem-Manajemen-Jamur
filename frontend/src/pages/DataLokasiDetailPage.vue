@@ -89,49 +89,20 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
-import ProductionChart from '../components/ProductionChart.vue'
-import { getLokasiDetail, jenisJamur } from '../services/mockDb'
+import { ref, onMounted } from 'vue'
 
 const props = defineProps({ lokasiId: { type: String, required: true } })
-const detail = getLokasiDetail(props.lokasiId)
+const detail = ref(null)
 
-const weekly = computed(() => {
-  // dummy weekly values derived from panen count
-  const base = (detail?.panen?.reduce((s, x) => s + x.jumlah_panen, 0) ?? 40) / 10
-  return [
-    Math.max(2, Math.round(base * 1.2)),
-    Math.max(2, Math.round(base * 0.9)),
-    Math.max(2, Math.round(base * 1.7)),
-    Math.max(2, Math.round(base * 1.1)),
-    Math.max(2, Math.round(base * 1.4)),
-    Math.max(2, Math.round(base * 1.0)),
-    Math.max(2, Math.round(base * 1.2))
-  ]
+onMounted(async () => {
+  try {
+    // Gunakan endpoint public monitoring yang menggabungkan data lokas dan rata-rata sensor
+    const response = await fetch(`/api/public/monitoring?id=${props.lokasiId}`)
+    const data = await response.json()
+    // Karena endpoint /api/public/monitoring biasanya mengembalikan array, kita cari yang sesuai ID
+    detail.value = data.find(d => d.id_lokasi == props.lokasiId)
+  } catch (error) {
+    console.error('Gagal mengambil detail lokasi:', error)
+  }
 })
-
-const budidayaRows = computed(() => {
-  if (!detail) return []
-  return detail.budidaya.map((b) => ({
-    id_budidaya: b.id_budidaya,
-    tanggal_mulai: b.tanggal_mulai,
-    status: b.status,
-    jenis: jenisJamur.find((j) => j.id_jenis === b.id_jenis)?.nama_jamur ?? '-'
-  }))
-})
-
-function badgeClass(status) {
-  if (status === 'Inkubasi') return 'green'
-  if (status === 'Panen') return 'orange'
-  return 'blue'
-}
-
-function exportPdf() {
-  alert('Export PDF (dummy). Integrasikan dengan backend untuk generate PDF.')
-}
-
-function exportCsv() {
-  alert('Export CSV (dummy). Integrasikan dengan backend untuk generate CSV.')
-}
 </script>

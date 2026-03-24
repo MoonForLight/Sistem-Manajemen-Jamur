@@ -26,16 +26,25 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { RouterLink } from 'vue-router'
-import { getLokasiWithSummary } from '../services/mockDb'
+import { ref, onMounted, computed } from 'vue'
 
 const q = ref('')
-const all = getLokasiWithSummary()
+const locations = ref([])
+
+const fetchLocations = async () => {
+  try {
+    const response = await fetch('/api/lokasi')
+    locations.value = await response.json()
+  } catch (error) {
+    console.error('Gagal mengambil data lokasi:', error)
+  }
+}
+
+onMounted(fetchLocations)
 
 const filtered = computed(() => {
-  const term = q.value.trim().toLowerCase()
-  if (!term) return all
-  return all.filter((x) => (x.nama_lokasi + ' ' + x.alamat).toLowerCase().includes(term))
+  return locations.value.filter(l => 
+    l.nama_lokasi.toLowerCase().includes(q.value.toLowerCase())
+  )
 })
 </script>
