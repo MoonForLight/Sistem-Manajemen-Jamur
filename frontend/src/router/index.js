@@ -13,10 +13,19 @@ import PublicLayout from '../layout/PublicLayout.vue'
 // Petugas Pages & Layout
 import PetugasLayout from '../layout/PetugasLayout.vue'
 import PetugasDashboard from '../pages/petugas/PetugasDashboard.vue'
+import PetugasJamur from '../pages/petugas/PetugasJamur.vue'
+import PetugasLaporan from '../pages/petugas/PetugasLaporan.vue'
+import PetugasRiwayat from '../pages/petugas/PetugasRiwayat.vue'
+import PetugasProfile from '../pages/petugas/PetugasProfile.vue'
 
 // Admin Pages & Layout
 import AdminLayout from '../layout/AdminLayout.vue'
 import AdminDashboard from '../pages/admin/AdminDashboard.vue'
+import AdminLokasi from '../pages/admin/AdminLokasi.vue'
+import AdminPetugas from '../pages/admin/AdminPetugas.vue'
+import AdminJamur from '../pages/admin/AdminJamur.vue'
+import AdminMedia from '../pages/admin/AdminMedia.vue'
+import AdminBudidaya from '../pages/admin/AdminBudidaya.vue'
 
 // 404 & Unauthorized
 const NotFound = { template: '<div class="container" style="padding:40px; text-align:center"><h1>404 - Page Not Found</h1></div>' }
@@ -43,14 +52,39 @@ const routes = [
     meta: { requiresAuth: true, role: 'petugas' },
     children: [
       {
+        path: '',
+        redirect: { name: 'petugas-dashboard' }
+      },
+      {
         path: 'dashboard',
         name: 'petugas-dashboard',
         component: PetugasDashboard,
         meta: { title: 'Dashboard Petugas' }
       },
-      // Add more petugas pages here
-      // { path: 'monitoring', name: 'petugas-monitoring', component: PetugasMonitoring },
-      // { path: 'lokasi', name: 'petugas-lokasi', component: PetugasDataLokasi },
+      {
+        path: 'jamur',
+        name: 'petugas-jamur',
+        component: PetugasJamur,
+        meta: { title: 'Jenis Jamur' }
+      },
+      {
+        path: 'laporan',
+        name: 'petugas-laporan',
+        component: PetugasLaporan,
+        meta: { title: 'Laporan Monitoring' }
+      },
+      {
+        path: 'riwayat',
+        name: 'petugas-riwayat',
+        component: PetugasRiwayat,
+        meta: { title: 'Riwayat Panen' }
+      },
+      {
+        path: 'profile',
+        name: 'petugas-profile',
+        component: PetugasProfile,
+        meta: { title: 'Profil Petugas' }
+      },
     ]
   },
 
@@ -61,9 +95,13 @@ const routes = [
     beforeEnter: requireRole('admin'),
     meta: { requiresAuth: true, role: 'admin' },
     children: [
+      { path: '', redirect: { name: 'admin-dashboard' } },
       { path: 'dashboard', name: 'admin-dashboard', component: AdminDashboard },
-      // { path: 'users', name: 'admin-users', component: AdminUsers },
-      // { path: 'locations', name: 'admin-locations', component: AdminLocations },
+      { path: 'lokasi', name: 'admin-lokasi', component: AdminLokasi },
+      { path: 'budidaya', name: 'admin-budidaya', component: AdminBudidaya },
+      { path: 'jamur', name: 'admin-jamur', component: AdminJamur },
+      { path: 'media', name: 'admin-media', component: AdminMedia },
+      { path: 'petugas', name: 'admin-petugas', component: AdminPetugas },
     ]
   },
 

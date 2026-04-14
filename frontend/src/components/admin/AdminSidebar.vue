@@ -10,11 +10,17 @@
       <RouterLink to="/admin/lokasi" class="nav-item">
         <span class="icon">📍</span> Lokasi Budidaya
       </RouterLink>
-      <RouterLink to="/admin/petugas" class="nav-item">
-        <span class="icon">👥</span> Petugas
+      <RouterLink to="/admin/budidaya" class="nav-item">
+        <span class="icon">🌱</span> Budidaya
       </RouterLink>
       <RouterLink to="/admin/jamur" class="nav-item">
-        <span class="icon">🍄</span> Jamur
+        <span class="icon">🍄</span> Jenis Jamur
+      </RouterLink>
+      <RouterLink to="/admin/media" class="nav-item">
+        <span class="icon">🧪</span> Media Tanam
+      </RouterLink>
+      <RouterLink to="/admin/petugas" class="nav-item">
+        <span class="icon">👥</span> Petugas
       </RouterLink>
     </nav>
   </aside>

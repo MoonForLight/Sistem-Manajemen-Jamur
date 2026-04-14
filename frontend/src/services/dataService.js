@@ -39,6 +39,11 @@ export const budidayaService = {
     return await api.get('/budidaya');
   },
 
+  // Get summary for dashboard
+  async getSummary() {
+    return await api.get('/budidaya/summary');
+  },
+
   // Get by location
   async getByLokasi(lokasiId) {
     return await api.get(`/budidaya/lokasi/${lokasiId}`);
@@ -57,6 +62,28 @@ export const budidayaService = {
   // Delete
   async delete(id) {
     return await api.delete(`/budidaya/${id}`);
+  },
+};
+
+export const mediaTanamService = {
+  async getAll() {
+    return await api.get('/media-tanam');
+  },
+
+  async getById(id) {
+    return await api.get(`/media-tanam/${id}`);
+  },
+
+  async create(data) {
+    return await api.post('/media-tanam', data);
+  },
+
+  async update(id, data) {
+    return await api.put(`/media-tanam/${id}`, data);
+  },
+
+  async delete(id) {
+    return await api.delete(`/media-tanam/${id}`);
   },
 };
 
@@ -142,33 +169,13 @@ export const jenisJamurService = {
 };
 
 export const usersService = {
-  // Get all users (admin only)
-  async getAll() {
-    return await api.get('/users');
+  // Get all petugas (admin only)
+  async getPetugasList() {
+    return await api.get('/users/petugas');
   },
 
-  // Get user by ID
-  async getById(id) {
-    return await api.get(`/users/${id}`);
-  },
-
-  // Create user
-  async create(data) {
-    return await api.post('/users', data);
-  },
-
-  // Update user
-  async update(id, data) {
-    return await api.put(`/users/${id}`, data);
-  },
-
-  // Delete user
-  async delete(id) {
-    return await api.delete(`/users/${id}`);
-  },
-
-  // Update profile
-  async updateProfile(data) {
-    return await api.put('/users/profile/me', data);
+  // Get user profile
+  async getMe() {
+    return await api.get('/users/me');
   },
 };

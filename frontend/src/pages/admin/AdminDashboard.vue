@@ -5,52 +5,52 @@
       <div class="stat-card">
         <div class="stat-top">
           <div class="stat-info">
-            <span class="stat-label">Total Lokasi Budidaya</span>
-            <span class="stat-value">1</span>
+            <span class="stat-label">Lokasi Budidaya</span>
+            <span class="stat-value">{{ stats.lokasi }}</span>
           </div>
-          <div class="stat-icon">👥</div>
+          <div class="stat-icon">📍</div>
         </div>
         <div class="stat-trend up">
-          <span class="trend-icon">↗</span> 8.5% <span class="trend-text">Up from yesterday</span>
+          <span class="trend-icon">↗</span> 12% <span class="trend-text">Dari minggu lalu</span>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-top">
           <div class="stat-info">
-            <span class="stat-label">Total Petugas</span>
-            <span class="stat-value">10</span>
+            <span class="stat-label">Petugas</span>
+            <span class="stat-value">{{ stats.petugas }}</span>
           </div>
           <div class="stat-icon">👥</div>
         </div>
         <div class="stat-trend up">
-          <span class="trend-icon">↗</span> 8.5% <span class="trend-text">Up from yesterday</span>
+          <span class="trend-icon">↗</span> 5% <span class="trend-text">Stabil</span>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-top">
           <div class="stat-info">
-            <span class="stat-label">Total User</span>
-            <span class="stat-value">40,689</span>
+            <span class="stat-label">Jenis Jamur</span>
+            <span class="stat-value">{{ stats.jenis }}</span>
           </div>
-          <div class="stat-icon">👥</div>
+          <div class="stat-icon">🍄</div>
         </div>
-        <div class="stat-trend up">
-          <span class="trend-icon">↗</span> 8.5% <span class="trend-text">Up from yesterday</span>
+        <div class="stat-trend">
+          <span class="trend-text">Kategori stabil</span>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-top">
           <div class="stat-info">
-            <span class="stat-label">Total Pengunjung</span>
-            <span class="stat-value">40,689</span>
+            <span class="stat-label">Media Tanam</span>
+            <span class="stat-value">{{ stats.media }}</span>
           </div>
-          <div class="stat-icon">👥</div>
+          <div class="stat-icon">🧪</div>
         </div>
-        <div class="stat-trend up">
-          <span class="trend-icon">↗</span> 8.5% <span class="trend-text">Up from yesterday</span>
+        <div class="stat-trend">
+          <span class="trend-text">Tersedia untuk semua budidaya</span>
         </div>
       </div>
     </div>
@@ -62,9 +62,13 @@
         <div class="panel">
           <h3 class="panel-title mb-4">Daftar Lokasi</h3>
           <div class="location-list">
-            <div class="location-item" v-for="loc in locations" :key="loc">
-              <span class="loc-name">{{ loc }}</span>
+            <div class="location-item" v-for="loc in locations" :key="loc.id_lokasi">
+              <span class="loc-name">{{ loc.nama_lokasi }}</span>
               <a href="#" class="loc-link">Detail →</a>
+            </div>
+            <div v-if="!locations.length && !isLoading" class="location-item">
+              <span class="loc-name">Belum ada lokasi tersedia</span>
+              <span></span>
             </div>
           </div>
           
@@ -80,20 +84,21 @@
       <div class="right-col">
         <div class="panel">
           <h3 class="panel-title">Detail Monitoring</h3>
-          <p class="panel-subtitle">Lokasi 2 • Jenis: Tiram • BDY-104</p>
+          <p class="panel-subtitle">
+            {{ latestSummary ? `${latestSummary.nama_lokasi} • ${latestSummary.nama_jamur} • BDY-${latestSummary.id_budidaya}` : 'Belum ada sesi budidaya aktif' }}
+          </p>
           
           <div class="monitor-cards">
             <div class="m-card">
-              <span class="m-label">Suhu</span>
+              <span class="m-label">Pengamatan</span>
               <div class="m-value-row">
-                <span class="m-value">31°C</span>
-                <span class="m-badge badge-danger">di atas batas</span>
+                <span class="m-value">{{ latestSummary ? latestSummary.total_pengamatan : 0 }}</span>
               </div>
             </div>
             <div class="m-card">
-              <span class="m-label">Kelembapan</span>
+              <span class="m-label">Total Panen</span>
               <div class="m-value-row">
-                <span class="m-value">88%</span>
+                <span class="m-value">{{ latestSummary ? latestSummary.total_panen : 0 }}</span>
               </div>
             </div>
           </div>
@@ -115,8 +120,10 @@
         <div class="panel">
           <h3 class="panel-title mb-4">Log Alert Terbaru</h3>
           <div class="alert-item">
-            <span class="alert-msg">Suhu tinggi (31°C) melebihi aturan jenis jamur</span>
-            <span class="alert-time">17:15</span>
+            <span class="alert-msg">
+              {{ latestSummary ? `Budidaya ${latestSummary.nama_jamur} di ${latestSummary.nama_lokasi} berstatus ${latestSummary.status}` : 'Belum ada alert budidaya terbaru.' }}
+            </span>
+            <span class="alert-time">{{ latestSummary ? 'Sekarang' : '' }}</span>
           </div>
         </div>
       </div>
@@ -125,16 +132,59 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { lokasiService, budidayaService, jenisJamurService, mediaTanamService, usersService } from '../../services/dataService.js'
 
-const locations = ref([
-  'Sembalun',
-  'Sandik',
-  'Pemenang',
-  'Lokasi 1',
-  'Lokasi 2',
-  'Lokasi 3'
-])
+const stats = ref({ lokasi: 0, petugas: 0, jenis: 0, media: 0 })
+const locations = ref([])
+const latestSummary = ref(null)
+const isLoading = ref(true)
+
+const statusClass = (status) => {
+  if (!status) return ''
+  return status.toLowerCase() === 'aktif' ? 'status-chip active' : 'status-chip inactive'
+}
+
+const latestStatus = computed(() => latestSummary.value?.status || 'Belum ada data')
+
+async function loadDashboard() {
+  try {
+    const [lokasiRes, jenisRes, mediaRes, petugasRes, summaryRes] = await Promise.all([
+      lokasiService.getAll(),
+      jenisJamurService.getAll(),
+      mediaTanamService.getAll(),
+      usersService.getPetugasList(),
+      budidayaService.getSummary(),
+    ])
+
+    if (lokasiRes?.success) {
+      locations.value = lokasiRes.data
+      stats.value.lokasi = lokasiRes.data.length
+    }
+
+    if (jenisRes?.success) {
+      stats.value.jenis = jenisRes.data.length
+    }
+
+    if (mediaRes?.success) {
+      stats.value.media = mediaRes.data.length
+    }
+
+    if (petugasRes?.success) {
+      stats.value.petugas = petugasRes.data.length
+    }
+
+    if (summaryRes?.success) {
+      latestSummary.value = summaryRes.data?.[0] || null
+    }
+  } catch (error) {
+    console.error('Gagal memuat dashboard admin:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(loadDashboard)
 </script>
 
 <style scoped>

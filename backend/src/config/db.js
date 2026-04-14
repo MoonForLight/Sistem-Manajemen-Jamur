@@ -14,7 +14,15 @@ async function testDbConnection() {
     await db.query("SELECT 1");
     console.log("Database Connected");
   } catch (err) {
-    console.error("DB Error :", err.message);
+    console.error("DB Error :", err.code || err.message || err);
+    console.error("DB Details:", {
+      code: err.code,
+      errno: err.errno,
+      sqlMessage: err.sqlMessage,
+      sqlState: err.sqlState,
+      fatal: err.fatal,
+    });
+    throw err;
   }
 }
 
