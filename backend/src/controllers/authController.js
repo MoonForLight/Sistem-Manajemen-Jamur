@@ -5,7 +5,7 @@ const lokasiModel = require("../models/lokasiModel");
 
 exports.register = async (req, res) => {
   try {
-    const { nama, username, password, role, id_lokasi } = req.body;
+    const { nama, username, password, role, id_lokasi, status } = req.body;
 
     if (!nama || !username || !password || !role) {
       return res.status(400).json({
@@ -20,6 +20,8 @@ exports.register = async (req, res) => {
         message: "Register hanya untuk petugas. Admin dibuat manual oleh sistem.",
       });
     }
+
+    const normalizedStatus = status === 'non-aktif' ? 'non-aktif' : 'aktif';
 
     // petugas wajib punya lokasi
     if (id_lokasi === undefined || id_lokasi === null || id_lokasi === "") {
@@ -53,7 +55,7 @@ exports.register = async (req, res) => {
     await userModel.setAsPetugas({
       id_user,
       id_lokasi,
-      status: "aktif",
+      status: normalizedStatus,
     });
 
     return res.status(201).json({

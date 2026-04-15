@@ -40,12 +40,13 @@ exports.create = async (req, res) => {
     return res.status(400).json({ success: false, message: "Budidaya tidak valid" });
   }
 
-  // ambil petugas dari token (yang login)
-  // agar petugas tidak bisa ngisi id_petugas orang lain
   const id_petugas = req.user.id_user;
 
-  // pastikan yang login memang petugas atau admin
   if (req.user.role === "petugas") {
+    const bud = await budidayaModel.getById(id_budidaya);
+    if (!bud || bud.id_petugas !== id_petugas) {
+      return res.status(403).json({ success: false, message: "Anda tidak berwenang untuk mencatat pertumbuhan di budidaya ini" });
+    }
     if (!(await existsPetugas(id_petugas))) {
       return res.status(400).json({ success: false, message: "Akun ini bukan petugas valid" });
     }
@@ -78,6 +79,19 @@ exports.update = async (req, res) => {
   }
 
   const id_petugas = req.user.id_user;
+  if (req.user.role === "petugas") {
+    const existing = await pertumbuhanModel.getById(id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Data pertumbuhan tidak ditemukan" });
+    }
+    if (existing.id_petugas !== id_petugas) {
+      return res.status(403).json({ success: false, message: "Anda tidak berwenang mengubah pengamatan ini" });
+    }
+    const bud = await budidayaModel.getById(id_budidaya);
+    if (!bud || bud.id_petugas !== id_petugas) {
+      return res.status(403).json({ success: false, message: "Anda tidak berwenang untuk mengaitkan pengamatan dengan budidaya ini" });
+    }
+  }
 
   const affected = await pertumbuhanModel.update(id, {
     id_budidaya,

@@ -43,6 +43,10 @@ exports.create = async (req, res) => {
   const id_petugas = req.user.id_user;
 
   if (req.user.role === "petugas") {
+    const bud = await budidayaModel.getById(id_budidaya);
+    if (!bud || bud.id_petugas !== id_petugas) {
+      return res.status(403).json({ success: false, message: "Anda tidak berwenang mencatat panen di budidaya ini" });
+    }
     if (!(await existsPetugas(id_petugas))) {
       return res.status(400).json({ success: false, message: "Akun ini bukan petugas valid" });
     }
@@ -72,6 +76,19 @@ exports.update = async (req, res) => {
   }
 
   const id_petugas = req.user.id_user;
+  if (req.user.role === "petugas") {
+    const existing = await panenModel.getById(id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Data panen tidak ditemukan" });
+    }
+    if (existing.id_petugas !== id_petugas) {
+      return res.status(403).json({ success: false, message: "Anda tidak berwenang mengubah panen ini" });
+    }
+    const bud = await budidayaModel.getById(id_budidaya);
+    if (!bud || bud.id_petugas !== id_petugas) {
+      return res.status(403).json({ success: false, message: "Anda tidak berwenang untuk mengaitkan panen dengan budidaya ini" });
+    }
+  }
 
   const affected = await panenModel.update(id, {
     id_budidaya,

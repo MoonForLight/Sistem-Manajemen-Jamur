@@ -25,13 +25,13 @@ exports.getById = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  const { id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status } = req.body;
+  const { id_lokasi, id_jenis, id_media, tanggal_mulai, status, catatan, id_petugas } = req.body;
 
   // validasi minimal
-  if (!id_lokasi || !id_jenis || !id_media || !id_petugas || !tanggal_mulai) {
+  if (!id_lokasi || !id_jenis || !id_media || !tanggal_mulai || !id_petugas) {
     return res.status(400).json({
       success: false,
-      message: "id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai wajib diisi",
+      message: "id_lokasi, id_jenis, id_media, tanggal_mulai, id_petugas wajib diisi",
     });
   }
 
@@ -55,7 +55,8 @@ exports.create = async (req, res) => {
     id_media,
     id_petugas,
     tanggal_mulai,
-    status: status || "aktif",
+    status: status || "inisiasi",
+    catatan: catatan || null,
   });
 
   res.status(201).json({
@@ -114,6 +115,12 @@ exports.remove = async (req, res) => {
   }
 
   res.json({ success: true, message: "Budidaya berhasil dihapus" });
+};
+
+exports.getByPetugas = async (req, res) => {
+  const id_petugas = req.user.id_user;
+  const data = await budidayaModel.getByPetugas(id_petugas);
+  res.json({ success: true, data });
 };
 
 exports.getSummary = async (req, res) => {

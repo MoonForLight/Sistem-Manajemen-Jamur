@@ -10,6 +10,7 @@ const mediaTanamRoutes = require("./routes/mediaTanamRoutes");
 const budidayaRoutes = require("./routes/budidayaRoutes");
 const pertumbuhanRoutes = require("./routes/pertumbuhanRoutes");
 const panenRoutes = require("./routes/panenRoutes");
+const publicRoutes = require("./routes/publicRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const usersRoutes = require("./routes/usersRoutes");
 
@@ -32,6 +33,7 @@ app.use("/api/media-tanam", mediaTanamRoutes);
 app.use("/api/budidaya", budidayaRoutes);
 app.use("/api/pertumbuhan", pertumbuhanRoutes);
 app.use("/api/panen", panenRoutes);
+app.use("/api/public", publicRoutes);
 app.use("/api/users", usersRoutes);
 app.use(errorHandler);
 

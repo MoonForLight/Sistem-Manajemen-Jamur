@@ -74,6 +74,44 @@ async function exists(id_budidaya) {
   return rows.length > 0;
 }
 
+async function getByLokasi(id_lokasi) {
+  const [rows] = await db.query(
+    `SELECT
+        b.id_budidaya,
+        b.tanggal_mulai,
+        b.status,
+        j.nama_jamur AS jenis
+     FROM budidaya b
+     JOIN jenis_jamur j ON b.id_jenis = j.id_jenis
+     WHERE b.id_lokasi = ?
+     ORDER BY b.tanggal_mulai DESC`,
+    [id_lokasi]
+  );
+  return rows;
+}
+
+async function getByPetugas(id_petugas) {
+  const [rows] = await db.query(
+    `SELECT 
+        b.id_budidaya,
+        b.tanggal_mulai,
+        b.status,
+        l.id_lokasi, l.nama_lokasi,
+        j.id_jenis, j.nama_jamur,
+        m.id_media, m.nama_media,
+        u.id_user AS id_petugas, u.nama AS nama_petugas
+     FROM budidaya b
+     JOIN lokasi l ON b.id_lokasi = l.id_lokasi
+     JOIN jenis_jamur j ON b.id_jenis = j.id_jenis
+     JOIN media_tanam m ON b.id_media = m.id_media
+     JOIN users u ON b.id_petugas = u.id_user
+     WHERE b.id_petugas = ?
+     ORDER BY b.id_budidaya DESC`,
+    [id_petugas]
+  );
+  return rows;
+}
+
 async function getSummary() {
   const [rows] = await db.query(
     `SELECT 
@@ -99,5 +137,4 @@ async function getSummary() {
   return rows;
 }
 
-
-module.exports = { getAll, getById, create, update, remove, exists, getSummary };
+module.exports = { getAll, getById, create, update, remove, exists, getByLokasi, getByPetugas, getSummary };

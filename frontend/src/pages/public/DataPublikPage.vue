@@ -26,24 +26,37 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { RouterLink } from 'vue-router'
+import { lokasiService } from '../../services/dataService.js'
 
 const q = ref('')
 const locations = ref([])
 
 const fetchLocations = async () => {
   try {
-    const response = await fetch('/api/lokasi')
-    locations.value = await response.json()
+    const response = await lokasiService.getAll()
+    if (Array.isArray(response?.data)) {
+      locations.value = response.data
+    } else if (Array.isArray(response)) {
+      locations.value = response
+    } else {
+      locations.value = []
+      console.warn('Unexpected lokasi response shape:', response)
+    }
   } catch (error) {
     console.error('Gagal mengambil data lokasi:', error)
+    locations.value = []
   }
 }
 
 onMounted(fetchLocations)
 
 const filtered = computed(() => {
+  if (!Array.isArray(locations.value)) {
+    return []
+  }
+
   return locations.value.filter(l => 
-    l.nama_lokasi.toLowerCase().includes(q.value.toLowerCase())
+    String(l.nama_lokasi || '').toLowerCase().includes(q.value.toLowerCase())
   )
 })
 </script>

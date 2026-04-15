@@ -39,6 +39,11 @@ export const budidayaService = {
     return await api.get('/budidaya');
   },
 
+  // Get petugas-specific budidaya
+  async getByPetugas() {
+    return await api.get('/budidaya/petugas/me');
+  },
+
   // Get summary for dashboard
   async getSummary() {
     return await api.get('/budidaya/summary');
@@ -174,8 +179,29 @@ export const usersService = {
     return await api.get('/users/petugas');
   },
 
-  // Get user profile
+  // Get current logged-in user profile
   async getMe() {
     return await api.get('/users/me');
+  },
+
+  async updateMe(data) {
+    return await api.put('/users/me', data);
+  },
+
+  async changePassword(data) {
+    return await api.put('/users/me/password', data);
+  },
+
+  // Create petugas via admin register
+  async createPetugas(data) {
+    return await api.post('/auth/register', data);
+  },
+
+  async updatePetugas(id, data) {
+    return await api.put(`/users/${id}`, data);
+  },
+
+  async deletePetugas(id) {
+    return await api.delete(`/users/${id}`);
   },
 };

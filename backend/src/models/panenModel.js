@@ -75,9 +75,29 @@ async function update(id, data) {
   return result.affectedRows;
 }
 
+async function getByLokasi(id_lokasi) {
+  const [rows] = await db.query(
+    `SELECT
+        pa.id_panen,
+        pa.id_budidaya,
+        pa.id_petugas,
+        u.nama AS nama_petugas,
+        pa.tanggal_panen,
+        pa.jumlah_panen,
+        pa.catatan
+     FROM panen pa
+     JOIN budidaya b ON pa.id_budidaya = b.id_budidaya
+     JOIN users u ON pa.id_petugas = u.id_user
+     WHERE b.id_lokasi = ?
+     ORDER BY pa.tanggal_panen ASC`,
+    [id_lokasi]
+  );
+  return rows;
+}
+
 async function remove(id) {
   const [result] = await db.query("DELETE FROM panen WHERE id_panen = ?", [id]);
   return result.affectedRows;
 }
 
-module.exports = { getAll, getById, getByBudidaya, create, update, remove };
+module.exports = { getAll, getById, getByBudidaya, getByLokasi, create, update, remove };

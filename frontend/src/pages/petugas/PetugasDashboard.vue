@@ -176,7 +176,7 @@ async function loadDashboard() {
   try {
     const [meRes, budRes, growthRes, panenRes] = await Promise.all([
       usersService.getMe(),
-      budidayaService.getAll(),
+      budidayaService.getByPetugas(),
       pertumbuhanService.getAll(),
       panenService.getAll(),
     ])
@@ -186,10 +186,9 @@ async function loadDashboard() {
     }
 
     user.value = meRes.data
-    const userId = user.value.id_user
 
     if (budRes?.success) {
-      assignedBudidaya.value = budRes.data.filter(item => item.id_petugas === userId)
+      assignedBudidaya.value = budRes.data
     }
 
     const assignedIds = new Set(assignedBudidaya.value.map(item => item.id_budidaya))
@@ -198,7 +197,7 @@ async function loadDashboard() {
       growthRecords.value = growthRes.data.filter(item => assignedIds.has(item.id_budidaya))
     }
     if (panenRes?.success) {
-      harvestRecords.value = panenRes.data.filter(item => item.id_petugas === userId)
+      harvestRecords.value = panenRes.data.filter(item => item.id_petugas === user.value.id_user)
     }
   } catch (err) {
     console.error(err)

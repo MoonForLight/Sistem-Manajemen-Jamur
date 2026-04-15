@@ -27,6 +27,14 @@ async function setAsPetugas({ id_user, id_lokasi = null, status = "aktif" }) {
   );
 }
 
+async function findUserByUsernameExceptId(username, excludeId) {
+  const [rows] = await db.query(
+    "SELECT id_user FROM users WHERE username = ? AND id_user != ?",
+    [username, excludeId]
+  );
+  return rows[0] || null;
+}
+
 async function getRole(id_user) {
   // cek admin dulu
   const [adminRows] = await db.query("SELECT id_user FROM admin WHERE id_user = ?", [id_user]);
@@ -63,12 +71,49 @@ async function getUserBasicById(id_user) {
   return rows[0] || null;
 }
 
+async function updateUser(id_user, { nama, username }) {
+  const [result] = await db.query(
+    "UPDATE users SET nama = ?, username = ? WHERE id_user = ?",
+    [nama, username, id_user]
+  );
+  return result.affectedRows;
+}
+
+async function updateUserPassword(id_user, newPassword) {
+  const bcrypt = require('bcryptjs');
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  const [result] = await db.query(
+    "UPDATE users SET password = ? WHERE id_user = ?",
+    [passwordHash, id_user]
+  );
+  return result.affectedRows;
+}
+
+async function updatePetugas(id_user, { id_lokasi, status }) {
+  const [result] = await db.query(
+    "UPDATE petugas SET id_lokasi = ?, status = ? WHERE id_user = ?",
+    [id_lokasi || null, status || 'aktif', id_user]
+  );
+  return result.affectedRows;
+}
+
+async function deleteUser(id_user) {
+  await db.query("DELETE FROM petugas WHERE id_user = ?", [id_user]);
+  const [result] = await db.query("DELETE FROM users WHERE id_user = ?", [id_user]);
+  return result.affectedRows;
+}
+
 module.exports = {
   findUserByUsername,
   createUser,
   setAsAdmin,
   setAsPetugas,
+  findUserByUsernameExceptId,
   getRole,
   getAllPetugas,
   getUserBasicById,
+  updateUser,
+  updateUserPassword,
+  updatePetugas,
+  deleteUser,
 };

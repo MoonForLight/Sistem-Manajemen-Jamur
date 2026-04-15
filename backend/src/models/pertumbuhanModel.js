@@ -126,6 +126,29 @@ async function update(id, data) {
   return result.affectedRows;
 }
 
+async function getByLokasi(id_lokasi) {
+  const [rows] = await db.query(
+    `SELECT
+        p.id_pertumbuhan,
+        p.id_budidaya,
+        p.id_petugas,
+        u.nama AS nama_petugas,
+        p.tanggal_pengamatan,
+        p.fase,
+        p.suhu,
+        p.kelembaban,
+        p.intensitas_cahaya,
+        p.catatan
+     FROM pertumbuhan p
+     JOIN budidaya b ON p.id_budidaya = b.id_budidaya
+     JOIN users u ON p.id_petugas = u.id_user
+     WHERE b.id_lokasi = ?
+     ORDER BY p.tanggal_pengamatan ASC`,
+    [id_lokasi]
+  );
+  return rows;
+}
+
 async function remove(id) {
   const [result] = await db.query(
     "DELETE FROM pertumbuhan WHERE id_pertumbuhan = ?",
@@ -134,4 +157,4 @@ async function remove(id) {
   return result.affectedRows;
 }
 
-module.exports = { getAll, getById, getByBudidaya, create, update, remove };
+module.exports = { getAll, getById, getByBudidaya, getByLokasi, create, update, remove };

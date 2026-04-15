@@ -89,20 +89,51 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import ProductionChart from '../../components/ProductionChart.vue'
 
 const props = defineProps({ lokasiId: { type: String, required: true } })
 const detail = ref(null)
 
+const weekly = computed(() => {
+  if (!detail.value?.panen) return [0, 0, 0, 0, 0, 0, 0]
+
+  const values = [0, 0, 0, 0, 0, 0, 0]
+  detail.value.panen.forEach((item) => {
+    const date = new Date(item.tanggal_panen)
+    if (!Number.isNaN(date.getTime())) {
+      const day = date.getDay()
+      const index = day === 0 ? 6 : day - 1
+      values[index] += Number(item.jumlah_panen) || 0
+    }
+  })
+  return values
+})
+
+const budidayaRows = computed(() => detail.value?.budidaya || [])
+
+const badgeClass = (status) => {
+  return status === 'aktif' ? 'badge-success' : 'badge-secondary'
+}
+
 onMounted(async () => {
   try {
-    // Gunakan endpoint public monitoring yang menggabungkan data lokas dan rata-rata sensor
     const response = await fetch(`/api/public/monitoring?id=${props.lokasiId}`)
-    const data = await response.json()
-    // Karena endpoint /api/public/monitoring biasanya mengembalikan array, kita cari yang sesuai ID
-    detail.value = data.find(d => d.id_lokasi == props.lokasiId)
+    const payload = await response.json()
+    let info = null
+
+    if (payload && payload.success && payload.data) {
+      info = payload.data
+    } else if (Array.isArray(payload)) {
+      info = payload.find((d) => Number(d.id_lokasi) === Number(props.lokasiId))
+    } else if (payload && typeof payload === 'object') {
+      info = payload
+    }
+
+    detail.value = info || null
   } catch (error) {
     console.error('Gagal mengambil detail lokasi:', error)
+    detail.value = null
   }
 })
 </script>
