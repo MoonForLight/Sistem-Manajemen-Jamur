@@ -8,7 +8,7 @@
           MycoFlow membantu pencatatan budidaya jamur dari inkubasi sampai panen.
           Fokus pada monitoring pertumbuhan, riwayat aktivitas, dan laporan produksi.
         </p>
-        <RouterLink class="btn primary pill" to="/data">Lihat Data</RouterLink>
+        <RouterLink class="btn primary pill" to="/edukasi">Lihat Edukasi</RouterLink>
       </div>
     </section>
 

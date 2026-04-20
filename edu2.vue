@@ -1,24 +1,25 @@
 <template>
   <div class="edu-page">
     <!-- Hero Section -->
-    <div class="container" style="margin-top: 10px;">
-      <section class="hero-banner-new">
-        <div class="hero-banner-bg" aria-hidden="true"></div>
-        <div class="hero-container">
-          <div class="hero-text">
-            <span class="badge-hero">Pusat Pengetahuan</span>
-            <h1 class="hero-title-edu">Ensiklopedia <br>Budidaya Jamur</h1>
-            <p class="hero-subtitle">
-              Pelajari segala hal tentang budidaya jamur dari tahap persiapan hingga panen. Panduan lengkap dan terstruktur ini dirancang untuk mengubah pemula menjadi ahli dalam manajemen dan operasional budidaya jamur.
-            </p>
-            <div class="hero-buttons">
-              <a href="#syarat-tumbuh" class="btn primary pill edu-btn-override">Mulai Belajar</a>
-              <a href="#tahapan" class="btn ghost pill edu-btn-ghost-override">Lihat Tahapan</a>
-            </div>
+    <section class="edu-hero">
+      <div class="hero-container">
+        <div class="hero-text">
+          <span class="badge-hero">Pusat Pengetahuan</span>
+          <h1 class="hero-title">Ensiklopedia Budidaya Jamur</h1>
+          <p class="hero-subtitle">
+            Pelajari segala hal tentang budidaya jamur dari tahap persiapan hingga panen. Panduan lengkap dan terstruktur ini dirancang untuk mengubah pemula menjadi ahli dalam manajemen dan operasional budidaya jamur.
+          </p>
+          <div class="hero-buttons">
+            <a href="#syarat-tumbuh" class="btn-primary">Mulai Belajar</a>
+            <a href="#tahapan" class="btn-secondary">Lihat Tahapan</a>
+          </div>
         </div>
+        <div class="hero-visual">
+          <div class="blob"></div>
+          <div class="mushroom-icon">🍄</div>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
 
     <!-- Sticky Navigation -->
     <nav class="edu-nav">
@@ -278,37 +279,11 @@ h1, h2, h3 { color: #111827; margin: 0; }
 a { text-decoration: none; }
 
 /* Hero Section */
-.hero-banner-new {
+.edu-hero {
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  padding: 80px 20px;
   position: relative;
   overflow: hidden;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: #0b1210;
-  width: 100%;
-  padding: 60px 20px;
-}
-
-@media (min-width: 768px) {
-  .hero-banner-new {
-    border-radius: 16px;
-    padding: 80px 40px;
-  }
-}
-
-.hero-banner-new::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(closest-side at 70% 30%, rgba(34, 197, 94, .35), transparent 60%),
-    linear-gradient(90deg, rgba(0, 0, 0, .75), rgba(0, 0, 0, .15));
-  z-index: 1;
-}
-
-.hero-banner-bg {
-  position: absolute;
-  inset: 0;
-  background: url('/assets/landing.jpg') center/cover no-repeat;
-  opacity: 0.3;
 }
 
 .hero-container {
@@ -336,50 +311,86 @@ a { text-decoration: none; }
   text-transform: uppercase;
 }
 
-.hero-title-edu {
-  font-size: 40px;
+.hero-title {
+  font-size: 48px;
   font-weight: 900;
   margin-bottom: 20px;
   color: white;
   line-height: 1.2;
 }
 
-@media (min-width: 768px) {
-  .hero-title-edu {
-    font-size: 48px;
-  }
-}
-
 .hero-subtitle {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.85);
+  font-size: 18px;
+  color: #d1fae5;
   margin-bottom: 30px;
   max-width: 600px;
 }
 
-@media (min-width: 768px) {
-  .hero-subtitle {
-    font-size: 18px;
-  }
-}
-
 .hero-buttons { display: flex; gap: 14px; }
 
-.edu-btn-override {
-  padding: 12px 28px;
-  font-size: 15px;
+.btn-primary {
+  background: white;
+  color: #047857;
+  padding: 14px 28px;
+  border-radius: 8px;
+  font-weight: 700;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.edu-btn-ghost-override {
-  padding: 12px 28px;
-  font-size: 15px;
-  border: 1px solid rgba(255,255,255,0.4);
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-secondary {
+  background: transparent;
   color: white;
+  border: 2px solid rgba(255,255,255,0.4);
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-weight: 700;
+  transition: all 0.2s;
 }
 
-.edu-btn-ghost-override:hover {
+.btn-secondary:hover {
   background: rgba(255,255,255,0.1);
   border-color: white;
+}
+
+.hero-visual {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.blob {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(255,255,255,0.1);
+  border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  animation: morph 8s ease-in-out infinite alternate;
+}
+
+.mushroom-icon {
+  font-size: 140px;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes morph {
+  0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+  100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
 }
 
 @media (max-width: 768px) {
@@ -403,7 +414,6 @@ a { text-decoration: none; }
   max-width: 1000px;
   margin: 0 auto;
   display: flex;
-  justify-content: center;
   gap: 12px;
   padding: 16px 20px;
   overflow-x: auto;
@@ -502,7 +512,7 @@ a { text-decoration: none; }
 .condition-card.temp { border-top-color: #ef4444; }
 .condition-card.humid { border-top-color: #3b82f6; }
 .condition-card.air { border-top-color: #8b5cf6; }
-.condition-card.hygiene { border-top-color: var(--green-dark); }
+.condition-card.hygiene { border-top-color: #10b981; }
 
 .c-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
 .c-icon { font-size: 30px; }
@@ -607,7 +617,7 @@ a { text-decoration: none; }
 .tl-marker {
   width: 48px;
   height: 48px;
-  background: var(--green-dark);
+  background: #10b981;
   color: white;
   border-radius: 50%;
   display: flex;
@@ -630,7 +640,7 @@ a { text-decoration: none; }
   flex: 1;
 }
 
-.tl-content h3 { font-size: 18px; margin-bottom: 10px; color: var(--green-dark); }
+.tl-content h3 { font-size: 18px; margin-bottom: 10px; color: #10b981; }
 .tl-content p { font-size: 15px; margin: 0; color: #4b5563; }
 
 @media(max-width: 600px) {
