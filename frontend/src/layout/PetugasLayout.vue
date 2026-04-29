@@ -1,8 +1,8 @@
 <template>
   <div class="petugas-layout">
-    <PetugasSidebar />
-    <div class="main-wrapper">
-      <PetugasNavbar />
+    <PetugasNavbar />
+    <div class="layout-body">
+      <PetugasSidebar />
       <main class="content-area">
         <RouterView />
       </main>
@@ -19,19 +19,34 @@ import PetugasNavbar from '../components/petugas/PetugasNavbar.vue'
 <style scoped>
 .petugas-layout {
   display: flex;
-  min-height: 100vh;
+  flex-direction: column;
+  height: 100vh;
   background-color: #fafbfc;
   font-family: 'Inter', sans-serif;
   color: #333;
 }
-.main-wrapper {
-  flex: 1;
+.layout-body {
   display: flex;
-  flex-direction: column;
-  min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 .content-area {
+  flex: 1;
   padding: 24px 32px;
   overflow-y: auto;
+}
+
+@media print {
+  /* Sembunyikan elemen UI yang tidak perlu saat di-print */
+  .petugas-layout > :not(.layout-body) {
+    display: none !important;
+  }
+  .layout-body > :not(.content-area) {
+    display: none !important;
+  }
+  .content-area {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div class="container" style="margin-top: 10px;">
     <section class="hero">
       <div class="hero-media" aria-hidden="true" />
       <div class="hero-content">
@@ -8,7 +8,7 @@
           MycoFlow membantu pencatatan budidaya jamur dari inkubasi sampai panen.
           Fokus pada monitoring pertumbuhan, riwayat aktivitas, dan laporan produksi.
         </p>
-        <RouterLink class="btn primary pill" to="/edukasi">Lihat Edukasi</RouterLink>
+        <RouterLink class="btn primary pill" to="/edukasi">Mengapa Jamur?</RouterLink>
       </div>
     </section>
 
@@ -150,7 +150,7 @@ import { RouterLink } from 'vue-router'
   width: 100%;
   height: 400px;
   border-radius: 24px;
-  background: url('/assets/hero_mushroom_lab.png') center/cover no-repeat;
+  background: url('/assets/image.png') center/cover no-repeat;
   display: flex;
   align-items: flex-end;
   justify-content: center;

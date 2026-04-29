@@ -9,6 +9,7 @@ async function ensureSchema() {
         nama VARCHAR(100) NOT NULL,
         username VARCHAR(50) NOT NULL,
         password VARCHAR(255) NOT NULL,
+        foto_profil VARCHAR(255) DEFAULT NULL,
         PRIMARY KEY (id_user),
         UNIQUE KEY username (username)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
@@ -31,6 +32,7 @@ async function ensureSchema() {
         alamat VARCHAR(255) DEFAULT NULL,
         jumlah_rak INT(11) NOT NULL DEFAULT 0,
         keterangan TEXT DEFAULT NULL,
+        foto_lokasi VARCHAR(255) DEFAULT NULL,
         PRIMARY KEY (id_lokasi)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
     },

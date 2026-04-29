@@ -10,7 +10,8 @@
     </div>
 
     <!-- Login Popup Modal -->
-    <div v-if="showLoginModal" class="modal-overlay" @click.self="showLoginModal = false">
+    <Teleport to="body">
+      <div v-if="showLoginModal" class="modal-overlay" @click.self="showLoginModal = false">
       <div class="modal-content">
         <button class="close-btn" @click="showLoginModal = false">✕</button>
         <div class="modal-header">
@@ -35,6 +36,7 @@
         </form>
       </div>
     </div>
+    </Teleport>
   </header>
 </template>
 

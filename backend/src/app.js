@@ -13,11 +13,14 @@ const panenRoutes = require("./routes/panenRoutes");
 const publicRoutes = require("./routes/publicRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const usersRoutes = require("./routes/usersRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
+const path = require("path");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '../public')));
 
 //test dulu
 testDbConnection();
@@ -35,6 +38,7 @@ app.use("/api/pertumbuhan", pertumbuhanRoutes);
 app.use("/api/panen", panenRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/upload", uploadRoutes);
 app.use(errorHandler);
 
 module.exports = app;

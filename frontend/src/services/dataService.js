@@ -205,3 +205,16 @@ export const usersService = {
     return await api.delete(`/users/${id}`);
   },
 };
+
+export const uploadService = {
+  // Upload image
+  async uploadImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+    return await api.post('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  }
+};

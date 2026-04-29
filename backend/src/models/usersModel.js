@@ -65,18 +65,26 @@ async function getAllPetugas() {
 
 async function getUserBasicById(id_user) {
   const [rows] = await db.query(
-    "SELECT id_user, nama, username FROM users WHERE id_user = ?",
+    "SELECT id_user, nama, username, foto_profil, email, no_hp FROM users WHERE id_user = ?",
     [id_user]
   );
   return rows[0] || null;
 }
 
-async function updateUser(id_user, { nama, username }) {
-  const [result] = await db.query(
-    "UPDATE users SET nama = ?, username = ? WHERE id_user = ?",
-    [nama, username, id_user]
-  );
-  return result.affectedRows;
+async function updateUser(id_user, { nama, username, foto_profil, email, no_hp }) {
+  if (foto_profil !== undefined) {
+    const [result] = await db.query(
+      "UPDATE users SET nama = ?, username = ?, foto_profil = ?, email = ?, no_hp = ? WHERE id_user = ?",
+      [nama, username, foto_profil, email, no_hp, id_user]
+    );
+    return result.affectedRows;
+  } else {
+    const [result] = await db.query(
+      "UPDATE users SET nama = ?, username = ?, email = ?, no_hp = ? WHERE id_user = ?",
+      [nama, username, email, no_hp, id_user]
+    );
+    return result.affectedRows;
+  }
 }
 
 async function updateUserPassword(id_user, newPassword) {

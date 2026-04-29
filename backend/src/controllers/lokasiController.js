@@ -15,25 +15,25 @@ exports.getById = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  const { nama_lokasi, alamat, jumlah_rak, keterangan } = req.body;
+  const { nama_lokasi, alamat, jumlah_rak, keterangan, foto_lokasi } = req.body;
 
   if (!nama_lokasi) {
     return res.status(400).json({ success: false, message: "nama_lokasi wajib diisi" });
   }
 
-  const idBaru = await lokasiModel.createLokasi({ nama_lokasi, alamat, jumlah_rak, keterangan });
+  const idBaru = await lokasiModel.createLokasi({ nama_lokasi, alamat, jumlah_rak, keterangan, foto_lokasi });
   res.status(201).json({ success: true, message: "Lokasi berhasil dibuat", data: { id_lokasi: idBaru } });
 };
 
 exports.update = async (req, res) => {
   const id = Number(req.params.id);
-  const { nama_lokasi, alamat, jumlah_rak, keterangan } = req.body;
+  const { nama_lokasi, alamat, jumlah_rak, keterangan, foto_lokasi } = req.body;
 
   if (!nama_lokasi) {
     return res.status(400).json({ success: false, message: "nama_lokasi wajib diisi" });
   }
 
-  const affected = await lokasiModel.updateLokasi(id, { nama_lokasi, alamat, jumlah_rak, keterangan });
+  const affected = await lokasiModel.updateLokasi(id, { nama_lokasi, alamat, jumlah_rak, keterangan, foto_lokasi });
   if (affected === 0) {
     return res.status(404).json({ success: false, message: "Lokasi tidak ditemukan" });
   }

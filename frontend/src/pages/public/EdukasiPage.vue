@@ -299,8 +299,7 @@ a { text-decoration: none; }
   content: "";
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(closest-side at 70% 30%, rgba(34, 197, 94, .35), transparent 60%),
-    linear-gradient(90deg, rgba(0, 0, 0, .75), rgba(0, 0, 0, .15));
+  background-image: radial-gradient(closest-side at 70% 30%, rgba(34, 197, 94, .35), transparent 60%);
   z-index: 1;
 }
 
@@ -308,7 +307,6 @@ a { text-decoration: none; }
   position: absolute;
   inset: 0;
   background: url('/assets/landing.jpg') center/cover no-repeat;
-  opacity: 0.3;
 }
 
 .hero-container {

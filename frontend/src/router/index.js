@@ -17,6 +17,7 @@ import PetugasJamur from '../pages/petugas/PetugasJamur.vue'
 import PetugasLaporan from '../pages/petugas/PetugasLaporan.vue'
 import PetugasRiwayat from '../pages/petugas/PetugasRiwayat.vue'
 import PetugasProfile from '../pages/petugas/PetugasProfile.vue'
+import PetugasNotifikasi from '../pages/petugas/PetugasNotifikasi.vue'
 
 // Admin Pages & Layout
 import AdminLayout from '../layout/AdminLayout.vue'
@@ -84,6 +85,12 @@ const routes = [
         name: 'petugas-profile',
         component: PetugasProfile,
         meta: { title: 'Profil Petugas' }
+      },
+      {
+        path: 'notifikasi',
+        name: 'petugas-notifikasi',
+        component: PetugasNotifikasi,
+        meta: { title: 'Notifikasi' }
       },
     ]
   },

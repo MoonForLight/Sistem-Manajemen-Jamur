@@ -1,97 +1,67 @@
 <template>
-  <div class="petugas-page">
-    <header class="page-header">
-      <div>
-        <h1>Riwayat Panen</h1>
-        <p class="page-description">Lihat catatan panen dan hasil yang telah Anda laporkan.</p>
+  <div class="petugas-page fade-in">
+    <header class="page-header-modern">
+      <div class="header-text">
+        <h1>Riwayat Kegiatan</h1>
+        <p class="page-description">Jejak seluruh aktivitas pencatatan pengamatan dan panen yang telah Anda lakukan.</p>
       </div>
-      <button class="btn-primary" @click="openForm('create')">Tambah Panen</button>
+      <div class="header-actions">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <input v-model="searchQuery" type="text" placeholder="Cari ID Budidaya atau detail..." class="modern-input" />
+        </div>
+      </div>
     </header>
-
-    <div v-if="showForm" class="form-card">
-      <div class="form-head">
-        <div>
-          <h2>{{ formMode === 'create' ? 'Tambah Panen' : 'Ubah Panen' }}</h2>
-          <p class="form-subtitle">Catat hasil panen sesuai data budidaya Anda.</p>
-        </div>
-        <button class="btn-outline" @click="closeForm">Tutup</button>
-      </div>
-
-      <form @submit.prevent="saveHarvest">
-        <div class="form-grid">
-          <label>
-            Budidaya
-            <select v-model.number="formData.id_budidaya" required>
-              <option value="" disabled>Pilih budidaya</option>
-              <option v-for="item in assignedBudidaya" :key="item.id_budidaya" :value="item.id_budidaya">
-                {{ item.id_budidaya }} - {{ item.nama_lokasi }} / {{ item.nama_jamur }}
-              </option>
-            </select>
-          </label>
-          <label>
-            Tanggal Panen
-            <input v-model="formData.tanggal_panen" type="date" required />
-          </label>
-          <label>
-            Jumlah Panen (kg)
-            <input v-model.number="formData.jumlah_panen" type="number" step="0.1" required />
-          </label>
-          <label class="full-width">
-            Catatan
-            <textarea v-model="formData.catatan" rows="3" placeholder="Catatan tambahan"></textarea>
-          </label>
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" class="btn-primary" :disabled="saving">
-            {{ formMode === 'create' ? 'Simpan Panen' : 'Perbarui Panen' }}
-          </button>
-          <button type="button" class="btn-outline" @click="closeForm">Batal</button>
-        </div>
-        <div v-if="formError" class="status-message error">{{ formError }}</div>
-        <div v-if="successMessage" class="status-message success">{{ successMessage }}</div>
-      </form>
-    </div>
 
     <div class="stats-row">
       <div class="stat-card">
-        <span class="stat-label">Total Panen</span>
-        <span class="stat-value">{{ harvestRecords.length }}</span>
+        <span class="stat-label">Total Aktivitas</span>
+        <span class="stat-value">{{ allActivities.length }}</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">Budidaya Selesai</span>
-        <span class="stat-value">{{ completedBudidaya }}</span>
+        <span class="stat-label">Pengamatan Dicatat</span>
+        <span class="stat-value text-blue">{{ totalPengamatan }}</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">Jumlah Kilogram</span>
-        <span class="stat-value">{{ totalHarvestKg }}</span>
+        <span class="stat-label">Panen Dicatat</span>
+        <span class="stat-value text-green">{{ totalPanen }}</span>
       </div>
     </div>
 
-    <div v-if="loading" class="status-message">Memuat riwayat...</div>
-    <div v-if="error" class="status-message error">{{ error }}</div>
-
-    <div class="table-card" v-if="!loading && !error">
-      <div class="table-header">
-        <span>Budidaya</span>
-        <span>Tanggal Panen</span>
-        <span>Jumlah Panen</span>
-        <span>Catatan</span>
-        <span>Aksi</span>
+    <!-- Table content -->
+    <div class="table-card-modern mt-24">
+      <div class="table-header-modern riwayat-grid">
+        <span>Jenis Kegiatan</span>
+        <span>ID Budidaya</span>
+        <span>Tanggal</span>
+        <span>Rincian & Catatan</span>
       </div>
 
-      <div v-if="harvestRecords.length === 0" class="table-row empty-row">
-        <span style="grid-column: 1 / -1">Belum ada riwayat panen.</span>
+      <div v-if="loading" class="table-row-modern riwayat-grid empty-row">
+        <span class="full-span">Memuat riwayat kegiatan...</span>
+      </div>
+      <div v-else-if="!filteredActivities.length" class="table-row-modern riwayat-grid empty-row">
+        <span class="full-span">Belum ada riwayat kegiatan yang ditemukan.</span>
       </div>
 
-      <div v-for="item in harvestRecords" :key="item.id_panen" class="table-row">
-        <span>{{ item.id_budidaya }}</span>
-        <span>{{ formatDate(item.tanggal_panen) }}</span>
-        <span>{{ item.jumlah_panen ?? '-' }} kg</span>
-        <span>{{ item.catatan || '-' }}</span>
-        <span>
-          <button type="button" class="btn-outline small" @click="openForm('edit', item)">Edit</button>
+      <div v-for="item in filteredActivities" :key="item.uid" class="table-row-modern riwayat-grid has-divider">
+        <!-- Jenis Kegiatan -->
+        <span class="activity-type">
+          <span v-if="item.tipe === 'Panen'" class="badge-tag green-tag">📦 Panen</span>
+          <span v-else class="badge-tag blue-tag">📝 Pengamatan</span>
         </span>
+        
+        <!-- ID Budidaya -->
+        <span class="fw-700 hitam">BDY-{{ String(item.id_budidaya).padStart(3, '0') }}</span>
+        
+        <!-- Tanggal -->
+        <span class="text-muted">{{ formatDate(item.tanggal) }}</span>
+        
+        <!-- Rincian -->
+        <div class="details-col">
+          <span class="detail-main fw-600">{{ item.deskripsi }}</span>
+          <span v-if="item.catatan" class="text-sm text-muted">Catatan: {{ item.catatan }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -99,129 +69,82 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { usersService, budidayaService, panenService } from '../../services/dataService.js'
+import { usersService, pertumbuhanService, panenService } from '../../services/dataService.js'
 
-const assignedBudidaya = ref([])
-const harvestRecords = ref([])
-const showForm = ref(false)
-const formMode = ref('create')
-const editId = ref(null)
-const formData = ref({
-  id_budidaya: '',
-  tanggal_panen: '',
-  jumlah_panen: '',
-  catatan: '',
-})
-const saving = ref(false)
-const formError = ref('')
-const successMessage = ref('')
+const allActivities = ref([])
 const loading = ref(true)
-const error = ref('')
+const searchQuery = ref('')
 
-const completedBudidaya = computed(() => assignedBudidaya.value.filter(item => item.status === 'selesai').length)
-const totalHarvestKg = computed(() => harvestRecords.value.reduce((sum, item) => sum + (item.jumlah_panen ?? 0), 0))
+const totalPengamatan = computed(() => allActivities.value.filter(a => a.tipe === 'Pengamatan').length)
+const totalPanen = computed(() => allActivities.value.filter(a => a.tipe === 'Panen').length)
+
+const filteredActivities = computed(() => {
+  if (!searchQuery.value) return allActivities.value
+  const q = searchQuery.value.toLowerCase()
+  return allActivities.value.filter(item => 
+    (`bdy-${item.id_budidaya}`).includes(q) ||
+    item.deskripsi.toLowerCase().includes(q) ||
+    (item.catatan && item.catatan.toLowerCase().includes(q))
+  )
+})
 
 function formatDate(value) {
   if (!value) return '-'
-  return new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
-function resetForm() {
-  editId.value = null
-  formMode.value = 'create'
-  formError.value = ''
-  successMessage.value = ''
-  formData.value = {
-    id_budidaya: '',
-    tanggal_panen: '',
-    jumlah_panen: '',
-    catatan: '',
-  }
-}
-
-function openForm(mode, record = null) {
-  resetForm()
-  formMode.value = mode
-  showForm.value = true
-  if (mode === 'edit' && record) {
-    editId.value = record.id_panen
-    formData.value = {
-      id_budidaya: record.id_budidaya,
-      tanggal_panen: record.tanggal_panen?.slice(0, 10) || '',
-      jumlah_panen: record.jumlah_panen ?? '',
-      catatan: record.catatan || '',
-    }
-  }
-}
-
-function closeForm() {
-  showForm.value = false
-  resetForm()
-}
-
-async function saveHarvest() {
-  formError.value = ''
-  successMessage.value = ''
-
-  if (!formData.value.id_budidaya || !formData.value.tanggal_panen || formData.value.jumlah_panen === '' ) {
-    formError.value = 'Lengkapi semua data panen sebelum menyimpan.'
-    return
-  }
-
-  saving.value = true
-  try {
-    if (formMode.value === 'create') {
-      await panenService.create({
-        id_budidaya: formData.value.id_budidaya,
-        tanggal_panen: formData.value.tanggal_panen,
-        jumlah_panen: formData.value.jumlah_panen,
-        catatan: formData.value.catatan,
-      })
-      successMessage.value = 'Data panen berhasil disimpan.'
-    } else if (editId.value) {
-      await panenService.update(editId.value, {
-        id_budidaya: formData.value.id_budidaya,
-        tanggal_panen: formData.value.tanggal_panen,
-        jumlah_panen: formData.value.jumlah_panen,
-        catatan: formData.value.catatan,
-      })
-      successMessage.value = 'Data panen berhasil diperbarui.'
-    }
-    await loadRiwayat()
-    closeForm()
-  } catch (err) {
-    console.error(err)
-    formError.value = err.message || 'Gagal menyimpan data panen.'
-  } finally {
-    saving.value = false
-  }
+  const date = new Date(value)
+  // Menambahkan waktu agar lebih presisi untuk log kegiatan
+  return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
 async function loadRiwayat() {
+  loading.value = true
   try {
-    const [meRes, budRes, panenRes] = await Promise.all([
+    const [meRes, growthRes, panenRes] = await Promise.all([
       usersService.getMe(),
-      budidayaService.getByPetugas(),
+      pertumbuhanService.getAll(),
       panenService.getAll(),
     ])
 
-    if (!meRes?.success) {
-      throw new Error('Gagal memuat profil petugas')
+    const userId = meRes?.data?.id_user
+    if (!userId) return
+
+    const combined = []
+
+    // Map Pengamatan (Pertumbuhan)
+    if (growthRes?.success) {
+      const myGrowth = growthRes.data.filter(item => item.id_petugas === userId)
+      myGrowth.forEach(g => {
+        combined.push({
+          uid: `growth_${g.id_pertumbuhan}`,
+          tipe: 'Pengamatan',
+          tanggal: g.tanggal_pengamatan,
+          id_budidaya: g.id_budidaya,
+          deskripsi: `Suhu ${g.suhu || '-'}°C, Kelembapan ${g.kelembaban || '-'}%`,
+          catatan: g.catatan
+        })
+      })
     }
 
-    const userId = meRes.data.id_user
-    if (budRes?.success) {
-      assignedBudidaya.value = budRes.data
-    }
-
+    // Map Panen
     if (panenRes?.success) {
-      harvestRecords.value = panenRes.data
-        .filter(item => item.id_petugas === userId)
-        .sort((a, b) => new Date(b.tanggal_panen) - new Date(a.tanggal_panen))
+      const myHarvest = panenRes.data.filter(item => item.id_petugas === userId)
+      myHarvest.forEach(p => {
+        combined.push({
+          uid: `harvest_${p.id_panen}`,
+          tipe: 'Panen',
+          tanggal: p.tanggal_panen,
+          id_budidaya: p.id_budidaya,
+          deskripsi: `Berhasil memanen ${p.jumlah_panen || 0} kg`,
+          catatan: p.catatan
+        })
+      })
     }
+
+    // Sort by Date Descending (Terbaru di atas)
+    combined.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal))
+
+    allActivities.value = combined
   } catch (err) {
-    console.error(err)
-    error.value = 'Tidak dapat memuat riwayat panen saat ini.'
+    console.error("Gagal memuat riwayat kegiatan:", err)
   } finally {
     loading.value = false
   }
@@ -231,30 +154,34 @@ onMounted(loadRiwayat)
 </script>
 
 <style scoped>
+.fade-in { animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
 .petugas-page {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-.page-header {
+.page-header-modern {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
-.page-header h1 {
-  margin: 0;
-  font-size: 28px;
-  color: #111827;
-}
+.header-text h1 { margin: 0; font-size: 24px; font-weight: 800; color: #111827; }
+.page-description { margin: 4px 0 0; color: #6b7280; font-size: 14px; }
 
-.page-description {
-  margin: 8px 0 0;
-  color: #6b7280;
-}
+.search-box { position: relative; display: flex; align-items: center; }
+.search-icon { position: absolute; left: 14px; width: 16px; height: 16px; color: #9ca3af; }
+.modern-input { width: 300px; padding: 10px 14px 10px 38px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-family: inherit; transition: all 0.2s; }
+.modern-input:focus { outline: none; border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1); }
 
+.mt-24 { margin-top: 24px; }
+
+/* Stats */
 .stats-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -264,125 +191,75 @@ onMounted(loadRiwayat)
 .stat-card {
   background: white;
   border-radius: 12px;
-  padding: 20px;
-  border: 1px solid #eef2ff;
+  padding: 24px;
+  border: 1px solid #f3f4f6;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-.stat-label {
-  display: block;
-  font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 10px;
-  font-weight: 600;
-}
+.stat-label { display: block; font-size: 13px; color: #6b7280; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-value { font-size: 32px; font-weight: 800; color: #111827; }
+.text-green { color: #16a34a; }
+.text-blue { color: #2563eb; }
 
-.stat-value {
-  font-size: 28px;
-  font-weight: 800;
-  color: #111827;
-}
-
-.table-card {
+/* Table Style */
+.table-card-modern {
   background: white;
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-}
-
-.form-card {
-  background: white;
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-  margin-bottom: 24px;
-}
-
-.form-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.form-subtitle {
-  margin: 8px 0 0;
-  color: #6b7280;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-label {
-  display: grid;
-  gap: 8px;
-}
-
-.full-width {
-  grid-column: span 3;
-}
-
-.form-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.btn-outline {
-  background: transparent;
-  border: 1px solid #d1d5db;
-  color: #374151;
-  padding: 12px 18px;
   border-radius: 12px;
-  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #f3f4f6;
 }
 
-.btn-outline.small {
-  padding: 8px 12px;
-  font-size: 13px;
-}
-
-.table-header,
-.table-row {
+.riwayat-grid {
   display: grid;
-  grid-template-columns: 1fr 1.2fr 1fr 2fr 0.8fr;
-  font-weight: 700;
-  color: #374151;
+  grid-template-columns: 140px 120px 180px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 24px;
+  font-size: 14px;
 }
 
-.table-row {
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.table-row.empty-row {
-  border-bottom: none;
-}
-
-.table-row:last-child {
-  border-bottom: none;
-}
-
-.status-message {
-  padding: 16px;
-  border-radius: 14px;
+.table-header-modern {
   background: #f9fafb;
-  color: #374151;
+  font-weight: 700;
+  color: #4b5563;
+  border-bottom: 1px solid #e5e7eb;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.05em;
 }
 
-.status-message.error {
-  background: #fef2f2;
-  color: #991b1b;
+.has-divider { border-top: 1px solid #f3f4f6; }
+.table-row-modern { transition: background 0.2s; color: #111827; }
+.table-row-modern:hover { background: #f9fafb; }
+
+.empty-row { display: block; padding: 48px; text-align: center; color: #6b7280; }
+.full-span { display: block; grid-column: 1 / -1; }
+
+.hitam { color: #111827; }
+.fw-600 { font-weight: 600; }
+.fw-700 { font-weight: 700; }
+.text-muted { color: #6b7280; }
+.text-sm { font-size: 13px; margin-top: 2px; }
+
+.details-col { display: flex; flex-direction: column; }
+
+.badge-tag {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 12px;
 }
+
+.green-tag { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.blue-tag { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
 
 @media(max-width: 1024px) {
-  .stats-row,
-  .table-header,
-  .table-row {
-    grid-template-columns: 1fr;
-  }
+  .stats-row { grid-template-columns: 1fr; }
+  .riwayat-grid { grid-template-columns: 120px 100px 140px 1fr; padding: 16px; }
+}
+@media(max-width: 640px) {
+  .riwayat-grid { grid-template-columns: 1fr; gap: 8px; }
 }
 </style>

@@ -68,7 +68,7 @@ exports.me = async (req, res) => {
 
 exports.updateMe = async (req, res) => {
   const id_user = req.user.id_user;
-  const { nama, username } = req.body;
+  const { nama, username, foto_profil, email, no_hp } = req.body;
 
   if (!nama || !username) {
     return res.status(400).json({ success: false, message: 'nama dan username wajib diisi' });
@@ -79,7 +79,7 @@ exports.updateMe = async (req, res) => {
     return res.status(400).json({ success: false, message: 'username sudah digunakan oleh akun lain' });
   }
 
-  const affectedUser = await usersModel.updateUser(id_user, { nama, username });
+  const affectedUser = await usersModel.updateUser(id_user, { nama, username, foto_profil, email, no_hp });
   if (affectedUser === 0) {
     return res.status(404).json({ success: false, message: 'User tidak ditemukan' });
   }
