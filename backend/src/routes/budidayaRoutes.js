@@ -12,8 +12,8 @@ router.get("/petugas/me", authMiddleware, roleMiddleware("admin", "petugas"), bu
 router.get("/", authMiddleware, budidayaController.getAll);
 router.get("/:id", authMiddleware, budidayaController.getById);
 
-// admin-only
-router.post("/", authMiddleware, roleMiddleware("admin"), budidayaController.create);
+// admin & petugas
+router.post("/", authMiddleware, roleMiddleware("admin", "petugas"), budidayaController.create);
 router.put("/:id", authMiddleware, roleMiddleware("admin"), budidayaController.update);
 router.delete("/:id", authMiddleware, roleMiddleware("admin"), budidayaController.remove);
 

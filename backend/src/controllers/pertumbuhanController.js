@@ -30,7 +30,7 @@ exports.getByBudidaya = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  const { id_budidaya, tanggal_pengamatan, fase, suhu, kelembaban, intensitas_cahaya, catatan } = req.body;
+  const { id_budidaya, tanggal_pengamatan, fase, detail_fase, catatan } = req.body;
 
   if (!id_budidaya || !tanggal_pengamatan) {
     return res.status(400).json({ success: false, message: "id_budidaya dan tanggal_pengamatan wajib diisi" });
@@ -40,7 +40,7 @@ exports.create = async (req, res) => {
     return res.status(400).json({ success: false, message: "Budidaya tidak valid" });
   }
 
-  const id_petugas = req.user.id_user;
+  const id_petugas = Number(req.user.id_user);
 
   if (req.user.role === "petugas") {
     const bud = await budidayaModel.getById(id_budidaya);
@@ -57,9 +57,7 @@ exports.create = async (req, res) => {
     id_petugas,
     tanggal_pengamatan,
     fase,
-    suhu,
-    kelembaban,
-    intensitas_cahaya,
+    detail_fase,
     catatan,
   });
 
@@ -68,7 +66,7 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   const id = Number(req.params.id);
-  const { id_budidaya, tanggal_pengamatan, fase, suhu, kelembaban, intensitas_cahaya, catatan } = req.body;
+  const { id_budidaya, tanggal_pengamatan, fase, detail_fase, catatan } = req.body;
 
   if (!id_budidaya || !tanggal_pengamatan) {
     return res.status(400).json({ success: false, message: "id_budidaya dan tanggal_pengamatan wajib diisi" });
@@ -78,7 +76,7 @@ exports.update = async (req, res) => {
     return res.status(400).json({ success: false, message: "Budidaya tidak valid" });
   }
 
-  const id_petugas = req.user.id_user;
+  const id_petugas = Number(req.user.id_user);
   if (req.user.role === "petugas") {
     const existing = await pertumbuhanModel.getById(id);
     if (!existing) {
@@ -98,9 +96,7 @@ exports.update = async (req, res) => {
     id_petugas,
     tanggal_pengamatan,
     fase,
-    suhu,
-    kelembaban,
-    intensitas_cahaya,
+    detail_fase,
     catatan,
   });
 

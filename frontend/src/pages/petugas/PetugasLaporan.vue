@@ -49,8 +49,8 @@
           <span class="stat-value text-green">{{ totalPanen }} Kg</span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Total Pengamatan</span>
-          <span class="stat-value">{{ monthlyRecords.length }}</span>
+          <span class="stat-label">Total Pencatatan Lingkungan</span>
+          <span class="stat-value">{{ monthlyEnvRecords.length }}</span>
         </div>
       </div>
 
@@ -72,27 +72,27 @@
 
       <!-- Table content (Optional: shown only on screen or both) -->
       <div class="table-card-modern mt-24">
-        <h4 class="table-title">Rincian Pengamatan Bulan Ini</h4>
+        <h4 class="table-title">Rincian Pencatatan Lingkungan Bulan Ini</h4>
         <div class="table-header-modern laporan-grid">
           <span>Budidaya</span>
           <span>Tanggal</span>
-          <span>Fase</span>
+          <span>Petugas</span>
           <span>Suhu</span>
           <span>Kelembapan</span>
-          <span>Catatan</span>
+          <span>Cahaya</span>
         </div>
 
-        <div v-if="monthlyRecords.length === 0" class="table-row-modern laporan-grid empty-row">
-          <span class="full-span">Tidak ada laporan pengamatan pada bulan ini.</span>
+        <div v-if="monthlyEnvRecords.length === 0" class="table-row-modern laporan-grid empty-row">
+          <span class="full-span">Tidak ada pencatatan lingkungan pada bulan ini.</span>
         </div>
 
-        <div v-for="item in monthlyRecords" :key="item.id_pertumbuhan" class="table-row-modern laporan-grid has-divider">
+        <div v-for="item in monthlyEnvRecords" :key="item.id_lingkungan" class="table-row-modern laporan-grid has-divider">
           <span class="fw-700 hitam">BDY-{{ String(item.id_budidaya).padStart(3, '0') }}</span>
-          <span class="text-muted">{{ formatDate(item.tanggal_pengamatan) }}</span>
-          <span class="hitam fw-600">{{ item.fase || '-' }}</span>
+          <span class="text-muted">{{ formatDate(item.tanggal_pengukuran) }}</span>
+          <span class="hitam fw-600">{{ item.nama_petugas || '-' }}</span>
           <span><span :class="['badge-tag', getSuhuClass(item.suhu)]">{{ item.suhu ?? '-' }}°C</span></span>
           <span><span :class="['badge-tag', getKelembabanClass(item.kelembaban)]">{{ item.kelembaban ?? '-' }}%</span></span>
-          <span class="text-sm">{{ item.catatan || '-' }}</span>
+          <span class="text-sm">{{ item.intensitas_cahaya ?? '-' }} lux</span>
         </div>
       </div>
     </div>
@@ -101,7 +101,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { usersService, budidayaService, pertumbuhanService, panenService } from '../../services/dataService.js'
+import { usersService, budidayaService, pertumbuhanService, panenService, lingkunganService } from '../../services/dataService.js'
 
 import { Line, Bar } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, LinearScale, PointElement, CategoryScale, BarElement } from 'chart.js'
@@ -112,8 +112,10 @@ const userName = ref('')
 const assignedBudidaya = ref([])
 const allGrowthRecords = ref([])
 const allHarvestRecords = ref([])
+const allEnvRecords = ref([])
 const monthlyRecords = ref([])
 const monthlyHarvestRecords = ref([])
+const monthlyEnvRecords = ref([])
 
 const loading = ref(true)
 
@@ -145,8 +147,52 @@ const chartOptions = {
   scales: { y: { beginAtZero: true }, x: { ticks: { font: { family: 'Inter' } } } }
 }
 
-function printReport() {
-  window.print()
+function loadHtml2Pdf() {
+  return new Promise((resolve, reject) => {
+    if (window.html2pdf) return resolve(window.html2pdf);
+    const script = document.createElement('script');
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+    script.onload = () => resolve(window.html2pdf);
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+async function printReport() {
+  try {
+    const html2pdf = await loadHtml2Pdf();
+    const element = document.querySelector('.petugas-page');
+    
+    // Tampilkan header print & Sembunyikan elemen navigasi
+    const printHeader = document.querySelector('.print-header');
+    if(printHeader) printHeader.style.display = 'block';
+    
+    const noPrintElements = document.querySelectorAll('.no-print, .petugas-navbar, .app-sidebar');
+    noPrintElements.forEach(el => {
+      if (el) el.style.display = 'none';
+    });
+
+    const opt = {
+      margin:       0.4,
+      filename:     `Laporan_Petugas_${selectedMonth.value}.pdf`,
+      image:        { type: 'jpeg', quality: 1 },
+      html2canvas:  { scale: 2, useCORS: true, windowWidth: 1200 },
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
+      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    await html2pdf().set(opt).from(element).save();
+
+    // Kembalikan tampilan
+    if(printHeader) printHeader.style.display = 'none';
+    noPrintElements.forEach(el => {
+      if (el) el.style.display = '';
+    });
+
+  } catch (error) {
+    console.error("Gagal mengekspor PDF:", error);
+    alert("Gagal memuat pustaka PDF. Periksa koneksi internet.");
+  }
 }
 
 function processMonthlyData() {
@@ -155,18 +201,37 @@ function processMonthlyData() {
   const ym = selectedMonth.value // format "YYYY-MM"
 
   // Filter records
-  monthlyRecords.value = allGrowthRecords.value.filter(item => item.tanggal_pengamatan?.startsWith(ym))
-    .sort((a, b) => new Date(a.tanggal_pengamatan) - new Date(b.tanggal_pengamatan))
-    
-  monthlyHarvestRecords.value = allHarvestRecords.value.filter(item => item.tanggal_panen?.startsWith(ym))
-    .sort((a, b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen))
+  const getLocalISO = (d) => {
+    if (!d) return ''
+    if (typeof d === 'string' && d.includes('T')) return d // Already ISO string
+    if (typeof d === 'string') return d // "YYYY-MM-DD"
+    const date = new Date(d)
+    const offset = date.getTimezoneOffset()
+    const local = new Date(date.getTime() - (offset * 60 * 1000))
+    return local.toISOString()
+  }
 
-  // Calculate Averages
-  if (monthlyRecords.value.length > 0) {
-    const sumSuhu = monthlyRecords.value.reduce((acc, curr) => acc + (Number(curr.suhu) || 0), 0)
-    const sumKelembapan = monthlyRecords.value.reduce((acc, curr) => acc + (Number(curr.kelembaban) || 0), 0)
-    avgSuhu.value = (sumSuhu / monthlyRecords.value.length).toFixed(1)
-    avgKelembapan.value = (sumKelembapan / monthlyRecords.value.length).toFixed(1)
+  monthlyRecords.value = allGrowthRecords.value.filter(item => {
+    const dStr = getLocalISO(item.tanggal_pengamatan)
+    return dStr.startsWith(ym)
+  }).sort((a, b) => new Date(a.tanggal_pengamatan) - new Date(b.tanggal_pengamatan))
+    
+  monthlyHarvestRecords.value = allHarvestRecords.value.filter(item => {
+    const dStr = getLocalISO(item.tanggal_panen)
+    return dStr.startsWith(ym)
+  }).sort((a, b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen))
+
+  monthlyEnvRecords.value = allEnvRecords.value.filter(item => {
+    const dStr = getLocalISO(item.tanggal_pengukuran)
+    return dStr.startsWith(ym)
+  }).sort((a, b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran))
+
+  // Calculate Averages from lingkungan_harian
+  if (monthlyEnvRecords.value.length > 0) {
+    const sumSuhu = monthlyEnvRecords.value.reduce((acc, curr) => acc + (Number(curr.suhu) || 0), 0)
+    const sumKelembapan = monthlyEnvRecords.value.reduce((acc, curr) => acc + (Number(curr.kelembaban) || 0), 0)
+    avgSuhu.value = (sumSuhu / monthlyEnvRecords.value.length).toFixed(1)
+    avgKelembapan.value = (sumKelembapan / monthlyEnvRecords.value.length).toFixed(1)
   } else {
     avgSuhu.value = 0
     avgKelembapan.value = 0
@@ -176,10 +241,10 @@ function processMonthlyData() {
   totalPanen.value = monthlyHarvestRecords.value.reduce((acc, curr) => acc + (Number(curr.jumlah_panen) || 0), 0).toFixed(1)
 
   // Generate Insight
-  if (monthlyRecords.value.length === 0) {
+  if (monthlyEnvRecords.value.length === 0) {
     aiInsight.value = "Belum ada data pengamatan pada bulan ini. Silakan pastikan pengisian data harian dilakukan tepat waktu."
   } else {
-    let insight = `Bulan ini terdapat ${monthlyRecords.value.length} pencatatan lingkungan. `
+    let insight = `Bulan ini terdapat ${monthlyEnvRecords.value.length} pencatatan lingkungan. `
     if (avgSuhu.value > 28) insight += "Suhu rata-rata cukup tinggi (>28°C), pertimbangkan untuk meningkatkan sirkulasi udara. "
     else if (avgSuhu.value < 20) insight += "Suhu rata-rata sangat dingin (<20°C). "
     else insight += "Suhu rata-rata berada pada ambang batas optimal (Idealnya ~25°C). "
@@ -193,11 +258,11 @@ function processMonthlyData() {
     aiInsight.value = insight
   }
 
-  // Prepare Charts Data
+  // Prepare Charts Data from lingkungan_harian
   const daysInMonth = new Date(ym.split('-')[0], ym.split('-')[1], 0).getDate()
   const labels = Array.from({ length: daysInMonth }, (_, i) => String(i + 1))
 
-  // Daily Averages
+  // Daily Averages from lingkungan_harian
   const dailySuhu = Array(daysInMonth).fill(null)
   const dailyKelembapan = Array(daysInMonth).fill(null)
   
@@ -205,7 +270,10 @@ function processMonthlyData() {
     const dayStr = String(i).padStart(2, '0')
     const dateStr = `${ym}-${dayStr}`
     
-    const dayRecs = monthlyRecords.value.filter(r => r.tanggal_pengamatan?.startsWith(dateStr))
+    const dayRecs = monthlyEnvRecords.value.filter(r => {
+      const dStr = getLocalISO(r.tanggal_pengukuran)
+      return dStr.startsWith(dateStr)
+    })
     if (dayRecs.length > 0) {
       dailySuhu[i-1] = dayRecs.reduce((s, r) => s + Number(r.suhu || 0), 0) / dayRecs.length
       dailyKelembapan[i-1] = dayRecs.reduce((s, r) => s + Number(r.kelembaban || 0), 0) / dayRecs.length
@@ -223,10 +291,16 @@ function processMonthlyData() {
   // Daily Harvest
   const dailyHarvest = Array(daysInMonth).fill(0)
   monthlyHarvestRecords.value.forEach(r => {
-    const dStr = r.tanggal_panen
-    if (dStr) {
-      const dayIndex = parseInt(dStr.split('-')[2], 10) - 1
-      dailyHarvest[dayIndex] += Number(r.jumlah_panen) || 0
+    const d = r.tanggal_panen
+    if (d) {
+      const dStr = getLocalISO(d).slice(0, 10)
+      const parts = dStr.split('-')
+      if (parts.length >= 3) {
+        const dayIndex = parseInt(parts[2], 10) - 1
+        if (dayIndex >= 0 && dayIndex < daysInMonth) {
+          dailyHarvest[dayIndex] += Number(r.jumlah_panen) || 0
+        }
+      }
     }
   })
 
@@ -261,24 +335,32 @@ function getSuhuColorClass(val) {
 async function loadReports() {
   loading.value = true
   try {
-    const [meRes, budRes, growthRes, panenRes] = await Promise.all([
-      usersService.getMe(),
-      budidayaService.getByPetugas(),
+    const meRes = await usersService.getMe()
+    let isAdmin = false
+    if (meRes?.success) {
+      userName.value = meRes.data.nama_lengkap
+      isAdmin = meRes.data.role === 'admin'
+    }
+
+    const [budRes, growthRes, panenRes, envRes] = await Promise.all([
+      isAdmin ? budidayaService.getAll() : budidayaService.getByPetugas(),
       pertumbuhanService.getAll(),
-      panenService.getAll()
+      panenService.getAll(),
+      lingkunganService.getAll()
     ])
 
-    if (meRes?.success) userName.value = meRes.data.nama_lengkap
     if (budRes?.success) assignedBudidaya.value = budRes.data
 
-    const assignedIds = new Set(assignedBudidaya.value.map(item => item.id_budidaya))
+    const assignedIds = new Set(assignedBudidaya.value.map(item => Number(item.id_budidaya)))
 
     if (growthRes?.success) {
-      allGrowthRecords.value = growthRes.data.filter(item => assignedIds.has(item.id_budidaya))
+      allGrowthRecords.value = growthRes.data.filter(item => assignedIds.has(Number(item.id_budidaya)))
     }
     if (panenRes?.success) {
-      // PetugasRiwayat checks item.id_petugas, here we check id_budidaya which is similar as it's assigned to them
-      allHarvestRecords.value = panenRes.data.filter(item => assignedIds.has(item.id_budidaya))
+      allHarvestRecords.value = panenRes.data.filter(item => assignedIds.has(Number(item.id_budidaya)))
+    }
+    if (envRes?.success) {
+      allEnvRecords.value = envRes.data.filter(item => assignedIds.has(Number(item.id_budidaya)))
     }
 
     processMonthlyData()

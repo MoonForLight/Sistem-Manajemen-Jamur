@@ -1,10 +1,5 @@
 <template>
   <div class="admin-page">
-    <!-- Tabs Navigasi Pseudo -->
-    <div class="tabs-bar">
-      <RouterLink to="/admin/jamur" class="tab-item">Jenis Jamur</RouterLink>
-      <RouterLink to="/admin/media" class="tab-item active">Media Tanam</RouterLink>
-    </div>
 
     <header class="page-header-modern">
       <div class="header-text">
@@ -66,8 +61,10 @@
         <span class="hitam fw-600">{{ item.kadar_air_optimal ?? '-' }}%</span>
         <span>{{ item.catatan || '-' }}</span>
         <span class="actions-modern">
-          <button type="button" class="text-link-btn" @click.prevent="openForm('edit', item)">Update &rarr;</button>
-          <button type="button" class="icon-btn delete-mini" @click.prevent="deleteMedia(item.id_media)" title="Hapus">
+          <button type="button" class="icon-btn edit" @click.prevent="openForm('edit', item)">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+          </button>
+          <button type="button" class="icon-btn delete" @click.prevent="deleteMedia(item.id_media)" title="Hapus">
             <svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
           </button>
         </span>
@@ -165,31 +162,6 @@ onMounted(loadMedia)
   gap: 20px;
 }
 
-/* Tabs */
-.tabs-bar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-.tab-item {
-  padding: 10px 24px;
-  border-radius: 20px;
-  border: 1px solid #e5e7eb;
-  background: white;
-  color: #6b7280;
-  text-decoration: none;
-  font-weight: 700;
-  font-size: 14px;
-  transition: all 0.2s;
-}
-.tab-item.active {
-  background: #e9fbef;
-  color: var(--green-dark, #16a34a);
-  border-color: #d1fae5;
-}
-.tab-item:hover:not(.active) {
-  background: #f9fafb;
-}
 
 .page-header-modern {
   display: flex;
@@ -333,29 +305,31 @@ onMounted(loadMedia)
 .actions-modern {
   display: flex;
   justify-content: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  color: #9ca3af;
+  transition: all 0.2s;
 }
-
-.text-link-btn {
-  background: transparent;
-  border: none;
+.icon-btn svg {
+  width: 20px;
+  height: 20px;
+}
+.icon-btn.edit:hover {
+  background: #eff6ff;
   color: #3b82f6;
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-  padding: 4px;
 }
-.text-link-btn:hover { text-decoration: underline; }
-
-.delete-mini {
-  background: transparent;
-  border: none;
-  cursor: pointer;
+.icon-btn.delete:hover {
+  background: #fef2f2;
   color: #ef4444;
-  display: flex; align-items: center; justify-content: center;
-  padding: 4px; border-radius: 4px; transition: all 0.2s;
 }
-.delete-mini:hover { background: #fee2e2; }
-.delete-mini svg { width: 18px; height: 18px; }
 </style>

@@ -40,7 +40,7 @@ exports.create = async (req, res) => {
     return res.status(400).json({ success: false, message: "Budidaya tidak valid" });
   }
 
-  const id_petugas = req.user.id_user;
+  const id_petugas = Number(req.user.id_user);
 
   if (req.user.role === "petugas") {
     const bud = await budidayaModel.getById(id_budidaya);
@@ -75,7 +75,7 @@ exports.update = async (req, res) => {
     return res.status(400).json({ success: false, message: "Budidaya tidak valid" });
   }
 
-  const id_petugas = req.user.id_user;
+  const id_petugas = Number(req.user.id_user);
   if (req.user.role === "petugas") {
     const existing = await panenModel.getById(id);
     if (!existing) {

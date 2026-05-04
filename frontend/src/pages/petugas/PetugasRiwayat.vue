@@ -48,6 +48,7 @@
         <!-- Jenis Kegiatan -->
         <span class="activity-type">
           <span v-if="item.tipe === 'Panen'" class="badge-tag green-tag">📦 Panen</span>
+          <span v-else-if="item.tipe === 'Lingkungan'" class="badge-tag yellow-tag">🌡️ Lingkungan</span>
           <span v-else class="badge-tag blue-tag">📝 Pengamatan</span>
         </span>
         
@@ -69,7 +70,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { usersService, pertumbuhanService, panenService } from '../../services/dataService.js'
+import { usersService, pertumbuhanService, panenService, lingkunganService } from '../../services/dataService.js'
 
 const allActivities = ref([])
 const loading = ref(true)
@@ -98,27 +99,43 @@ function formatDate(value) {
 async function loadRiwayat() {
   loading.value = true
   try {
-    const [meRes, growthRes, panenRes] = await Promise.all([
+    const [meRes, growthRes, panenRes, envRes] = await Promise.all([
       usersService.getMe(),
       pertumbuhanService.getAll(),
       panenService.getAll(),
+      lingkunganService.getAll(),
     ])
 
-    const userId = meRes?.data?.id_user
+    const userId = Number(meRes?.data?.id_user)
     if (!userId) return
 
     const combined = []
 
-    // Map Pengamatan (Pertumbuhan)
+    // Map Lingkungan Harian
+    if (envRes?.success) {
+      const myEnv = envRes.data.filter(item => Number(item.id_petugas) === userId)
+      myEnv.forEach(e => {
+        combined.push({
+          uid: `env_${e.id_lingkungan}`,
+          tipe: 'Lingkungan',
+          tanggal: e.tanggal_pengukuran,
+          id_budidaya: e.id_budidaya,
+          deskripsi: `Suhu ${e.suhu || '-'}°C, Kelembapan ${e.kelembaban || '-'}%`,
+          catatan: e.intensitas_cahaya ? `Cahaya: ${e.intensitas_cahaya} lux` : null
+        })
+      })
+    }
+
+    // Map Pengamatan (Pertumbuhan / Fase)
     if (growthRes?.success) {
-      const myGrowth = growthRes.data.filter(item => item.id_petugas === userId)
+      const myGrowth = growthRes.data.filter(item => Number(item.id_petugas) === userId)
       myGrowth.forEach(g => {
         combined.push({
           uid: `growth_${g.id_pertumbuhan}`,
           tipe: 'Pengamatan',
           tanggal: g.tanggal_pengamatan,
           id_budidaya: g.id_budidaya,
-          deskripsi: `Suhu ${g.suhu || '-'}°C, Kelembapan ${g.kelembaban || '-'}%`,
+          deskripsi: `Fase: ${g.fase || '-'}`,
           catatan: g.catatan
         })
       })
@@ -126,7 +143,7 @@ async function loadRiwayat() {
 
     // Map Panen
     if (panenRes?.success) {
-      const myHarvest = panenRes.data.filter(item => item.id_petugas === userId)
+      const myHarvest = panenRes.data.filter(item => Number(item.id_petugas) === userId)
       myHarvest.forEach(p => {
         combined.push({
           uid: `harvest_${p.id_panen}`,
@@ -254,6 +271,7 @@ onMounted(loadRiwayat)
 
 .green-tag { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
 .blue-tag { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.yellow-tag { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
 
 @media(max-width: 1024px) {
   .stats-row { grid-template-columns: 1fr; }

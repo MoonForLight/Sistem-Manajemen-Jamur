@@ -1,5 +1,6 @@
 const usersModel = require("../models/usersModel");
 const lokasiModel = require("../models/lokasiModel");
+const budidayaModel = require("../models/budidayaModel");
 
 exports.getPetugasList = async (req, res) => {
   const data = await usersModel.getAllPetugas();
@@ -59,10 +60,25 @@ exports.me = async (req, res) => {
   }
 
   const role = await usersModel.getRole(id_user);
+  let extraData = {};
+
+  if (role === "petugas") {
+    const lokasiInfo = await usersModel.getPetugasLokasiInfo(id_user);
+    if (lokasiInfo && lokasiInfo.id_lokasi) {
+      const activeRacks = await budidayaModel.getActiveRacksByLokasi(lokasiInfo.id_lokasi);
+      extraData = {
+        id_lokasi: lokasiInfo.id_lokasi,
+        nama_lokasi: lokasiInfo.nama_lokasi,
+        kapasitas_rak: lokasiInfo.kapasitas_rak,
+        rak_terpakai: activeRacks,
+        rak_tersedia: Math.max(0, lokasiInfo.kapasitas_rak - activeRacks)
+      };
+    }
+  }
 
   res.json({
     success: true,
-    data: { ...user, role },
+    data: { ...user, role, ...extraData },
   });
 };
 

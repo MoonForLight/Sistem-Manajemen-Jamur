@@ -140,7 +140,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { lokasiService, budidayaService, jenisJamurService, mediaTanamService, usersService, pertumbuhanService, panenService } from '../../services/dataService.js'
+import { lokasiService, budidayaService, jenisJamurService, mediaTanamService, usersService, pertumbuhanService, panenService, lingkunganService } from '../../services/dataService.js'
 
 import { Line, Doughnut } from 'vue-chartjs'
 import {
@@ -156,8 +156,10 @@ const locations = ref([])
 const budidayaList = ref([])
 const growthRecords = ref([])
 const harvestRecords = ref([])
+const envRecords = ref([])
 
-const today = new Date().toISOString().slice(0, 10)
+const d_now = new Date()
+const today = `${d_now.getFullYear()}-${String(d_now.getMonth() + 1).padStart(2, '0')}-${String(d_now.getDate()).padStart(2, '0')}`
 const currentMonth = today.slice(0, 7)
 
 // Computations
@@ -166,11 +168,11 @@ const locationStats = computed(() => {
     // Find active budidaya in this location
     const actives = budidayaList.value.filter(b => b.id_lokasi === loc.id_lokasi && b.status === 'aktif')
     
-    // Find latest env records for these actives
+    // Find latest env records from lingkungan_harian for these actives
     let sumSuhu = 0, sumKelembaban = 0, countEnv = 0
     actives.forEach(b => {
-      const records = growthRecords.value.filter(g => g.id_budidaya === b.id_budidaya && g.suhu !== null && g.suhu !== undefined)
-      records.sort((x, y) => new Date(y.tanggal_pengamatan) - new Date(x.tanggal_pengamatan))
+      const records = envRecords.value.filter(e => Number(e.id_budidaya) === Number(b.id_budidaya) && e.suhu !== null && e.suhu !== undefined)
+      records.sort((x, y) => new Date(y.tanggal_pengukuran) - new Date(x.tanggal_pengukuran))
       if (records.length > 0) {
         sumSuhu += Number(records[0].suhu)
         sumKelembaban += Number(records[0].kelembaban)
@@ -226,7 +228,12 @@ const suhuChartData = computed(() => {
   for(let i=6; i>=0; i--) {
      const d = new Date(); d.setDate(d.getDate() - i)
      labels.push(d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }))
-     const recs = growthRecords.value.filter(item => item.tanggal_pengamatan?.startsWith(d.toISOString().slice(0, 10)))
+     const dateStr = d.toISOString().slice(0, 10)
+     const recs = envRecords.value.filter(item => {
+       const dd = item.tanggal_pengukuran
+       const ddStr = typeof dd === 'string' ? dd : new Date(dd).toISOString()
+       return ddStr.startsWith(dateStr)
+     })
      
      const suhuRecs = recs.filter(item => item.suhu !== null && item.suhu !== undefined && item.suhu !== '')
      const humidRecs = recs.filter(item => item.kelembaban !== null && item.kelembaban !== undefined && item.kelembaban !== '')
@@ -274,13 +281,14 @@ function getSuhuColor(val) {
 async function loadDashboard() {
   isLoading.value = true
   try {
-    const [lokasiRes, jenisRes, petugasRes, budidayaRes, growthRes, panenRes] = await Promise.all([
+    const [lokasiRes, jenisRes, petugasRes, budidayaRes, growthRes, panenRes, envRes] = await Promise.all([
       lokasiService.getAll(),
       jenisJamurService.getAll(),
       usersService.getPetugasList(),
       budidayaService.getAll(),
       pertumbuhanService.getAll(),
-      panenService.getAll()
+      panenService.getAll(),
+      lingkunganService.getAll()
     ])
 
     if (lokasiRes?.success) { locations.value = lokasiRes.data; stats.value.lokasi = locations.value.length }
@@ -292,6 +300,7 @@ async function loadDashboard() {
       stats.value.budidayaAktif = budidayaList.value.filter(b => b.status === 'aktif').length
     }
     if (growthRes?.success) growthRecords.value = growthRes.data
+    if (envRes?.success) envRecords.value = envRes.data
     if (panenRes?.success) {
       harvestRecords.value = panenRes.data
       stats.value.panenBulanIni = harvestRecords.value

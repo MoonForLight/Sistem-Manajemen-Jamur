@@ -119,6 +119,33 @@ export const pertumbuhanService = {
   },
 };
 
+export const lingkunganService = {
+  // Get all
+  async getAll() {
+    return await api.get('/lingkungan');
+  },
+
+  // Get by budidaya
+  async getByBudidaya(budidayaId) {
+    return await api.get(`/lingkungan/budidaya/${budidayaId}`);
+  },
+
+  // Create
+  async create(data) {
+    return await api.post('/lingkungan', data);
+  },
+
+  // Update
+  async update(id, data) {
+    return await api.put(`/lingkungan/${id}`, data);
+  },
+
+  // Delete
+  async delete(id) {
+    return await api.delete(`/lingkungan/${id}`);
+  },
+};
+
 export const panenService = {
   // Get harvest records
   async getAll() {

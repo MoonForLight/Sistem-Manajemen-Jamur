@@ -2,6 +2,7 @@ const budidayaModel = require("../models/budidayaModel");
 const lokasiModel = require("../models/lokasiModel");
 const jenisJamurModel = require("../models/jenisJamurModel");
 const mediaTanamModel = require("../models/mediaTanamModel");
+const usersModel = require("../models/usersModel");
 
 // helper cek petugas
 const { db } = require("../config/db");
@@ -25,7 +26,17 @@ exports.getById = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  const { id_lokasi, id_jenis, id_media, tanggal_mulai, status, catatan, id_petugas } = req.body;
+  let { id_lokasi, id_jenis, id_media, tanggal_mulai, status, catatan, id_petugas, jumlah_rak } = req.body;
+  const role = await usersModel.getRole(req.user.id_user);
+
+  if (role === "petugas") {
+    id_petugas = req.user.id_user;
+    const lokasiInfo = await usersModel.getPetugasLokasiInfo(id_petugas);
+    if (!lokasiInfo || !lokasiInfo.id_lokasi) {
+      return res.status(400).json({ success: false, message: "Anda belum ditugaskan ke lokasi manapun" });
+    }
+    id_lokasi = lokasiInfo.id_lokasi;
+  }
 
   // validasi minimal
   if (!id_lokasi || !id_jenis || !id_media || !tanggal_mulai || !id_petugas) {
@@ -36,7 +47,8 @@ exports.create = async (req, res) => {
   }
 
   // validasi referensi
-  if (!(await lokasiModel.existsLokasi(id_lokasi))) {
+  const targetLokasi = await lokasiModel.getLokasiById(id_lokasi);
+  if (!targetLokasi) {
     return res.status(400).json({ success: false, message: "Lokasi tidak valid" });
   }
   if (!(await jenisJamurModel.exists(id_jenis))) {
@@ -49,6 +61,18 @@ exports.create = async (req, res) => {
     return res.status(400).json({ success: false, message: "Petugas tidak valid" });
   }
 
+  // Validasi Kapasitas Rak
+  const activeRacks = await budidayaModel.getActiveRacksByLokasi(id_lokasi);
+  const requestedRacks = Number(jumlah_rak) || 1;
+  const availableRacks = targetLokasi.jumlah_rak - activeRacks;
+
+  if (requestedRacks > availableRacks) {
+    return res.status(400).json({ 
+      success: false, 
+      message: `Kapasitas rak tidak mencukupi. Sisa rak tersedia: ${Math.max(0, availableRacks)}` 
+    });
+  }
+
   const newId = await budidayaModel.create({
     id_lokasi,
     id_jenis,
@@ -57,6 +81,7 @@ exports.create = async (req, res) => {
     tanggal_mulai,
     status: status || "inisiasi",
     catatan: catatan || null,
+    jumlah_rak: requestedRacks
   });
 
   res.status(201).json({
@@ -68,7 +93,7 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   const id = Number(req.params.id);
-  const { id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status } = req.body;
+  const { id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status, jumlah_rak } = req.body;
 
   if (!id_lokasi || !id_jenis || !id_media || !id_petugas || !tanggal_mulai) {
     return res.status(400).json({
@@ -77,7 +102,8 @@ exports.update = async (req, res) => {
     });
   }
 
-  if (!(await lokasiModel.existsLokasi(id_lokasi))) {
+  const targetLokasi = await lokasiModel.getLokasiById(id_lokasi);
+  if (!targetLokasi) {
     return res.status(400).json({ success: false, message: "Lokasi tidak valid" });
   }
   if (!(await jenisJamurModel.exists(id_jenis))) {
@@ -90,6 +116,20 @@ exports.update = async (req, res) => {
     return res.status(400).json({ success: false, message: "Petugas tidak valid" });
   }
 
+  // Validasi Kapasitas Rak (exclude this budidaya ID so it doesn't count its own old rak amount)
+  if (status === 'aktif' || status === 'inisiasi') {
+    const activeRacks = await budidayaModel.getActiveRacksByLokasi(id_lokasi, id);
+    const requestedRacks = Number(jumlah_rak) || 1;
+    const availableRacks = targetLokasi.jumlah_rak - activeRacks;
+
+    if (requestedRacks > availableRacks) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Kapasitas rak tidak mencukupi. Sisa rak tersedia: ${Math.max(0, availableRacks)}` 
+      });
+    }
+  }
+
   const affected = await budidayaModel.update(id, {
     id_lokasi,
     id_jenis,
@@ -97,6 +137,7 @@ exports.update = async (req, res) => {
     id_petugas,
     tanggal_mulai,
     status: status || "aktif",
+    jumlah_rak: Number(jumlah_rak) || 1
   });
 
   if (affected === 0) {

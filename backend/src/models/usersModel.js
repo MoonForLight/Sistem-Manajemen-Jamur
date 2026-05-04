@@ -46,6 +46,20 @@ async function getRole(id_user) {
   return "unknown";
 }
 
+async function getPetugasLokasiInfo(id_user) {
+  const [rows] = await db.query(
+    `SELECT 
+        p.id_lokasi,
+        l.nama_lokasi,
+        l.jumlah_rak AS kapasitas_rak
+     FROM petugas p
+     LEFT JOIN lokasi l ON p.id_lokasi = l.id_lokasi
+     WHERE p.id_user = ?`,
+    [id_user]
+  );
+  return rows[0] || null;
+}
+
 async function getAllPetugas() {
   const [rows] = await db.query(
     `SELECT 
@@ -124,4 +138,5 @@ module.exports = {
   updateUserPassword,
   updatePetugas,
   deleteUser,
+  getPetugasLokasiInfo,
 };

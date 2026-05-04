@@ -2,6 +2,7 @@ const lokasiModel = require("../models/lokasiModel");
 const budidayaModel = require("../models/budidayaModel");
 const pertumbuhanModel = require("../models/pertumbuhanModel");
 const panenModel = require("../models/panenModel");
+const lingkunganModel = require("../models/lingkunganModel");
 
 exports.getMonitoring = async (req, res) => {
   const lokasiId = Number(req.query.id);
@@ -17,21 +18,22 @@ exports.getMonitoring = async (req, res) => {
   const budidaya = await budidayaModel.getByLokasi(lokasiId);
   const panen = await panenModel.getByLokasi(lokasiId);
   const pertumbuhan = await pertumbuhanModel.getByLokasi(lokasiId);
+  const lingkungan = await lingkunganModel.getByLokasi(lokasiId);
 
-  const suhuRata = pertumbuhan.length
+  const suhuRata = lingkungan.length
     ? Number(
         (
-          pertumbuhan.reduce((acc, item) => acc + (Number(item.suhu) || 0), 0) /
-          pertumbuhan.length
+          lingkungan.reduce((acc, item) => acc + (Number(item.suhu) || 0), 0) /
+          lingkungan.length
         ).toFixed(1)
       )
     : 0;
 
-  const kelembapanRata = pertumbuhan.length
+  const kelembapanRata = lingkungan.length
     ? Number(
         (
-          pertumbuhan.reduce((acc, item) => acc + (Number(item.kelembaban) || 0), 0) /
-          pertumbuhan.length
+          lingkungan.reduce((acc, item) => acc + (Number(item.kelembaban) || 0), 0) /
+          lingkungan.length
         ).toFixed(1)
       )
     : 0;
@@ -45,6 +47,7 @@ exports.getMonitoring = async (req, res) => {
       budidaya,
       panen,
       pertumbuhan,
+      lingkungan,
       kpi: {
         suhu_rata: suhuRata,
         kelembapan: kelembapanRata,

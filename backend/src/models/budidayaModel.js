@@ -6,6 +6,7 @@ async function getAll() {
         b.id_budidaya,
         b.tanggal_mulai,
         b.status,
+        b.jumlah_rak,
         l.id_lokasi, l.nama_lokasi,
         j.id_jenis, j.nama_jamur,
         m.id_media, m.nama_media,
@@ -14,7 +15,7 @@ async function getAll() {
      JOIN lokasi l ON b.id_lokasi = l.id_lokasi
      JOIN jenis_jamur j ON b.id_jenis = j.id_jenis
      JOIN media_tanam m ON b.id_media = m.id_media
-     JOIN users u ON b.id_petugas = u.id_user
+     LEFT JOIN users u ON b.id_petugas = u.id_user
      ORDER BY b.id_budidaya DESC`
   );
   return rows;
@@ -26,6 +27,7 @@ async function getById(id) {
         b.id_budidaya,
         b.tanggal_mulai,
         b.status,
+        b.jumlah_rak,
         l.id_lokasi, l.nama_lokasi,
         j.id_jenis, j.nama_jamur,
         m.id_media, m.nama_media,
@@ -34,28 +36,28 @@ async function getById(id) {
      JOIN lokasi l ON b.id_lokasi = l.id_lokasi
      JOIN jenis_jamur j ON b.id_jenis = j.id_jenis
      JOIN media_tanam m ON b.id_media = m.id_media
-     JOIN users u ON b.id_petugas = u.id_user
+     LEFT JOIN users u ON b.id_petugas = u.id_user
      WHERE b.id_budidaya = ?`,
     [id]
   );
   return rows[0] || null;
 }
 
-async function create({ id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status }) {
+async function create({ id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status, jumlah_rak }) {
   const [result] = await db.query(
-    `INSERT INTO budidaya (id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status]
+    `INSERT INTO budidaya (id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status, jumlah_rak)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status, jumlah_rak || 1]
   );
   return result.insertId;
 }
 
-async function update(id, { id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status }) {
+async function update(id, { id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status, jumlah_rak }) {
   const [result] = await db.query(
     `UPDATE budidaya
-     SET id_lokasi = ?, id_jenis = ?, id_media = ?, id_petugas = ?, tanggal_mulai = ?, status = ?
+     SET id_lokasi = ?, id_jenis = ?, id_media = ?, id_petugas = ?, tanggal_mulai = ?, status = ?, jumlah_rak = ?
      WHERE id_budidaya = ?`,
-    [id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status, id]
+    [id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status, jumlah_rak || 1, id]
   );
   return result.affectedRows;
 }
@@ -80,6 +82,7 @@ async function getByLokasi(id_lokasi) {
         b.id_budidaya,
         b.tanggal_mulai,
         b.status,
+        b.jumlah_rak,
         j.nama_jamur AS jenis
      FROM budidaya b
      JOIN jenis_jamur j ON b.id_jenis = j.id_jenis
@@ -96,6 +99,7 @@ async function getByPetugas(id_petugas) {
         b.id_budidaya,
         b.tanggal_mulai,
         b.status,
+        b.jumlah_rak,
         l.id_lokasi, l.nama_lokasi,
         j.id_jenis, j.nama_jamur,
         m.id_media, m.nama_media,
@@ -104,7 +108,7 @@ async function getByPetugas(id_petugas) {
      JOIN lokasi l ON b.id_lokasi = l.id_lokasi
      JOIN jenis_jamur j ON b.id_jenis = j.id_jenis
      JOIN media_tanam m ON b.id_media = m.id_media
-     JOIN users u ON b.id_petugas = u.id_user
+     LEFT JOIN users u ON b.id_petugas = u.id_user
      WHERE b.id_petugas = ?
      ORDER BY b.id_budidaya DESC`,
     [id_petugas]
@@ -118,6 +122,7 @@ async function getSummary() {
         b.id_budidaya,
         b.tanggal_mulai,
         b.status,
+        b.jumlah_rak,
         l.nama_lokasi,
         j.nama_jamur,
         m.nama_media,
@@ -128,7 +133,7 @@ async function getSummary() {
      JOIN lokasi l ON b.id_lokasi = l.id_lokasi
      JOIN jenis_jamur j ON b.id_jenis = j.id_jenis
      JOIN media_tanam m ON b.id_media = m.id_media
-     JOIN users u ON b.id_petugas = u.id_user
+     LEFT JOIN users u ON b.id_petugas = u.id_user
      LEFT JOIN pertumbuhan p ON p.id_budidaya = b.id_budidaya
      LEFT JOIN panen pa ON pa.id_budidaya = b.id_budidaya
      GROUP BY b.id_budidaya
@@ -137,4 +142,17 @@ async function getSummary() {
   return rows;
 }
 
-module.exports = { getAll, getById, create, update, remove, exists, getByLokasi, getByPetugas, getSummary };
+async function getActiveRacksByLokasi(id_lokasi, exclude_budidaya_id = null) {
+  let query = "SELECT COALESCE(SUM(jumlah_rak), 0) as used_racks FROM budidaya WHERE id_lokasi = ? AND status = 'aktif'";
+  let params = [id_lokasi];
+  
+  if (exclude_budidaya_id) {
+    query += " AND id_budidaya != ?";
+    params.push(exclude_budidaya_id);
+  }
+  
+  const [rows] = await db.query(query, params);
+  return Number(rows[0].used_racks);
+}
+
+module.exports = { getAll, getById, create, update, remove, exists, getByLokasi, getByPetugas, getSummary, getActiveRacksByLokasi };

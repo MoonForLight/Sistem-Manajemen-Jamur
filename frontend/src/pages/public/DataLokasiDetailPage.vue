@@ -19,8 +19,16 @@
           <h1>{{ lokasi.nama_lokasi }}</h1>
           <p class="page-description">{{ lokasi.alamat }} • {{ activeBudidaya.length }} Rak Aktif</p>
         </div>
-        <div class="header-actions">
+        <div class="header-actions" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
           <input v-model="selectedMonth" type="month" class="modern-input" @change="processData" />
+          <button @click="exportBulananCSV" class="btn-primary" style="display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 10px 16px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            CSV
+          </button>
+          <button @click="exportPDF" class="btn-primary" style="background: #dc2626; display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 10px 16px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            PDF
+          </button>
         </div>
       </header>
 
@@ -70,8 +78,14 @@
 
       <!-- Table content -->
       <div class="table-card-modern mt-24">
-        <h4 class="table-title">Daftar Budidaya (Rak)</h4>
-        <div class="table-header-modern laporan-grid">
+        <div class="table-header-flex">
+          <h4 class="table-title" style="border-bottom: none;">Daftar Budidaya (Rak)</h4>
+          <button @click="exportRakCSV" class="btn-export">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Ekspor Data Rak
+          </button>
+        </div>
+        <div class="table-header-modern laporan-grid" style="border-top: 1px solid #e5e7eb;">
           <span>Kode</span>
           <span>Jenis Jamur</span>
           <span>Status</span>
@@ -116,8 +130,10 @@ const activeBudidaya = ref([])
 
 const allGrowthRecords = ref([])
 const allHarvestRecords = ref([])
+const allEnvRecords = ref([])
 const monthlyRecords = ref([])
 const monthlyHarvestRecords = ref([])
+const monthlyEnvRecords = ref([])
 
 // Default to current month YYYY-MM
 const today = new Date()
@@ -159,12 +175,15 @@ function processData() {
   monthlyHarvestRecords.value = allHarvestRecords.value.filter(item => item.tanggal_panen?.startsWith(ym))
     .sort((a, b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen))
 
-  // Calculate Averages
-  if (monthlyRecords.value.length > 0) {
-    const sumSuhu = monthlyRecords.value.reduce((acc, curr) => acc + (Number(curr.suhu) || 0), 0)
-    const sumKelembapan = monthlyRecords.value.reduce((acc, curr) => acc + (Number(curr.kelembaban) || 0), 0)
-    avgSuhu.value = (sumSuhu / monthlyRecords.value.length).toFixed(1)
-    avgKelembapan.value = (sumKelembapan / monthlyRecords.value.length).toFixed(1)
+  monthlyEnvRecords.value = allEnvRecords.value.filter(item => item.tanggal_pengukuran?.startsWith(ym))
+    .sort((a, b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran))
+
+  // Calculate Averages from lingkungan
+  if (monthlyEnvRecords.value.length > 0) {
+    const sumSuhu = monthlyEnvRecords.value.reduce((acc, curr) => acc + (Number(curr.suhu) || 0), 0)
+    const sumKelembapan = monthlyEnvRecords.value.reduce((acc, curr) => acc + (Number(curr.kelembaban) || 0), 0)
+    avgSuhu.value = (sumSuhu / monthlyEnvRecords.value.length).toFixed(1)
+    avgKelembapan.value = (sumKelembapan / monthlyEnvRecords.value.length).toFixed(1)
   } else {
     avgSuhu.value = 0
     avgKelembapan.value = 0
@@ -174,10 +193,10 @@ function processData() {
   totalPanen.value = monthlyHarvestRecords.value.reduce((acc, curr) => acc + (Number(curr.jumlah_panen) || 0), 0).toFixed(1)
 
   // Generate Insight
-  if (monthlyRecords.value.length === 0) {
+  if (monthlyEnvRecords.value.length === 0) {
     aiInsight.value = "Belum ada data monitoring yang direkam untuk lokasi ini pada bulan terpilih."
   } else {
-    let insight = `Lokasi ini memiliki ${monthlyRecords.value.length} pencatatan lingkungan bulan ini. `
+    let insight = `Lokasi ini memiliki ${monthlyEnvRecords.value.length} pencatatan lingkungan bulan ini. `
     if (avgSuhu.value > 28) insight += "Suhu rata-rata cukup tinggi (>28°C), sirkulasi udara perlu diperhatikan. "
     else if (avgSuhu.value < 20) insight += "Suhu rata-rata cenderung dingin (<20°C). "
     else insight += "Suhu lingkungan berada dalam batas optimal. "
@@ -191,11 +210,10 @@ function processData() {
     aiInsight.value = insight
   }
 
-  // Prepare Charts Data
+  // Prepare Charts from lingkungan
   const daysInMonth = new Date(ym.split('-')[0], ym.split('-')[1], 0).getDate()
   const labels = Array.from({ length: daysInMonth }, (_, i) => String(i + 1))
 
-  // Daily Averages
   const dailySuhu = Array(daysInMonth).fill(null)
   const dailyKelembapan = Array(daysInMonth).fill(null)
   
@@ -203,7 +221,7 @@ function processData() {
     const dayStr = String(i).padStart(2, '0')
     const dateStr = `${ym}-${dayStr}`
     
-    const dayRecs = monthlyRecords.value.filter(r => r.tanggal_pengamatan?.startsWith(dateStr))
+    const dayRecs = monthlyEnvRecords.value.filter(r => r.tanggal_pengukuran?.startsWith(dateStr))
     if (dayRecs.length > 0) {
       dailySuhu[i-1] = dayRecs.reduce((s, r) => s + Number(r.suhu || 0), 0) / dayRecs.length
       dailyKelembapan[i-1] = dayRecs.reduce((s, r) => s + Number(r.kelembaban || 0), 0) / dayRecs.length
@@ -254,6 +272,7 @@ async function loadData() {
 
       allGrowthRecords.value = payload.data.pertumbuhan || []
       allHarvestRecords.value = payload.data.panen || []
+      allEnvRecords.value = payload.data.lingkungan || []
 
       processData()
     } else {
@@ -275,6 +294,127 @@ function formatDate(value) {
 function getSuhuColorClass(val) {
   if (val > 28 || val < 18) return 'text-red'
   return 'text-green'
+}
+
+function exportBulananCSV() {
+  if (!lokasi.value) return;
+  
+  const ym = selectedMonth.value;
+  const daysInMonth = new Date(ym.split('-')[0], ym.split('-')[1], 0).getDate();
+  
+  const headers = ['Tanggal', 'Suhu Rata-rata (C)', 'Kelembapan Rata-rata (%)', 'Hasil Panen (Kg)'];
+  const rows = [];
+  
+  for (let i = 1; i <= daysInMonth; i++) {
+    const dayStr = String(i).padStart(2, '0');
+    const dateStr = `${ym}-${dayStr}`;
+    
+    // Suhu & Kelembapan from lingkungan
+    const dayRecs = monthlyEnvRecords.value.filter(r => r.tanggal_pengukuran?.startsWith(dateStr));
+    let avgS = '';
+    let avgK = '';
+    if (dayRecs.length > 0) {
+      avgS = (dayRecs.reduce((s, r) => s + Number(r.suhu || 0), 0) / dayRecs.length).toFixed(1);
+      avgK = (dayRecs.reduce((s, r) => s + Number(r.kelembaban || 0), 0) / dayRecs.length).toFixed(1);
+    }
+    
+    // Panen
+    const harvRecs = monthlyHarvestRecords.value.filter(r => r.tanggal_panen?.startsWith(dateStr));
+    let totHarv = 0;
+    if (harvRecs.length > 0) {
+      totHarv = harvRecs.reduce((acc, r) => acc + Number(r.jumlah_panen || 0), 0);
+    }
+    
+    rows.push([
+      dateStr,
+      avgS,
+      avgK,
+      totHarv > 0 ? totHarv.toFixed(1) : '0'
+    ]);
+  }
+  
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(e => e.join(','))
+  ].join('\n');
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Laporan_Bulanan_${lokasi.value.nama_lokasi.replace(/\s+/g, '_')}_${ym}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function exportRakCSV() {
+  if (budidayaList.value.length === 0) return;
+  
+  const headers = ['Kode', 'Jenis Jamur', 'Status', 'Tanggal Mulai', 'Tanggal Selesai'];
+  const rows = budidayaList.value.map(b => [
+    `BDY-${String(b.id_budidaya).padStart(3, '0')}`,
+    b.nama_jamur || '-',
+    b.status === 'aktif' ? 'Aktif' : 'Selesai',
+    formatDate(b.tanggal_mulai),
+    formatDate(b.tanggal_selesai)
+  ]);
+  
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(e => e.join(','))
+  ].join('\n');
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Data_Rak_${lokasi.value?.nama_lokasi?.replace(/\s+/g, '_') || 'Lokasi'}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function loadHtml2Pdf() {
+  return new Promise((resolve, reject) => {
+    if (window.html2pdf) return resolve(window.html2pdf);
+    const script = document.createElement('script');
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+    script.onload = () => resolve(window.html2pdf);
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+async function exportPDF() {
+  try {
+    const html2pdf = await loadHtml2Pdf();
+    const element = document.querySelector('.public-container');
+    
+    // Sembunyikan elemen navigasi dan tombol export agar tidak ikut tercetak di PDF
+    const noPrintElements = document.querySelectorAll('.header-actions, .btn-export, .back-link');
+    noPrintElements.forEach(el => el.style.display = 'none');
+
+    const opt = {
+      margin:       0.4,
+      filename:     `Laporan_${lokasi.value.nama_lokasi.replace(/\s+/g, '_')}_${selectedMonth.value}.pdf`,
+      image:        { type: 'jpeg', quality: 1 },
+      html2canvas:  { scale: 2, useCORS: true, windowWidth: 1200 },
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
+      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    await html2pdf().set(opt).from(element).save();
+
+    // Tampilkan kembali elemen yang disembunyikan
+    noPrintElements.forEach(el => el.style.display = '');
+
+  } catch (error) {
+    console.error("Gagal mengekspor PDF:", error);
+    alert("Gagal memuat pustaka PDF. Periksa koneksi internet.");
+  }
 }
 
 onMounted(loadData)
@@ -317,7 +457,10 @@ onMounted(loadData)
 .chart-wrapper { height: 250px; position: relative; }
 
 .table-card-modern { background: white; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb; }
+.table-header-flex { display: flex; justify-content: space-between; align-items: center; padding-right: 24px; }
 .table-title { margin: 0; padding: 20px 24px; border-bottom: 1px solid #e5e7eb; font-size: 16px; color: #111827; font-weight: 800; }
+.btn-export { background: white; color: #111827; border: 1px solid #d1d5db; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+.btn-export:hover { background: #f9fafb; border-color: #9ca3af; }
 .mt-24 { margin-top: 24px; }
 .laporan-grid { display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 1fr; gap: 16px; align-items: center; padding: 16px 24px; font-size: 14px; }
 .table-header-modern { background: #f9fafb; font-weight: 700; color: #4b5563; border-bottom: 1px solid #e5e7eb; text-transform: uppercase; font-size: 12px; }

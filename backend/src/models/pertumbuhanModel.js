@@ -9,9 +9,7 @@ async function getAll() {
         u.nama AS nama_petugas,
         p.tanggal_pengamatan,
         p.fase,
-        p.suhu,
-        p.kelembaban,
-        p.intensitas_cahaya,
+        p.detail_fase,
         p.catatan
      FROM pertumbuhan p
      JOIN users u ON p.id_petugas = u.id_user
@@ -29,9 +27,7 @@ async function getById(id) {
         u.nama AS nama_petugas,
         p.tanggal_pengamatan,
         p.fase,
-        p.suhu,
-        p.kelembaban,
-        p.intensitas_cahaya,
+        p.detail_fase,
         p.catatan
      FROM pertumbuhan p
      JOIN users u ON p.id_petugas = u.id_user
@@ -50,9 +46,7 @@ async function getByBudidaya(id_budidaya) {
         u.nama AS nama_petugas,
         p.tanggal_pengamatan,
         p.fase,
-        p.suhu,
-        p.kelembaban,
-        p.intensitas_cahaya,
+        p.detail_fase,
         p.catatan
      FROM pertumbuhan p
      JOIN users u ON p.id_petugas = u.id_user
@@ -69,24 +63,20 @@ async function create(data) {
     id_petugas,
     tanggal_pengamatan,
     fase,
-    suhu,
-    kelembaban,
-    intensitas_cahaya,
+    detail_fase,
     catatan,
   } = data;
 
   const [result] = await db.query(
     `INSERT INTO pertumbuhan
-     (id_budidaya, id_petugas, tanggal_pengamatan, fase, suhu, kelembaban, intensitas_cahaya, catatan)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+     (id_budidaya, id_petugas, tanggal_pengamatan, fase, detail_fase, catatan)
+     VALUES (?, ?, ?, ?, ?, ?)`,
     [
       id_budidaya,
       id_petugas,
       tanggal_pengamatan,
       fase || null,
-      suhu ?? null,
-      kelembaban ?? null,
-      intensitas_cahaya ?? null,
+      detail_fase || null,
       catatan || null,
     ]
   );
@@ -100,24 +90,20 @@ async function update(id, data) {
     id_petugas,
     tanggal_pengamatan,
     fase,
-    suhu,
-    kelembaban,
-    intensitas_cahaya,
+    detail_fase,
     catatan,
   } = data;
 
   const [result] = await db.query(
     `UPDATE pertumbuhan
-     SET id_budidaya = ?, id_petugas = ?, tanggal_pengamatan = ?, fase = ?, suhu = ?, kelembaban = ?, intensitas_cahaya = ?, catatan = ?
+     SET id_budidaya = ?, id_petugas = ?, tanggal_pengamatan = ?, fase = ?, detail_fase = ?, catatan = ?
      WHERE id_pertumbuhan = ?`,
     [
       id_budidaya,
       id_petugas,
       tanggal_pengamatan,
       fase || null,
-      suhu ?? null,
-      kelembaban ?? null,
-      intensitas_cahaya ?? null,
+      detail_fase || null,
       catatan || null,
       id,
     ]
@@ -135,9 +121,7 @@ async function getByLokasi(id_lokasi) {
         u.nama AS nama_petugas,
         p.tanggal_pengamatan,
         p.fase,
-        p.suhu,
-        p.kelembaban,
-        p.intensitas_cahaya,
+        p.detail_fase,
         p.catatan
      FROM pertumbuhan p
      JOIN budidaya b ON p.id_budidaya = b.id_budidaya
