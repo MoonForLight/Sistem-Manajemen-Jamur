@@ -31,6 +31,20 @@
         </div>
       </header>
 
+      <div class="detail-image">
+        <img v-if="lokasi.foto_lokasi" :src="`http://localhost:3000/uploads/${lokasi.foto_lokasi}`" :alt="`Foto ${lokasi.nama_lokasi}`" />
+        <div v-else class="detail-image-placeholder">
+          <div style="text-align: center;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" style="margin: 0 auto 8px;">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <p style="margin: 8px 0 0 0; color: #9ca3af; font-size: 14px;">Foto tidak tersedia</p>
+          </div>
+        </div>
+      </div>
+
       <div class="insight-box">
         <h3 class="insight-title">💡 Analisis Otomatis: {{ formattedMonth }}</h3>
         <p class="insight-text">{{ aiInsight }}</p>
@@ -380,17 +394,30 @@ async function exportPDF() {
     const noPrintElements = document.querySelectorAll('.header-actions, .btn-export, .back-link');
     noPrintElements.forEach(el => el.style.display = 'none');
 
+    // Pastikan background putih saat capture
+    const originalBg = element.style.backgroundColor;
+    element.style.backgroundColor = '#ffffff';
+
     const opt = {
       margin:       0.4,
       filename:     `Laporan_${lokasi.value.nama_lokasi.replace(/\s+/g, '_')}_${selectedMonth.value}.pdf`,
       image:        { type: 'jpeg', quality: 1 },
-      html2canvas:  { scale: 2, useCORS: true, windowWidth: 1200 },
+      html2canvas:  { 
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        windowWidth: 1200,
+        backgroundColor: '#ffffff'
+      },
       jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
       pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
     await html2pdf().set(opt).from(element).save();
 
+    // Restore styles
+    element.style.backgroundColor = originalBg;
     noPrintElements.forEach(el => el.style.display = '');
 
   } catch (error) {
@@ -455,10 +482,79 @@ onMounted(loadData)
 .badge-success { background: #dcfce7; color: #16a34a; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; display: inline-block; }
 .badge-secondary { background: #f3f4f6; color: #6b7280; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; display: inline-block; }
 
+.detail-image {
+  width: 100%;
+  height: 280px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f3f4f6;
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detail-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.detail-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+@media print {
+  * {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+  
+  body, .public-container {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+
+  .header-actions, .btn-export, .back-link {
+    display: none !important;
+  }
+
+  .page-header-modern {
+    background: white !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .insight-box { border: 1px solid #16a34a; background: transparent; padding: 16px; page-break-inside: avoid; }
+  .stat-card { background: white !important; }
+  .chart-box { background: white !important; }
+  .table-card-modern { background: white !important; }
+  .table-header-modern { background: #f9fafb !important; }
+  .detail-image { background: white !important; }
+  
+  img { max-width: 100%; }
+  
+  @page {
+    margin: 0.4in;
+    size: landscape;
+  }
+}
+
 @media(max-width: 1024px) {
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .charts-container { grid-template-columns: 1fr; }
+  .detail-image { height: 240px; }
 }
+
 @media(max-width: 640px) {
   .stats-row { grid-template-columns: 1fr; }
   .laporan-grid { grid-template-columns: 1fr 1fr; }

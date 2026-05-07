@@ -117,4 +117,11 @@ const router = createRouter({
   }
 })
 
+router.afterEach((to, from) => {
+  // Simpan route terakhir yang membutuhkan auth (termasuk saat refresh/awal load)
+  if (to.matched.some(record => record.meta?.requiresAuth) || to.path.startsWith('/petugas') || to.path.startsWith('/admin')) {
+    localStorage.setItem('lastAuthRoute', to.fullPath)
+  }
+})
+
 export default router

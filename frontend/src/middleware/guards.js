@@ -14,6 +14,7 @@ export const requireRole = (requiredRole) => {
     const userRole = authService.getCurrentRole();
 
     if (!authService.isAuthenticated()) {
+      localStorage.setItem('redirectAfterLogin', to.fullPath);
       next('/login');
     } else if (userRole !== requiredRole && requiredRole !== 'any') {
       next('/unauthorized');
@@ -28,6 +29,7 @@ export const requireRoles = (allowedRoles) => {
     const userRole = authService.getCurrentRole();
 
     if (!authService.isAuthenticated()) {
+      localStorage.setItem('redirectAfterLogin', to.fullPath);
       next('/login');
     } else if (!allowedRoles.includes(userRole)) {
       next('/unauthorized');
@@ -41,6 +43,18 @@ export const requireGuest = (to, from, next) => {
   if (!authService.isAuthenticated()) {
     next();
   } else {
-    next('/');
+    const user = authService.getCurrentUser();
+    const lastRoute = localStorage.getItem('lastAuthRoute');
+    if (user?.role === 'petugas' && lastRoute?.includes('/petugas')) {
+      next(lastRoute);
+    } else if (user?.role === 'admin' && lastRoute?.includes('/admin')) {
+      next(lastRoute);
+    } else if (user?.role === 'petugas') {
+      next('/petugas/jamur');
+    } else if (user?.role === 'admin') {
+      next('/admin/dashboard');
+    } else {
+      next('/');
+    }
   }
 };

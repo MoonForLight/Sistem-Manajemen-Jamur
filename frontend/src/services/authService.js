@@ -7,6 +7,9 @@ export const authService = {
     if (response && response.data && response.data.token) {
       localStorage.setItem('authToken', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      const redirect = localStorage.getItem('redirectAfterLogin');
+      localStorage.removeItem('redirectAfterLogin');
+      return { ...response, redirectTo: redirect || null };
     }
     return response;
   },
@@ -42,7 +45,7 @@ export const authService = {
       const response = await api.get('/auth/verify');
       return response;
     } catch (error) {
-      this.logout();
+      // Jangan logout paksa, cukup return null agar caller yang memutuskan
       return null;
     }
   },

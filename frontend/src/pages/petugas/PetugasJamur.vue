@@ -126,8 +126,8 @@
         </div>
 
         <div class="tabs-container">
-          <button :class="['tab-btn', { active: activeForm === 'lingkungan' }]" @click="activeForm = 'lingkungan'">Data Lingkungan</button>
-          <button :class="['tab-btn', { active: activeForm === 'pertumbuhan' }]" @click="activeForm = 'pertumbuhan'">Fase Pertumbuhan</button>
+          <button :class="['tab-btn', { active: activeForm === 'lingkungan' }]" @click="setActiveForm('lingkungan')">Data Lingkungan</button>
+          <button :class="['tab-btn', { active: activeForm === 'pertumbuhan' }]" @click="setActiveForm('pertumbuhan')">Fase Pertumbuhan</button>
           
           <div class="tab-wrapper" :title="!isPanenAllowed ? 'Terkunci: Ubah fase pertumbuhan ke \'Siap Panen\' terlebih dahulu.' : ''">
             <button 
@@ -266,11 +266,14 @@ const todayFormatted = computed(() => {
 })
 
 const latestFase = computed(() => {
-  if (!selectedBudidaya.value || !growthRecords.value.length) return ''
-  const myRecords = growthRecords.value.filter(g => g.id_budidaya === selectedBudidaya.value.id_budidaya)
+  if (!selectedBudidaya.value) return ''
+  if (!growthRecords.value || !Array.isArray(growthRecords.value)) return ''
+  const selectedId = String(selectedBudidaya.value.id_budidaya)
+  const myRecords = growthRecords.value
+    .filter(g => String(g.id_budidaya) === selectedId)
   if (myRecords.length === 0) return ''
-  myRecords.sort((a, b) => new Date(b.tanggal_pengamatan) - new Date(a.tanggal_pengamatan) || b.id_pertumbuhan - a.id_pertumbuhan)
-  return myRecords[0].fase || ''
+  myRecords.sort((a, b) => new Date(b.tanggal_pengamatan) - new Date(a.tanggal_pengamatan))
+  return myRecords[0]?.fase || ''
 })
 
 const isPanenAllowed = computed(() => {
@@ -384,7 +387,9 @@ async function fetchBudidaya() {
       }
 
       if (budidayaList.value.length > 0) {
-        selectedBudidaya.value = budidayaList.value[0]
+        const savedId = localStorage.getItem('selectedBudidayaId')
+        const found = savedId ? budidayaList.value.find(b => String(b.id_budidaya) === String(savedId)) : null
+        selectedBudidaya.value = found || budidayaList.value[0]
         handleSelectChange()
       }
     }
@@ -396,6 +401,11 @@ async function fetchBudidaya() {
 }
 
 function handleSelectChange() {
+  if (selectedBudidaya.value) {
+    localStorage.setItem('selectedBudidayaId', String(selectedBudidaya.value.id_budidaya))
+  }
+  localStorage.setItem('petugasActiveForm', activeForm.value)
+
   const d = new Date()
   const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   
@@ -424,6 +434,11 @@ function addDetail() {
 
 function removeDetail(index) {
   dynamicDetails.value.splice(index, 1)
+}
+
+function setActiveForm(form) {
+  activeForm.value = form
+  localStorage.setItem('petugasActiveForm', form)
 }
 
 async function submitLingkungan() {
@@ -467,13 +482,16 @@ async function submitPertumbuhan() {
     const res = await pertumbuhanService.create(payload)
     if (res?.success) {
       showToast('Fase pertumbuhan berhasil dicatat!', 'success')
-      
+
+      // Ambil data terbaru dari server lalu update growthRecords secara reaktif
       const growthRes = await pertumbuhanService.getAll()
       if (growthRes?.success) {
-        growthRecords.value = growthRes.data
+        // Ganti seluruh array agar computed latestFase & isPanenAllowed langsung reaktif
+        growthRecords.value = growthRes.data.slice()
       }
 
-      handleSelectChange() // reset form
+      // Reset form input pertumbuhan
+      handleSelectChange()
     } else {
       showToast('Gagal: ' + (res?.message || 'Terjadi kesalahan'), 'error')
     }
@@ -513,8 +531,19 @@ function formatDate(dateString) {
   return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-onMounted(() => {
-  fetchBudidaya()
+onMounted(async () => {
+  const savedForm = localStorage.getItem('petugasActiveForm')
+  if (savedForm) {
+    activeForm.value = savedForm
+  }
+  await fetchBudidaya()
+
+  // Setelah data dimuat: cek apakah tab yang tersimpan boleh diakses
+  // Jika tab 'panen' tapi belum boleh panen, fallback ke 'pertumbuhan'
+  if (activeForm.value === 'panen' && !isPanenAllowed.value) {
+    activeForm.value = 'pertumbuhan'
+    localStorage.setItem('petugasActiveForm', 'pertumbuhan')
+  }
 })
 </script>
 

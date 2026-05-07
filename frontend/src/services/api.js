@@ -11,9 +11,13 @@ class ApiClient {
     const token = localStorage.getItem('authToken');
 
     const headers = {
-      'Content-Type': 'application/json',
       ...options.headers,
     };
+
+    // Let the browser set the multipart boundary when sending FormData
+    if (!(options.body instanceof FormData) && !headers['Content-Type'] && !headers['content-type']) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -52,18 +56,20 @@ class ApiClient {
   }
 
   post(endpoint, data, options) {
+    const body = data instanceof FormData ? data : JSON.stringify(data);
     return this.request(endpoint, {
       ...options,
       method: 'POST',
-      body: JSON.stringify(data),
+      body,
     });
   }
 
   put(endpoint, data, options) {
+    const body = data instanceof FormData ? data : JSON.stringify(data);
     return this.request(endpoint, {
       ...options,
       method: 'PUT',
-      body: JSON.stringify(data),
+      body,
     });
   }
 

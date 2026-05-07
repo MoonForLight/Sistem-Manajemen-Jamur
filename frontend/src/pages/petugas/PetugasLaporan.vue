@@ -7,6 +7,31 @@
       <hr />
     </div>
 
+    <div class="report-cover">
+      <div class="report-cover-title">
+        <h1>Laporan Bulanan Operasional Jamur</h1>
+        <p class="report-cover-subtitle">Ringkasan laporan untuk petugas, grafik, dan detail lingkungan.</p>
+      </div>
+      <div class="report-cover-meta">
+        <div>
+          <span class="meta-label">Bulan</span>
+          <span class="meta-value">{{ formattedMonth }}</span>
+        </div>
+        <div>
+          <span class="meta-label">Petugas</span>
+          <span class="meta-value">{{ userName }}</span>
+        </div>
+        <div>
+          <span class="meta-label">Total Panen</span>
+          <span class="meta-value">{{ totalPanen }} Kg</span>
+        </div>
+        <div>
+          <span class="meta-label">Total Pencatatan</span>
+          <span class="meta-value">{{ monthlyEnvRecords.length }}</span>
+        </div>
+      </div>
+    </div>
+
     <header class="page-header-modern no-print">
       <div class="header-text">
         <h1>Laporan & Analisis Bulanan</h1>
@@ -162,17 +187,35 @@ async function printReport() {
       if (el) el.style.display = 'none';
     });
 
+    element.classList.add('pdf-export');
+    const originalBg = element.style.backgroundColor;
+    element.style.backgroundColor = '#ffffff';
+    element.scrollIntoView({ behavior: 'auto', block: 'start' });
+    await new Promise(resolve => setTimeout(resolve, 120));
+
+    const pageWidth = Math.min(1200, element.scrollWidth || element.offsetWidth || 1200);
     const opt = {
       margin:       0.4,
       filename:     `Laporan_Petugas_${selectedMonth.value}.pdf`,
       image:        { type: 'jpeg', quality: 1 },
-      html2canvas:  { scale: 2, useCORS: true, windowWidth: 1200 },
-      jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
+      html2canvas:  { 
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        windowWidth: pageWidth,
+        scrollY: 0,
+        backgroundColor: '#ffffff'
+      },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' },
       pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
     await html2pdf().set(opt).from(element).save();
 
+    // Restore styles
+    element.style.backgroundColor = originalBg;
+    element.classList.remove('pdf-export');
     if(printHeader) printHeader.style.display = 'none';
     noPrintElements.forEach(el => {
       if (el) el.style.display = '';
@@ -369,6 +412,58 @@ onMounted(loadReports)
 
 .print-header { display: none; }
 
+.report-cover {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.05);
+}
+
+.report-cover-title h1 {
+  margin: 0 0 8px 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.report-cover-subtitle {
+  margin: 0;
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.report-cover-meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.report-cover-meta div {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.meta-label {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.meta-value {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
 .page-header-modern {
   display: flex;
   justify-content: space-between;
@@ -456,18 +551,54 @@ onMounted(loadReports)
     display: none !important;
   }
   
-  body, .app-wrapper, .main-layout {
+  body, .app-wrapper, .main-layout, .petugas-page {
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
     overflow: visible !important;
     height: auto !important;
     width: 100% !important;
+    color: #111827 !important;
+  }
+
+  .petugas-page, .petugas-page * {
+    color: #111827 !important;
+    box-shadow: none !important;
+  }
+
+  .pdf-export, .pdf-export * {
+    background: white !important;
+    background-color: white !important;
+    color: #111827 !important;
+  }
+
+  .pdf-export {
+    width: 100% !important;
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+  }
+
+  .pdf-export .btn-primary,
+  .pdf-export .no-print,
+  .pdf-export .app-sidebar,
+  .pdf-export .petugas-navbar,
+  .pdf-export .search-box {
+    display: none !important;
   }
 
   .print-header {
     display: block;
     margin-bottom: 20px;
+    background: white !important;
+  }
+  .print-header h2 { margin: 0 0 4px 0; font-size: 24px; color: #111827; }
+  .print-header p { margin: 0; font-size: 14px; color: #4b5563; }
+  .print-header hr { border: none; border-bottom: 2px solid #e5e7eb; margin: 16px 0; }
+
+  .chart-wrapper canvas {
+    width: 100% !important;
+    height: auto !important;
   }
   .print-header h2 { margin: 0 0 4px 0; font-size: 24px; color: #111827; }
   .print-header p { margin: 0; font-size: 14px; color: #4b5563; }
@@ -478,18 +609,28 @@ onMounted(loadReports)
     padding: 0 !important;
     width: 100%;
     margin: 0;
+    background: white !important;
+    color: #111827 !important;
+  }
+
+  .insight-box { border: 1px solid #16a34a; background: white !important; padding: 16px; page-break-inside: avoid; }
+  .stat-card { background: white !important; border: 1px solid #e5e7eb !important; box-shadow: none !important; }
+  .chart-box { background: white !important; border: 1px solid #e5e7eb !important; box-shadow: none !important; }
+  .table-card-modern { background: white !important; border: 1px solid #e5e7eb !important; box-shadow: none !important; }
+  .table-header-modern { background: #f9fafb !important; }
+  .table-row-modern { color: #111827 !important; }
+  .badge-tag { background: #f3f4f6 !important; color: #111827 !important; }
+  .page-header-modern { background: white !important; border: none !important; box-shadow: none !important; }
+  .print-header, .page-header-modern, .insight-box, .stat-card, .chart-box, .table-card-modern, .table-header-modern {
+    color: #111827 !important;
   }
   
-  .insight-box { border: 1px solid #16a34a; background: transparent; padding: 16px; page-break-inside: avoid; }
-  .stats-row { grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
-  .stat-card { padding: 12px; border: 1px solid #d1d5db; box-shadow: none; page-break-inside: avoid; }
+  img { max-width: 100%; }
   
-  .charts-container { gap: 20px; margin-bottom: 16px; }
-  .chart-box { border: 1px solid #d1d5db; padding: 12px; box-shadow: none; page-break-inside: avoid; }
-  .chart-wrapper { height: 250px; }
-
-  .table-card-modern { border: 1px solid #d1d5db; box-shadow: none; page-break-inside: auto; }
-  .table-row-modern { page-break-inside: avoid; }
+  @page {
+    margin: 0.4in;
+    size: landscape;
+  }
 }
 
 @media(max-width: 1024px) {
