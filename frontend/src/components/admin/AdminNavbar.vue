@@ -8,7 +8,6 @@
       <button @click="showLogoutModal = true" class="btn-logout">Logout</button>
     </div>
 
-    <!-- Custom Logout Modal -->
     <div v-if="showLogoutModal" class="modal-overlay">
       <div class="logout-modal fade-in-up">
         <div class="modal-icon">👋</div>
@@ -77,7 +76,6 @@ const confirmLogout = () => {
   transform: translateY(-1px);
 }
 
-/* Modal Logout */
 .modal-overlay {
   position: fixed;
   inset: 0;

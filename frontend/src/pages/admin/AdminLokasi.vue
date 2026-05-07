@@ -62,7 +62,6 @@
       </div>
     </div>
 
-    <!-- Table content -->
     <div class="table-card-modern">
       <div class="table-header-modern">
         <span>Foto</span>
@@ -172,7 +171,6 @@ function handleFileChange(event) {
 
   fileToUpload.value = file
   
-  // Create preview
   const reader = new FileReader()
   reader.onload = (e) => {
     fotoPreview.value = e.target.result
@@ -420,7 +418,6 @@ onMounted(loadLokasi)
   padding-top: 16px;
 }
 
-/* Modern Button */
 .modern-btn {
   padding: 10px 20px;
   border-radius: 8px;
@@ -450,7 +447,6 @@ onMounted(loadLokasi)
   background: #f9fafb;
 }
 
-/* Table Style */
 .table-card-modern {
   background: white;
   border-radius: 12px;

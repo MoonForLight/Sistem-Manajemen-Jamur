@@ -10,6 +10,8 @@ async function ensureSchema() {
         username VARCHAR(50) NOT NULL,
         password VARCHAR(255) NOT NULL,
         foto_profil VARCHAR(255) DEFAULT NULL,
+        email VARCHAR(100) DEFAULT NULL,
+        no_hp VARCHAR(20) DEFAULT NULL,
         PRIMARY KEY (id_user),
         UNIQUE KEY username (username)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
@@ -100,15 +102,30 @@ async function ensureSchema() {
         id_petugas INT(11) NOT NULL,
         tanggal_pengamatan DATE DEFAULT NULL,
         fase VARCHAR(100) DEFAULT NULL,
-        suhu DECIMAL(5,2) DEFAULT NULL,
-        kelembaban DECIMAL(5,2) DEFAULT NULL,
-        intensitas_cahaya DECIMAL(5,2) DEFAULT NULL,
+        detail_fase TEXT DEFAULT NULL,
         catatan TEXT DEFAULT NULL,
         PRIMARY KEY (id_pertumbuhan),
         KEY fk_pertumbuhan_budidaya_idx (id_budidaya),
         KEY fk_pertumbuhan_petugas_idx (id_petugas),
         CONSTRAINT fk_pertumbuhan_budidaya FOREIGN KEY (id_budidaya) REFERENCES budidaya(id_budidaya) ON DELETE CASCADE ON UPDATE CASCADE,
         CONSTRAINT fk_pertumbuhan_petugas FOREIGN KEY (id_petugas) REFERENCES users(id_user) ON DELETE RESTRICT ON UPDATE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
+    },
+    {
+      name: 'lingkungan_harian',
+      sql: `CREATE TABLE IF NOT EXISTS lingkungan_harian (
+        id_lingkungan INT(11) NOT NULL AUTO_INCREMENT,
+        id_budidaya INT(11) NOT NULL,
+        id_petugas INT(11) NOT NULL,
+        tanggal_pengukuran DATE NOT NULL,
+        suhu DECIMAL(5,2) DEFAULT NULL,
+        kelembaban DECIMAL(5,2) DEFAULT NULL,
+        intensitas_cahaya DECIMAL(5,2) DEFAULT NULL,
+        PRIMARY KEY (id_lingkungan),
+        KEY fk_lingkungan_budidaya_idx (id_budidaya),
+        KEY fk_lingkungan_petugas_idx (id_petugas),
+        CONSTRAINT fk_lingkungan_budidaya FOREIGN KEY (id_budidaya) REFERENCES budidaya(id_budidaya) ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT fk_lingkungan_petugas FOREIGN KEY (id_petugas) REFERENCES users(id_user) ON DELETE RESTRICT ON UPDATE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
     },
     {
@@ -158,7 +175,61 @@ async function ensureSchema() {
     }
   }
 
+  await migrateLegacySchema();
   await db.query('SET FOREIGN_KEY_CHECKS = 1');
+}
+
+async function migrateLegacySchema() {
+  try {
+    const [usersFotocol] = await db.query("SHOW COLUMNS FROM users LIKE 'foto_profil'");
+    if (usersFotocol.length === 0) {
+      await db.query("ALTER TABLE users ADD COLUMN foto_profil VARCHAR(255) DEFAULT NULL");
+    }
+
+    const [usersEmailCol] = await db.query("SHOW COLUMNS FROM users LIKE 'email'");
+    if (usersEmailCol.length === 0) {
+      await db.query("ALTER TABLE users ADD COLUMN email VARCHAR(100) DEFAULT NULL");
+    }
+
+    const [usersPhoneCol] = await db.query("SHOW COLUMNS FROM users LIKE 'no_hp'");
+    if (usersPhoneCol.length === 0) {
+      await db.query("ALTER TABLE users ADD COLUMN no_hp VARCHAR(20) DEFAULT NULL");
+    }
+
+    const [lokasiPhotoCol] = await db.query("SHOW COLUMNS FROM lokasi LIKE 'foto_lokasi'");
+    if (lokasiPhotoCol.length === 0) {
+      await db.query("ALTER TABLE lokasi ADD COLUMN foto_lokasi VARCHAR(255) DEFAULT NULL");
+    }
+
+    const [budidayaRaksCol] = await db.query("SHOW COLUMNS FROM budidaya LIKE 'jumlah_rak'");
+    if (budidayaRaksCol.length === 0) {
+      await db.query("ALTER TABLE budidaya ADD COLUMN jumlah_rak INT(11) DEFAULT 1");
+    }
+
+    const [detailCol] = await db.query("SHOW COLUMNS FROM pertumbuhan LIKE 'detail_fase'");
+    if (detailCol.length === 0) {
+      await db.query("ALTER TABLE pertumbuhan ADD COLUMN detail_fase TEXT DEFAULT NULL");
+    }
+
+    const [oldSuhuCol] = await db.query("SHOW COLUMNS FROM pertumbuhan LIKE 'suhu'");
+    if (oldSuhuCol.length > 0) {
+      await db.query(`
+        INSERT INTO lingkungan_harian (id_budidaya, id_petugas, tanggal_pengukuran, suhu, kelembaban, intensitas_cahaya)
+        SELECT id_budidaya, id_petugas, tanggal_pengamatan, suhu, kelembaban, intensitas_cahaya
+        FROM pertumbuhan
+        WHERE (suhu IS NOT NULL OR kelembaban IS NOT NULL OR intensitas_cahaya IS NOT NULL)
+          AND NOT EXISTS (
+            SELECT 1 FROM lingkungan_harian lh
+            WHERE lh.id_budidaya = pertumbuhan.id_budidaya
+              AND lh.tanggal_pengukuran = pertumbuhan.tanggal_pengamatan
+          )
+      `);
+
+      await db.query(`ALTER TABLE pertumbuhan DROP COLUMN suhu, DROP COLUMN kelembaban, DROP COLUMN intensitas_cahaya`);
+    }
+  } catch (err) {
+    console.warn('Legacy schema migration failed:', err.code || err.message);
+  }
 }
 
 module.exports = { ensureSchema };

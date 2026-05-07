@@ -1,9 +1,6 @@
 // Route Guards untuk Role-Based Access
 import { authService } from '../services/authService.js';
 
-/**
- * Guard untuk check apakah user sudah login
- */
 export const requireAuth = (to, from, next) => {
   if (authService.isAuthenticated()) {
     next();
@@ -12,10 +9,6 @@ export const requireAuth = (to, from, next) => {
   }
 };
 
-/**
- * Guard untuk check role user
- * Contoh: beforeEnter: requireRole('admin')
- */
 export const requireRole = (requiredRole) => {
   return (to, from, next) => {
     const userRole = authService.getCurrentRole();
@@ -30,10 +23,6 @@ export const requireRole = (requiredRole) => {
   };
 };
 
-/**
- * Guard untuk check multiple roles
- * Contoh: beforeEnter: requireRoles(['admin', 'petugas'])
- */
 export const requireRoles = (allowedRoles) => {
   return (to, from, next) => {
     const userRole = authService.getCurrentRole();
@@ -48,9 +37,6 @@ export const requireRoles = (allowedRoles) => {
   };
 };
 
-/**
- * Guard public route (guest only)
- */
 export const requireGuest = (to, from, next) => {
   if (!authService.isAuthenticated()) {
     next();

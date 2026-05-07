@@ -107,7 +107,6 @@ watchEffect(() => {
   fill: #16a34a;
 }
 
-/* Dropdown */
 .nav-group-items {
   display: flex;
   flex-direction: column;

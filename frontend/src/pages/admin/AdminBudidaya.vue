@@ -17,9 +17,7 @@
       </div>
     </header>
 
-    <!-- Modal Form Dihapus (Kini read-only) -->
 
-    <!-- Table content -->
     <div class="table-card">
       <div class="table-header budidaya-grid">
         <span>ID</span>
@@ -244,7 +242,6 @@ onUnmounted(() => {
 .text-muted { color: #6b7280; font-size: 12px; }
 .text-center { text-align: center; }
 
-/* Table Styles */
 .table-card {
   background: white;
   border-radius: 12px;

@@ -1,16 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { requireAuth, requireRole, requireGuest } from '../middleware/guards.js'
 
-// Public Pages
 import LandingPage from '../pages/public/LandingPage.vue'
 import EdukasiPage from '../pages/public/EdukasiPage.vue'
 import DataPublikPage from '../pages/public/DataPublikPage.vue'
 import DataLokasiDetailPage from '../pages/public/DataLokasiDetailPage.vue'
 
-// Public Layout
 import PublicLayout from '../layout/PublicLayout.vue'
 
-// Petugas Pages & Layout
 import PetugasLayout from '../layout/PetugasLayout.vue'
 import PetugasDashboard from '../pages/petugas/PetugasDashboard.vue'
 import PetugasJamur from '../pages/petugas/PetugasJamur.vue'
@@ -19,7 +16,6 @@ import PetugasRiwayat from '../pages/petugas/PetugasRiwayat.vue'
 import PetugasProfile from '../pages/petugas/PetugasProfile.vue'
 import PetugasNotifikasi from '../pages/petugas/PetugasNotifikasi.vue'
 
-// Admin Pages & Layout
 import AdminLayout from '../layout/AdminLayout.vue'
 import AdminDashboard from '../pages/admin/AdminDashboard.vue'
 import AdminLokasi from '../pages/admin/AdminLokasi.vue'
@@ -28,12 +24,10 @@ import AdminJamur from '../pages/admin/AdminJamur.vue'
 import AdminMedia from '../pages/admin/AdminMedia.vue'
 import AdminBudidaya from '../pages/admin/AdminBudidaya.vue'
 
-// 404 & Unauthorized
 const NotFound = { template: '<div class="container" style="padding:40px; text-align:center"><h1>404 - Page Not Found</h1></div>' }
 const Unauthorized = { template: '<div class="container" style="padding:40px; text-align:center"><h1>403 - Unauthorized Access</h1></div>' }
 
 const routes = [
-  // ============ PUBLIC PAGES ============
   {
     path: '/',
     component: PublicLayout,
@@ -45,7 +39,6 @@ const routes = [
     ]
   },
 
-  // ============ PETUGAS PAGES (Role: petugas) ============
   {
     path: '/petugas',
     component: PetugasLayout,
@@ -95,7 +88,6 @@ const routes = [
     ]
   },
 
-  // ============ ADMIN PAGES (Role: admin) ============
   {
     path: '/admin',
     component: AdminLayout,
@@ -112,7 +104,6 @@ const routes = [
     ]
   },
 
-  // ============ ERROR PAGES ============
   { path: '/unauthorized', component: Unauthorized },
   { path: '/:pathMatch(.*)*', component: NotFound }
 ]

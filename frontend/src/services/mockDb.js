@@ -67,7 +67,6 @@ export const mediaTanam = [
   }
 ]
 
-// Public budidaya summary per lokasi (mock)
 export const budidaya = [
   {
     id_budidaya: 'BDY-101',
@@ -160,7 +159,6 @@ export const panen = [
 ]
 
 export function getLokasiWithSummary() {
-  // ringkasan publik per lokasi
   return lokasi.map((l) => {
     const b = budidaya.filter((x) => x.id_lokasi === l.id_lokasi)
     const jenisSet = new Set(b.map((x) => x.id_jenis))
@@ -191,7 +189,6 @@ export function getLokasiDetail(lokasiId) {
     .filter((p) => budidayaIds.includes(p.id_budidaya))
     .sort((a, b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen))
 
-  // KPI contoh: ambil rata-rata dari pertumbuhan terakhir
   const last = pert.at(-1)
   const avgTemp = last?.suhu ?? 24
   const avgHum = last?.kelembaban ?? 82

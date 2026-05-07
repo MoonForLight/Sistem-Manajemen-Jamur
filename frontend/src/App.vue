@@ -7,7 +7,6 @@ import { RouterView } from 'vue-router'
 import { onMounted } from 'vue'
 import { authService } from './services/authService.js'
 
-// Verify token on app load
 onMounted(() => {
   if (authService.isAuthenticated()) {
     authService.verifyToken()

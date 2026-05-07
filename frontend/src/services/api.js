@@ -25,12 +25,9 @@ class ApiClient {
         headers,
       });
 
-      // PENCEGAHAN REDIRECT HARD KE /login:
-      // Hanya menghapus item auth di token kadaluwarsa, tidak langsung window.location
       if (response.status === 401) {
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
-        // Tidak redirect ke /login karena login sekarang modal popup
       }
 
       if (!response.ok) {
@@ -39,7 +36,6 @@ class ApiClient {
           const errorInfo = await response.json();
           if (errorInfo.message) errorMsg = errorInfo.message;
         } catch (e) {
-          // kalau bukan json, biarkan error bawaan
         }
         throw new Error(errorMsg);
       }

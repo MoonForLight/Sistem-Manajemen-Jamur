@@ -12,7 +12,6 @@
     </div>
 
     <div class="public-container" v-else>
-      <!-- Header -->
       <header class="page-header-modern">
         <div class="header-text">
           <RouterLink to="/data" class="back-link">← Kembali</RouterLink>
@@ -32,13 +31,11 @@
         </div>
       </header>
 
-      <!-- Insight Bulanan -->
       <div class="insight-box">
         <h3 class="insight-title">💡 Analisis Otomatis: {{ formattedMonth }}</h3>
         <p class="insight-text">{{ aiInsight }}</p>
       </div>
 
-      <!-- Stats -->
       <div class="stats-row">
         <div class="stat-card">
           <span class="stat-label">Rata-rata Suhu</span>
@@ -60,7 +57,6 @@
         </div>
       </div>
 
-      <!-- Charts Section -->
       <div class="charts-container">
         <div class="chart-box">
           <h4>Tren Suhu & Kelembapan Harian</h4>
@@ -76,7 +72,6 @@
         </div>
       </div>
 
-      <!-- Table content -->
       <div class="table-card-modern mt-24">
         <div class="table-header-flex">
           <h4 class="table-title" style="border-bottom: none;">Daftar Budidaya (Rak)</h4>
@@ -115,6 +110,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { api } from '../../services/api'
 
 import { Line, Bar } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, LinearScale, PointElement, CategoryScale, BarElement } from 'chart.js'
@@ -135,7 +131,6 @@ const monthlyRecords = ref([])
 const monthlyHarvestRecords = ref([])
 const monthlyEnvRecords = ref([])
 
-// Default to current month YYYY-MM
 const today = new Date()
 const currentYm = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
 const selectedMonth = ref(currentYm)
@@ -147,13 +142,11 @@ const formattedMonth = computed(() => {
   return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
 })
 
-// Stats
 const avgSuhu = ref(0)
 const avgKelembapan = ref(0)
 const totalPanen = ref(0)
 const aiInsight = ref('')
 
-// Chart Data
 const envChartData = ref({ labels: [], datasets: [] })
 const harvestChartData = ref({ labels: [], datasets: [] })
 const chartOptions = {
@@ -168,7 +161,6 @@ function processData() {
 
   const ym = selectedMonth.value
 
-  // Filter records
   monthlyRecords.value = allGrowthRecords.value.filter(item => item.tanggal_pengamatan?.startsWith(ym))
     .sort((a, b) => new Date(a.tanggal_pengamatan) - new Date(b.tanggal_pengamatan))
     
@@ -178,7 +170,6 @@ function processData() {
   monthlyEnvRecords.value = allEnvRecords.value.filter(item => item.tanggal_pengukuran?.startsWith(ym))
     .sort((a, b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran))
 
-  // Calculate Averages from lingkungan
   if (monthlyEnvRecords.value.length > 0) {
     const sumSuhu = monthlyEnvRecords.value.reduce((acc, curr) => acc + (Number(curr.suhu) || 0), 0)
     const sumKelembapan = monthlyEnvRecords.value.reduce((acc, curr) => acc + (Number(curr.kelembaban) || 0), 0)
@@ -189,10 +180,8 @@ function processData() {
     avgKelembapan.value = 0
   }
 
-  // Calculate Panen
   totalPanen.value = monthlyHarvestRecords.value.reduce((acc, curr) => acc + (Number(curr.jumlah_panen) || 0), 0).toFixed(1)
 
-  // Generate Insight
   if (monthlyEnvRecords.value.length === 0) {
     aiInsight.value = "Belum ada data monitoring yang direkam untuk lokasi ini pada bulan terpilih."
   } else {
@@ -210,7 +199,6 @@ function processData() {
     aiInsight.value = insight
   }
 
-  // Prepare Charts from lingkungan
   const daysInMonth = new Date(ym.split('-')[0], ym.split('-')[1], 0).getDate()
   const labels = Array.from({ length: daysInMonth }, (_, i) => String(i + 1))
 
@@ -236,7 +224,6 @@ function processData() {
     ]
   }
 
-  // Daily Harvest
   const dailyHarvest = Array(daysInMonth).fill(0)
   monthlyHarvestRecords.value.forEach(r => {
     const dStr = r.tanggal_panen
@@ -256,8 +243,7 @@ async function loadData() {
   loading.value = true
   try {
     const locIdStr = String(props.lokasiId)
-    const response = await fetch(`/api/public/monitoring?id=${locIdStr}`)
-    const payload = await response.json()
+    const payload = await api.get(`/public/monitoring?id=${locIdStr}`)
 
     if (payload?.success && payload.data) {
       lokasi.value = payload.data.lokasi
@@ -309,7 +295,6 @@ function exportBulananCSV() {
     const dayStr = String(i).padStart(2, '0');
     const dateStr = `${ym}-${dayStr}`;
     
-    // Suhu & Kelembapan from lingkungan
     const dayRecs = monthlyEnvRecords.value.filter(r => r.tanggal_pengukuran?.startsWith(dateStr));
     let avgS = '';
     let avgK = '';
@@ -318,7 +303,6 @@ function exportBulananCSV() {
       avgK = (dayRecs.reduce((s, r) => s + Number(r.kelembaban || 0), 0) / dayRecs.length).toFixed(1);
     }
     
-    // Panen
     const harvRecs = monthlyHarvestRecords.value.filter(r => r.tanggal_panen?.startsWith(dateStr));
     let totHarv = 0;
     if (harvRecs.length > 0) {
@@ -393,7 +377,6 @@ async function exportPDF() {
     const html2pdf = await loadHtml2Pdf();
     const element = document.querySelector('.public-container');
     
-    // Sembunyikan elemen navigasi dan tombol export agar tidak ikut tercetak di PDF
     const noPrintElements = document.querySelectorAll('.header-actions, .btn-export, .back-link');
     noPrintElements.forEach(el => el.style.display = 'none');
 
@@ -408,7 +391,6 @@ async function exportPDF() {
 
     await html2pdf().set(opt).from(element).save();
 
-    // Tampilkan kembali elemen yang disembunyikan
     noPrintElements.forEach(el => el.style.display = '');
 
   } catch (error) {

@@ -6,7 +6,6 @@
     <div class="header-right">
       <span class="greeting">Halo, {{ userName || 'Petugas' }}!!</span>
       
-      <!-- Profile Picture added to Navbar -->
       <div class="nav-avatar">
         <img v-if="fotoProfil" :src="'http://localhost:3000/uploads/' + fotoProfil" alt="Profile" class="nav-avatar-img" />
         <span v-else class="nav-avatar-initial">{{ userName.charAt(0).toUpperCase() }}</span>
@@ -19,7 +18,6 @@
       <button @click="showLogoutModal = true" class="btn-logout">Logout</button>
     </div>
 
-    <!-- Custom Logout Modal -->
     <div v-if="showLogoutModal" class="modal-overlay">
       <div class="logout-modal fade-in-up">
         <div class="modal-icon">👋</div>
@@ -64,7 +62,6 @@ const fetchProfile = async () => {
   }
 }
 
-// Menerima event storage jika profil diubah di tab lain atau di komponen lain
 const onStorageChange = () => {
   loadUserData()
   fetchProfile()

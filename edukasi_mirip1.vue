@@ -1,7 +1,6 @@
 <template>
   <div class="container">
     <section class="hero">
-      <!-- You can put a different background image, or just use the same as landing -->
       <div class="hero-media" aria-hidden="true" style="background-image: url('/assets/edukasi_landing.jpg');"></div>
       <div class="hero-content">
         <h1 class="hero-title">Ensiklopedia<br/>Budidaya Jamur</h1>
@@ -12,7 +11,6 @@
     </section>
 
     <div class="edu-layout">
-      <!-- Sticky Sidebar Nav -->
       <aside class="edu-sidebar">
         <nav class="sticky-nav">
           <a href="#mengapa" class="nav-link">Kenapa Jamur?</a>
@@ -24,13 +22,11 @@
       </aside>
 
       <div class="edu-content">
-        <!-- Section: Mengapa Jamur -->
         <section id="mengapa" class="featured-section first">
           <h2 class="featured-title">Mengapa Membudidayakan Jamur?</h2>
           <div class="feature-card-grid">
             <div class="f-card">
               <div class="f-icon">
-                <!-- Icon Profit/Trending Up -->
                 <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
               </div>
               <h4>Peluang Ekonomi</h4>
@@ -38,7 +34,6 @@
             </div>
             <div class="f-card">
               <div class="f-icon">
-                <!-- Icon Earth/Eco -->
                  <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
               </div>
               <h4>Ramah Lingkungan</h4>
@@ -46,7 +41,6 @@
             </div>
             <div class="f-card">
               <div class="f-icon">
-                <!-- Icon Health/Heart -->
                 <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
               </div>
               <h4>Kaya Nutrisi</h4>
@@ -55,7 +49,6 @@
           </div>
         </section>
 
-        <!-- Section: Syarat Tumbuh -->
         <section id="syarat-tumbuh" class="featured-section">
           <h2 class="featured-title">Syarat Tumbuh Optimal</h2>
           <div class="feature-card-grid">
@@ -82,7 +75,6 @@
           </div>
         </section>
 
-        <!-- Section: Jenis Jamur -->
         <section id="jenis-jamur" class="featured-section">
           <h2 class="featured-title">Jenis Jamur Komersial</h2>
           <div class="grid-2">
@@ -111,7 +103,6 @@
           </div>
         </section>
 
-        <!-- Section: Panduan Tahapan -->
         <section id="tahapan" class="featured-section timeline-section">
           <h2 class="featured-title">Tahapan & Proses</h2>
           <div class="timeline">
@@ -153,7 +144,6 @@
           </div>
         </section>
 
-        <!-- Section: Troubleshooting -->
         <section id="masalah" class="featured-section">
           <h2 class="featured-title">Identifikasi Masalah</h2>
           <div class="troubleshoot-grid">
@@ -244,7 +234,6 @@
   flex: 1;
 }
 
-/* Common Section */
 .featured-section {
   margin-bottom: 80px;
 }
@@ -316,7 +305,6 @@
   margin: 0;
 }
 
-/* Info Cards & Troubleshoot */
 .info-card, .ts-card {
   background: white;
   border-radius: 16px;
@@ -346,7 +334,7 @@
 
 .ts-card h4 {
   margin-bottom: 10px;
-  color: #ef4444; /* Give a subtle alert tone to troubleshoot titles */
+  color: #ef4444;
 }
 
 .info-card p, .ts-card p {

@@ -42,7 +42,6 @@
       </div>
     </div>
 
-    <!-- Table content -->
     <div class="table-card-modern">
       <div class="table-header-modern jamur-grid green-header">
         <span>ID</span>
@@ -187,7 +186,7 @@ onMounted(loadJenisJamur)
 
 .page-header-modern h1 {
   margin: 0;
-  font-size: 20px; /* Sedikit dikecilkan agar tab lebih menonjol */
+  font-size: 20px;
   font-weight: 800;
   color: #111827;
 }
@@ -251,7 +250,6 @@ onMounted(loadJenisJamur)
   margin-top: 16px;
 }
 
-/* Modern Button */
 .modern-btn {
   padding: 10px 20px;
   border-radius: 8px;
@@ -274,7 +272,6 @@ onMounted(loadJenisJamur)
   border: 1px solid #d1d5db;
 }
 
-/* Table Style */
 .table-card-modern {
   background: white;
   border-radius: 12px;

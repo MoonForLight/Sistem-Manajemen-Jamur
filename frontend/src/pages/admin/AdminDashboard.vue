@@ -1,6 +1,5 @@
 <template>
   <div class="dashboard-content fade-in">
-    <!-- Top Stats Row -->
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon bg-blue-light"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L2 12h3v8h14v-8h3L12 2zm0 2.83l5.17 5.17H17V18H7v-8H6.83L12 4.83z"/></svg></div>
@@ -32,10 +31,8 @@
       </div>
     </div>
 
-    <!-- Main Dashboard Grid -->
     <div class="main-grid mt-24">
       
-      <!-- Left Column: Global Trend -->
       <div class="left-col">
         <div class="panel h-full flex-col">
           <div class="panel-header">
@@ -51,7 +48,6 @@
         </div>
       </div>
 
-      <!-- Right Column: Distribution & Composition -->
       <div class="right-col">
         <div class="panel h-full flex-col">
           <div class="panel-header">
@@ -69,9 +65,7 @@
 
     </div>
 
-    <!-- Bottom Grid -->
     <div class="bottom-grid mt-24">
-      <!-- Daftar Lokasi Operasional -->
       <div class="panel">
         <div class="panel-header flex-between">
           <div>
@@ -111,7 +105,6 @@
         </div>
       </div>
 
-      <!-- Aktivitas / Log Terbaru -->
       <div class="panel">
         <div class="panel-header">
           <h3 class="panel-title">Log Aktivitas Terbaru</h3>
@@ -162,13 +155,10 @@ const d_now = new Date()
 const today = `${d_now.getFullYear()}-${String(d_now.getMonth() + 1).padStart(2, '0')}-${String(d_now.getDate()).padStart(2, '0')}`
 const currentMonth = today.slice(0, 7)
 
-// Computations
 const locationStats = computed(() => {
   return locations.value.slice(0, 5).map(loc => {
-    // Find active budidaya in this location
     const actives = budidayaList.value.filter(b => b.id_lokasi === loc.id_lokasi && b.status === 'aktif')
     
-    // Find latest env records from lingkungan_harian for these actives
     let sumSuhu = 0, sumKelembaban = 0, countEnv = 0
     actives.forEach(b => {
       const records = envRecords.value.filter(e => Number(e.id_budidaya) === Number(b.id_budidaya) && e.suhu !== null && e.suhu !== undefined)
@@ -259,7 +249,6 @@ const suhuChartData = computed(() => {
   }
 })
 
-// Chart Configs
 const chartOptions = {
   responsive: true, maintainAspectRatio: false,
   plugins: { legend: { position: 'top', labels: { font: { family: 'Inter' } } } },
@@ -325,7 +314,6 @@ onMounted(loadDashboard)
 
 .dashboard-content { display: flex; flex-direction: column; }
 
-/* Stats Row */
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
 .stat-card { background: white; border-radius: 16px; padding: 24px; display: flex; align-items: center; gap: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; transition: transform 0.2s; }
 .stat-card:hover { transform: translateY(-2px); border-color: #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
@@ -342,12 +330,10 @@ onMounted(loadDashboard)
 .stat-value { font-size: 28px; font-weight: 800; color: #111827; display: flex; align-items: baseline; gap: 6px; }
 .stat-sub { font-size: 14px; font-weight: 600; color: #9ca3af; text-transform: none; letter-spacing: normal; }
 
-/* Grids */
 .mt-24 { margin-top: 24px; }
 .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
 .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 
-/* Panels */
 .panel { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; }
 .h-full { height: 100%; }
 .flex-col { display: flex; flex-direction: column; }
@@ -363,7 +349,6 @@ onMounted(loadDashboard)
 .chart-container { height: 300px; position: relative; width: 100%; }
 .chart-container-pie { height: 260px; position: relative; width: 100%; display: flex; justify-content: center; }
 
-/* Locations List */
 .location-list { display: flex; flex-direction: column; gap: 12px; }
 .location-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-radius: 12px; border: 1px solid #f3f4f6; background: #fafbfc; transition: all 0.2s; }
 .location-item:hover { background: white; border-color: #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
@@ -381,7 +366,6 @@ onMounted(loadDashboard)
 
 .badge-inactive { font-size: 12px; font-weight: 700; color: #9ca3af; background: #f3f4f6; padding: 6px 12px; border-radius: 999px; }
 
-/* Activities List */
 .activity-list { display: flex; flex-direction: column; gap: 12px; }
 .activity-item { display: flex; gap: 16px; align-items: center; padding: 16px; border-radius: 12px; border: 1px solid #f3f4f6; background: white; }
 .act-icon { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 18px; flex-shrink: 0; }
@@ -390,7 +374,6 @@ onMounted(loadDashboard)
 .act-desc { font-size: 13px; color: #6b7280; font-weight: 500; }
 .act-time { font-size: 11px; font-weight: 600; color: #9ca3af; margin-top: 4px; }
 
-/* Utilities */
 .py-4 { padding-top: 16px; padding-bottom: 16px; }
 .empty-state { text-align: center; color: #9ca3af; font-weight: 500; font-style: italic; }
 .loading-state { text-align: center; color: #6b7280; font-weight: 600; animation: pulse 2s infinite; }
@@ -405,6 +388,6 @@ onMounted(loadDashboard)
 }
 @media(max-width: 640px) {
   .stats-grid { grid-template-columns: 1fr; }
-  .loc-metrics { display: none; /* Hide metrics on very small screens to prevent overflow */ }
+  .loc-metrics { display: none; }
 }
 </style>

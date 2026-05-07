@@ -1,7 +1,6 @@
 <template>
   <footer class="footer-dark">
     <div class="footer-dark-inner">
-      <!-- Left col -->
       <div class="footer-brand-col">
         <div class="brand-logo">
           <span style="color: #005F05;">Myco</span><span style="color: #66BB69;">Flow</span>
@@ -13,7 +12,6 @@
           <span class="contact-hl">(+62) 8191-7718-779</span> &nbsp;or&nbsp; <span class="contact-hl">MycoFlow@gmail.com</span>
         </div>
       </div>
-      <!-- Right cols wrapper for mobile layout -->
       <div class="footer-links-wrapper">
         <div class="footer-link-col">
           <h4>Bantuan</h4>

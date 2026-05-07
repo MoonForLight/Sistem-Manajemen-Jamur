@@ -1,6 +1,5 @@
 <template>
   <div class="petugas-operasional">
-    <!-- Toast Notification -->
     <Transition name="toast">
       <div v-if="toast.show" :class="['toast-notification', toast.type]">
         <div class="toast-icon">
@@ -10,7 +9,6 @@
         <span class="toast-message">{{ toast.message }}</span>
       </div>
     </Transition>
-    <!-- Page Header -->
     <header class="operasional-header">
       <div class="header-content">
         <div>
@@ -33,7 +31,6 @@
     </header>
 
     <main class="main-content">
-      <!-- Modal Form Tambah Budidaya -->
       <div v-if="showNewBudidayaForm" class="modal-overlay" @click.self="closeNewBudidayaForm">
         <div class="form-modal slide-up">
           <div class="modal-header">
@@ -101,7 +98,6 @@
       </div>
 
       <div v-else-if="selectedBudidaya" class="detail-container">
-        <!-- Info Banner -->
         <div class="info-banner">
           <div class="info-item">
             <span class="label">ID Budidaya</span>
@@ -129,7 +125,6 @@
           </div>
         </div>
 
-        <!-- Forms Tabs -->
         <div class="tabs-container">
           <button :class="['tab-btn', { active: activeForm === 'lingkungan' }]" @click="activeForm = 'lingkungan'">Data Lingkungan</button>
           <button :class="['tab-btn', { active: activeForm === 'pertumbuhan' }]" @click="activeForm = 'pertumbuhan'">Fase Pertumbuhan</button>
@@ -145,7 +140,6 @@
           </div>
         </div>
 
-        <!-- LINGKUNGAN FORM -->
         <div v-if="activeForm === 'lingkungan'" class="form-card fade-in">
           <h2 class="form-title">Pencatatan Lingkungan Harian</h2>
           <form @submit.prevent="submitLingkungan">
@@ -175,7 +169,6 @@
           </form>
         </div>
 
-        <!-- PERTUMBUHAN FORM -->
         <div v-if="activeForm === 'pertumbuhan'" class="form-card fade-in">
           <h2 class="form-title">Laporan Fase Pertumbuhan</h2>
           <form @submit.prevent="submitPertumbuhan">
@@ -218,7 +211,6 @@
           </form>
         </div>
 
-        <!-- PANEN FORM -->
         <div v-if="activeForm === 'panen'" class="form-card fade-in">
           <h2 class="form-title">Input Data Panen</h2>
           <form @submit.prevent="submitPanen">
@@ -260,7 +252,6 @@ const selectedBudidaya = ref(null)
 const activeForm = ref('lingkungan')
 const isSubmitting = ref(false)
 
-// Toast notification state
 const toast = ref({ show: false, message: '', type: 'success' })
 let toastTimer = null
 
@@ -310,7 +301,6 @@ const formPanen = ref({
   catatan: ''
 })
 
-// === State untuk Form Tambah Budidaya ===
 const myLokasi = ref({ nama_lokasi: '', rak_tersedia: 0, kapasitas_rak: 0 })
 const showNewBudidayaForm = ref(false)
 const isSubmittingNew = ref(false)
@@ -325,7 +315,6 @@ const formNewBudidaya = ref({
   status: 'aktif'
 })
 
-// === Method Tambah Budidaya ===
 async function openNewBudidayaForm() {
   // Fetch latest capacity & options
   const [meRes, jRes, mRes] = await Promise.all([
@@ -407,7 +396,6 @@ async function fetchBudidaya() {
 }
 
 function handleSelectChange() {
-  // Reset forms when selection changes
   const d = new Date()
   const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   
@@ -464,7 +452,6 @@ async function submitLingkungan() {
 async function submitPertumbuhan() {
   isSubmitting.value = true
   try {
-    // build detail_fase JSON
     const detailObj = {}
     dynamicDetails.value.forEach(d => {
       if (d.key && d.value) {
@@ -481,7 +468,6 @@ async function submitPertumbuhan() {
     if (res?.success) {
       showToast('Fase pertumbuhan berhasil dicatat!', 'success')
       
-      // Update growth records so latestFase updates instantly
       const growthRes = await pertumbuhanService.getAll()
       if (growthRes?.success) {
         growthRecords.value = growthRes.data
@@ -533,7 +519,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Toast Notification */
 .toast-notification {
   position: fixed;
   top: 50%;
@@ -576,7 +561,6 @@ onMounted(() => {
 
 .toast-message { flex: 1; line-height: 1.4; }
 
-/* Toast transition */
 .toast-enter-active { animation: toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
 .toast-leave-active { animation: toastOut 0.25s ease-in forwards; }
 
@@ -654,7 +638,6 @@ onMounted(() => {
   box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
 }
 
-/* Main Content Area */
 .main-content {
   display: flex;
   flex-direction: column;
@@ -682,7 +665,6 @@ onMounted(() => {
   font-size: 18px;
 }
 
-/* Detail Container */
 .detail-container {
   display: flex;
   flex-direction: column;
@@ -879,7 +861,6 @@ onMounted(() => {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Modal CSS untuk Form Budidaya Baru */
 .modal-overlay {
   position: fixed;
   inset: 0;

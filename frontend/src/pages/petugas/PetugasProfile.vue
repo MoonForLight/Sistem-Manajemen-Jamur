@@ -5,7 +5,6 @@
 
     <div v-if="!loading && !error" class="profile-container">
       
-      <!-- Bagian Kiri/Atas: Pengaturan Akun Utama -->
       <div class="profile-main-section">
         
         <div class="profile-card fade-in">
@@ -66,7 +65,6 @@
           </form>
         </div>
 
-        <!-- Keamanan Akun -->
         <div class="profile-card fade-in mt-24" style="animation-delay: 0.1s;">
           <div class="card-header-clean flex-between">
             <div>
@@ -79,7 +77,6 @@
 
       </div>
 
-      <!-- Bagian Kanan/Bawah: Kinerja -->
       <div class="profile-side-section">
         <div class="performance-card fade-in" style="animation-delay: 0.2s;">
           <div class="card-header-clean">
@@ -116,7 +113,6 @@
       </div>
     </div>
 
-    <!-- Modal Ubah Kata Sandi -->
     <div v-if="showPasswordModal" class="modal-overlay">
       <div class="password-modal fade-in-up">
         <div class="modal-header">
@@ -347,10 +343,8 @@ onMounted(loadProfile)
 
 
 
-/* Layout Grid */
 .profile-container { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
 
-/* Cards */
 .profile-card, .performance-card {
   background: white; border-radius: 16px; padding: 32px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #f3f4f6;
@@ -362,7 +356,6 @@ onMounted(loadProfile)
 
 .flex-between { display: flex; justify-content: space-between; align-items: center; border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
 
-/* Avatar Section */
 .profile-avatar-row { display: flex; align-items: center; gap: 24px; margin-bottom: 32px; }
 
 .avatar-circle {
@@ -383,7 +376,6 @@ onMounted(loadProfile)
 .avatar-info h3 { margin: 0 0 4px 0; font-size: 20px; font-weight: 800; color: #111827; }
 .avatar-info p { margin: 0 0 12px 0; font-size: 14px; color: #6b7280; font-weight: 500; }
 
-/* Forms */
 .form-section { background: #fafbfc; padding: 20px; border-radius: 12px; border: 1px solid #f3f4f6; }
 .form-section-title { margin: 0 0 16px 0; font-size: 14px; font-weight: 800; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; }
 
@@ -396,7 +388,6 @@ onMounted(loadProfile)
 
 .form-actions { display: flex; justify-content: flex-end; padding-top: 24px; border-top: 1px solid #f3f4f6; }
 
-/* Buttons */
 .btn-primary { background: #111827; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s; }
 .btn-primary:hover:not(:disabled) { background: #374151; transform: translateY(-1px); }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -407,7 +398,6 @@ onMounted(loadProfile)
 .btn-outline-small { background: white; color: #4b5563; border: 1px solid #d1d5db; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.2s; }
 .btn-outline-small:hover { background: #f3f4f6; }
 
-/* Stats Column */
 .stats-col { display: flex; flex-direction: column; gap: 16px; }
 .stat-item { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: 12px; border: 1px solid #f3f4f6; background: #fafbfc; }
 .stat-icon-wrap { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
@@ -420,7 +410,6 @@ onMounted(loadProfile)
 .bg-green-light { background: #f0fdf4; color: #16a34a; }
 .bg-yellow-light { background: #fffbeb; color: #d97706; }
 
-/* Modal */
 .modal-overlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.5); backdrop-filter: blur(2px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
 .password-modal { background: white; border-radius: 16px; padding: 32px; width: 100%; max-width: 450px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -438,7 +427,6 @@ onMounted(loadProfile)
 
 .error-text { color: #ef4444; font-size: 13px; font-weight: 600; margin-top: 4px; }
 
-/* Utilities */
 .mt-16 { margin-top: 16px; }
 .mt-24 { margin-top: 24px; }
 .mt-8 { margin-top: 8px; }

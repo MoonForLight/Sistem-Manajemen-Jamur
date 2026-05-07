@@ -1,6 +1,5 @@
 <template>
   <div class="petugas-page fade-in">
-    <!-- Print Only Header -->
     <div class="print-header">
       <h2>Laporan Bulanan Operasional Jamur</h2>
       <p>Bulan Laporan: {{ formattedMonth }}</p>
@@ -14,7 +13,6 @@
         <p class="page-description">Pilih periode laporan untuk melihat ringkasan performa dan grafik.</p>
       </div>
       <div class="header-actions">
-        <!-- Month Picker -->
         <div class="search-box">
           <input v-model="selectedMonth" type="month" class="modern-input" @change="processMonthlyData" />
         </div>
@@ -28,13 +26,11 @@
     <div v-if="loading" class="empty-state no-print">Memuat data...</div>
 
     <div v-else>
-      <!-- Insight Bulanan -->
       <div class="insight-box">
         <h3 class="insight-title">💡 Analisis Otomatis: {{ formattedMonth }}</h3>
         <p class="insight-text">{{ aiInsight }}</p>
       </div>
 
-      <!-- Stats -->
       <div class="stats-row">
         <div class="stat-card">
           <span class="stat-label">Rata-rata Suhu</span>
@@ -54,7 +50,6 @@
         </div>
       </div>
 
-      <!-- Charts Section -->
       <div class="charts-container">
         <div class="chart-box">
           <h4>Tren Suhu & Kelembapan Harian</h4>
@@ -70,7 +65,6 @@
         </div>
       </div>
 
-      <!-- Table content (Optional: shown only on screen or both) -->
       <div class="table-card-modern mt-24">
         <h4 class="table-title">Rincian Pencatatan Lingkungan Bulan Ini</h4>
         <div class="table-header-modern laporan-grid">
@@ -119,7 +113,6 @@ const monthlyEnvRecords = ref([])
 
 const loading = ref(true)
 
-// Default to current month YYYY-MM
 const today = new Date()
 const currentYm = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
 const selectedMonth = ref(currentYm)
@@ -131,13 +124,11 @@ const formattedMonth = computed(() => {
   return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
 })
 
-// Stats
 const avgSuhu = ref(0)
 const avgKelembapan = ref(0)
 const totalPanen = ref(0)
 const aiInsight = ref('')
 
-// Chart Data
 const envChartData = ref({ labels: [], datasets: [] })
 const harvestChartData = ref({ labels: [], datasets: [] })
 const chartOptions = {
@@ -163,7 +154,6 @@ async function printReport() {
     const html2pdf = await loadHtml2Pdf();
     const element = document.querySelector('.petugas-page');
     
-    // Tampilkan header print & Sembunyikan elemen navigasi
     const printHeader = document.querySelector('.print-header');
     if(printHeader) printHeader.style.display = 'block';
     
@@ -183,7 +173,6 @@ async function printReport() {
 
     await html2pdf().set(opt).from(element).save();
 
-    // Kembalikan tampilan
     if(printHeader) printHeader.style.display = 'none';
     noPrintElements.forEach(el => {
       if (el) el.style.display = '';
@@ -198,12 +187,11 @@ async function printReport() {
 function processMonthlyData() {
   if (!selectedMonth.value) return
 
-  const ym = selectedMonth.value // format "YYYY-MM"
+  const ym = selectedMonth.value
 
-  // Filter records
   const getLocalISO = (d) => {
     if (!d) return ''
-    if (typeof d === 'string' && d.includes('T')) return d // Already ISO string
+    if (typeof d === 'string' && d.includes('T')) return d
     if (typeof d === 'string') return d // "YYYY-MM-DD"
     const date = new Date(d)
     const offset = date.getTimezoneOffset()
@@ -226,7 +214,6 @@ function processMonthlyData() {
     return dStr.startsWith(ym)
   }).sort((a, b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran))
 
-  // Calculate Averages from lingkungan_harian
   if (monthlyEnvRecords.value.length > 0) {
     const sumSuhu = monthlyEnvRecords.value.reduce((acc, curr) => acc + (Number(curr.suhu) || 0), 0)
     const sumKelembapan = monthlyEnvRecords.value.reduce((acc, curr) => acc + (Number(curr.kelembaban) || 0), 0)
@@ -237,10 +224,8 @@ function processMonthlyData() {
     avgKelembapan.value = 0
   }
 
-  // Calculate Panen
   totalPanen.value = monthlyHarvestRecords.value.reduce((acc, curr) => acc + (Number(curr.jumlah_panen) || 0), 0).toFixed(1)
 
-  // Generate Insight
   if (monthlyEnvRecords.value.length === 0) {
     aiInsight.value = "Belum ada data pengamatan pada bulan ini. Silakan pastikan pengisian data harian dilakukan tepat waktu."
   } else {
@@ -258,11 +243,9 @@ function processMonthlyData() {
     aiInsight.value = insight
   }
 
-  // Prepare Charts Data from lingkungan_harian
   const daysInMonth = new Date(ym.split('-')[0], ym.split('-')[1], 0).getDate()
   const labels = Array.from({ length: daysInMonth }, (_, i) => String(i + 1))
 
-  // Daily Averages from lingkungan_harian
   const dailySuhu = Array(daysInMonth).fill(null)
   const dailyKelembapan = Array(daysInMonth).fill(null)
   
@@ -288,7 +271,6 @@ function processMonthlyData() {
     ]
   }
 
-  // Daily Harvest
   const dailyHarvest = Array(daysInMonth).fill(0)
   monthlyHarvestRecords.value.forEach(r => {
     const d = r.tanggal_panen
@@ -385,7 +367,6 @@ onMounted(loadReports)
   gap: 24px;
 }
 
-/* Print Only Styles */
 .print-header { display: none; }
 
 .page-header-modern {
@@ -416,7 +397,6 @@ onMounted(loadReports)
 .insight-title { margin: 0 0 8px 0; color: #16a34a; font-size: 16px; font-weight: 800; }
 .insight-text { margin: 0; color: #15803d; font-size: 15px; line-height: 1.5; font-weight: 500; }
 
-/* Stats */
 .stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -430,7 +410,6 @@ onMounted(loadReports)
 .text-blue { color: #2563eb; }
 .text-red { color: #dc2626; }
 
-/* Charts */
 .charts-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -447,7 +426,6 @@ onMounted(loadReports)
 .chart-box h4 { margin: 0 0 16px 0; font-size: 15px; color: #111827; }
 .chart-wrapper { height: 250px; position: relative; }
 
-/* Table Style */
 .table-card-modern {
   background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #f3f4f6;
 }
@@ -473,14 +451,11 @@ onMounted(loadReports)
 .red-tag { background: #fef2f2; color: #dc2626; }
 .gray-tag { background: #f3f4f6; color: #4b5563; }
 
-/* ======== PRINT CSS ======== */
 @media print {
-  /* Hide UI elements */
   .no-print, .btn-primary, .app-sidebar, .petugas-navbar, .search-box {
     display: none !important;
   }
   
-  /* Reset body and wrapper for printing */
   body, .app-wrapper, .main-layout {
     margin: 0 !important;
     padding: 0 !important;
@@ -490,7 +465,6 @@ onMounted(loadReports)
     width: 100% !important;
   }
 
-  /* Show Print Header */
   .print-header {
     display: block;
     margin-bottom: 20px;
@@ -499,7 +473,6 @@ onMounted(loadReports)
   .print-header p { margin: 0; font-size: 14px; color: #4b5563; }
   .print-header hr { border: none; border-bottom: 2px solid #e5e7eb; margin: 16px 0; }
 
-  /* Adjust Layout */
   .petugas-page {
     gap: 16px;
     padding: 0 !important;

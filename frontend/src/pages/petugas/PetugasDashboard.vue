@@ -25,12 +25,9 @@
       </div>
     </div>
 
-    <!-- Main Section: Environment Left, Trend Chart Right -->
     <div class="main-env-grid">
       
-      <!-- Kiri: Realtime Env Cards -->
       <div class="env-section">
-        <!--<h3 class="section-title">Suhu & Kelembapan Real-Time</h3>-->
         <div v-if="loading" class="empty-state">Memuat data lingkungan...</div>
         <div v-else-if="activeBudidayaList.length === 0" class="empty-state">Belum ada rumah jamur yang aktif.</div>
         
@@ -39,7 +36,6 @@
             <div class="panel-header-row mb-0">
               <h3 class="panel-title">Suhu & Kelembapan Terkini</h3>
               <span v-if="b.insightStatus === 'warning'" class="alert-badge pulse">Bahaya!</span>
-              <!--<span v-else-if="!b.hasDataToday" class="1pending-badge">Belum Input</span>-->
               <span v-else class="status-badge">Kondisi Ideal</span>
             </div>
             
@@ -92,7 +88,6 @@
         </div>
       </div>
 
-      <!-- Kanan: Tren Chart -->
       <div class="trend-section">
         <div class="chart-panel h-full">
           <div class="panel-header-row">
@@ -107,7 +102,6 @@
 
     </div>
 
-    <!-- Charts and Sidebar Below -->
     <div class="dashboard-grid mt-24">
       <div class="left-col">
         <div class="chart-panels-row">
@@ -174,7 +168,6 @@ const loading = ref(true)
 const d_now = new Date()
 const today = `${d_now.getFullYear()}-${String(d_now.getMonth() + 1).padStart(2, '0')}-${String(d_now.getDate()).padStart(2, '0')}`
 
-// Computed Stats
 const activeBudidaya = computed(() => assignedBudidaya.value.filter(item => item.status === 'aktif').length)
 const todayTasks = computed(() => envRecords.value.filter(item => {
   const d = item.tanggal_pengukuran
@@ -229,7 +222,6 @@ function getSuhuColor(val) {
   return 'text-success'
 }
 
-// Charts Data
 const chartData = computed(() => {
   const labels = []
   const dataList = []
@@ -339,10 +331,8 @@ async function loadDashboard() {
     if (panenRes?.success) harvestRecords.value = panenRes.data.filter(item => assignedIds.has(Number(item.id_budidaya)))
     if (envRes?.success) envRecords.value = envRes.data.filter(item => assignedIds.has(Number(item.id_budidaya)))
     
-    // Proses Active Budidaya & Fetch Real Weather
     const actives = assignedBudidaya.value.filter(b => b.status === 'aktif')
     activeBudidayaList.value = await Promise.all(actives.map(async (b, index) => {
-      // Perbandingan ID yang aman (Number)
       const records = growthRecords.value.filter(g => Number(g.id_budidaya) === Number(b.id_budidaya))
       records.sort((x, y) => new Date(y.tanggal_pengamatan) - new Date(x.tanggal_pengamatan))
 
@@ -373,9 +363,8 @@ async function loadDashboard() {
       const latestSuhu = latestEnv ? Number(latestEnv.suhu) : null
       const latestKelembaban = latestEnv ? Number(latestEnv.kelembaban) : null
       
-      // Logika Insight Perbandingan Cuaca Profesional
       let weatherInsight = "Data lingkungan belum lengkap."
-      let insightStatus = "normal" // normal, warning, success
+      let insightStatus = "normal"
 
       if (latestSuhu && weather.suhu) {
         const diff = (latestSuhu - weather.suhu).toFixed(1)
@@ -432,7 +421,6 @@ onMounted(loadDashboard)
 
 .section-title { font-size: 18px; font-weight: 800; color: #111827; margin-bottom: 16px; margin-top: 0; }
 
-/* Main Environment Grid */
 .main-env-grid {
   display: grid;
   grid-template-columns: 1fr 1.5fr;

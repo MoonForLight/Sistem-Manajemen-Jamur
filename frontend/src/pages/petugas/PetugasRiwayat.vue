@@ -28,7 +28,6 @@
       </div>
     </div>
 
-    <!-- Table content -->
     <div class="table-card-modern mt-24">
       <div class="table-header-modern riwayat-grid">
         <span>Jenis Kegiatan</span>
@@ -45,20 +44,16 @@
       </div>
 
       <div v-for="item in filteredActivities" :key="item.uid" class="table-row-modern riwayat-grid has-divider">
-        <!-- Jenis Kegiatan -->
         <span class="activity-type">
           <span v-if="item.tipe === 'Panen'" class="badge-tag green-tag">📦 Panen</span>
           <span v-else-if="item.tipe === 'Lingkungan'" class="badge-tag yellow-tag">🌡️ Lingkungan</span>
           <span v-else class="badge-tag blue-tag">📝 Pengamatan</span>
         </span>
         
-        <!-- ID Budidaya -->
         <span class="fw-700 hitam">BDY-{{ String(item.id_budidaya).padStart(3, '0') }}</span>
         
-        <!-- Tanggal -->
         <span class="text-muted">{{ formatDate(item.tanggal) }}</span>
         
-        <!-- Rincian -->
         <div class="details-col">
           <span class="detail-main fw-600">{{ item.deskripsi }}</span>
           <span v-if="item.catatan" class="text-sm text-muted">Catatan: {{ item.catatan }}</span>
@@ -92,7 +87,6 @@ const filteredActivities = computed(() => {
 function formatDate(value) {
   if (!value) return '-'
   const date = new Date(value)
-  // Menambahkan waktu agar lebih presisi untuk log kegiatan
   return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
@@ -111,7 +105,6 @@ async function loadRiwayat() {
 
     const combined = []
 
-    // Map Lingkungan Harian
     if (envRes?.success) {
       const myEnv = envRes.data.filter(item => Number(item.id_petugas) === userId)
       myEnv.forEach(e => {
@@ -126,7 +119,6 @@ async function loadRiwayat() {
       })
     }
 
-    // Map Pengamatan (Pertumbuhan / Fase)
     if (growthRes?.success) {
       const myGrowth = growthRes.data.filter(item => Number(item.id_petugas) === userId)
       myGrowth.forEach(g => {
@@ -140,8 +132,7 @@ async function loadRiwayat() {
         })
       })
     }
-
-    // Map Panen
+ 
     if (panenRes?.success) {
       const myHarvest = panenRes.data.filter(item => Number(item.id_petugas) === userId)
       myHarvest.forEach(p => {
@@ -156,7 +147,6 @@ async function loadRiwayat() {
       })
     }
 
-    // Sort by Date Descending (Terbaru di atas)
     combined.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal))
 
     allActivities.value = combined
@@ -198,7 +188,6 @@ onMounted(loadRiwayat)
 
 .mt-24 { margin-top: 24px; }
 
-/* Stats */
 .stats-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -218,7 +207,6 @@ onMounted(loadRiwayat)
 .text-green { color: #16a34a; }
 .text-blue { color: #2563eb; }
 
-/* Table Style */
 .table-card-modern {
   background: white;
   border-radius: 12px;

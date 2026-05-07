@@ -9,7 +9,6 @@
       </nav>
     </div>
 
-    <!-- Login Popup Modal -->
     <Teleport to="body">
       <div v-if="showLoginModal" class="modal-overlay" @click.self="showLoginModal = false">
       <div class="modal-content">

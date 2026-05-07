@@ -50,14 +50,12 @@
       </div>
     </section>
 
-    <!-- iot hero section -->
     <section class="iot-hero">
       <div class="iot-overlay">
         <h2>Pantau Perkembangan Jamur Secara Real-Time Dengan Perangkat IoT</h2>
       </div>
     </section>
 
-    <!-- Transparansi Data -->
     <section class="data-transparency">
       <div class="dt-text">
         <h2 class="dt-title">Transparansi Data<br/>Untuk Kemajuan Bersama</h2>

@@ -58,7 +58,6 @@
       </div>
     </div>
 
-    <!-- Table content -->
     <div class="table-card-modern">
       <div class="table-header-modern petugas-grid">
         <span>ID</span>
@@ -334,7 +333,6 @@ onMounted(async () => {
   margin-top: 16px;
 }
 
-/* Modern Button */
 .modern-btn {
   padding: 10px 20px;
   border-radius: 8px;
@@ -360,7 +358,6 @@ onMounted(async () => {
   background: #f9fafb;
 }
 
-/* Table Style */
 .table-card-modern {
   background: white;
   border-radius: 12px;

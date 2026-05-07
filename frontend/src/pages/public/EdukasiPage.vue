@@ -1,6 +1,5 @@
 <template>
   <div class="edu-page">
-    <!-- Hero Section -->
     <div class="container" style="margin-top: 10px;">
       <section class="hero-banner-new">
         <div class="hero-banner-bg" aria-hidden="true"></div>
@@ -20,7 +19,6 @@
       </section>
     </div>
 
-    <!-- Sticky Navigation -->
     <nav class="edu-nav">
       <div class="nav-container">
         <a href="#mengapa" class="nav-pill">Kenapa Jamur?</a>
@@ -32,7 +30,6 @@
     </nav>
 
     <div class="main-content">
-      <!-- Section: Kenapa Jamur -->
       <section id="mengapa" class="edu-section">
         <div class="section-header">
           <h2>🌟 Mengapa Membudidayakan Jamur?</h2>
@@ -57,7 +54,6 @@
         </div>
       </section>
 
-      <!-- Section: Syarat Tumbuh -->
       <section id="syarat-tumbuh" class="edu-section alt-bg">
         <div class="section-header">
           <h2>📊 Syarat Tumbuh Optimal</h2>
@@ -95,7 +91,6 @@
         </div>
       </section>
 
-      <!-- Section: Jenis Jamur -->
       <section id="jenis-jamur" class="edu-section">
         <div class="section-header">
           <h2>🍄 Mengenal Jenis Jamur Komersial</h2>
@@ -149,7 +144,6 @@
         </div>
       </section>
 
-      <!-- Section: Tahapan Budidaya (Timeline) -->
       <section id="tahapan" class="edu-section alt-bg">
         <div class="section-header">
           <h2>🛤️ Panduan Tahapan Budidaya (Step by Step)</h2>
@@ -201,7 +195,6 @@
         </div>
       </section>
 
-      <!-- Section: Troubleshooting -->
       <section id="masalah" class="edu-section">
         <div class="section-header">
           <h2>🧩 Troubleshooting & Identifikasi Masalah</h2>
@@ -263,11 +256,9 @@
 </template>
 
 <script setup>
-// Edukasi Page Logic
 </script>
 
 <style scoped>
-/* Base & Typography */
 .edu-page {
   font-family: 'Inter', sans-serif;
   color: #333;
@@ -277,7 +268,6 @@
 h1, h2, h3 { color: #111827; margin: 0; }
 a { text-decoration: none; }
 
-/* Hero Section */
 .hero-banner-new {
   position: relative;
   overflow: hidden;
@@ -387,7 +377,6 @@ a { text-decoration: none; }
   .hero-title { font-size: 36px; }
 }
 
-/* Sticky Nav */
 .edu-nav {
   background: white;
   border-bottom: 1px solid #e5e7eb;
@@ -423,7 +412,6 @@ a { text-decoration: none; }
 
 .nav-pill:hover { background: #e0e7ff; color: #4f46e5; }
 
-/* Main Content Wrapper */
 .main-content {
   max-width: 1000px;
   margin: 0 auto;
@@ -456,7 +444,6 @@ a { text-decoration: none; }
   margin: 0 auto;
 }
 
-/* Grid Layouts */
 .grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -473,7 +460,6 @@ a { text-decoration: none; }
   .grid-3, .grid-2 { grid-template-columns: 1fr; }
 }
 
-/* Feature Cards */
 .feature-card {
   background: white;
   padding: 30px;
@@ -488,7 +474,6 @@ a { text-decoration: none; }
 .feature-card h3 { font-size: 20px; margin-bottom: 12px; }
 .feature-card p { font-size: 14px; color: #4b5563; margin: 0; }
 
-/* Condition Cards */
 .condition-card {
   background: white;
   padding: 30px;
@@ -507,7 +492,6 @@ a { text-decoration: none; }
 .condition-card h3 { font-size: 18px; margin: 0; }
 .condition-card p { font-size: 14px; color: #4b5563; margin: 0; }
 
-/* Mushroom List */
 .mushroom-list {
   display: flex;
   flex-direction: column;
@@ -572,7 +556,6 @@ a { text-decoration: none; }
 
 .m-details ul li { margin-bottom: 6px; }
 
-/* Timeline */
 .timeline {
   display: flex;
   flex-direction: column;
@@ -637,7 +620,6 @@ a { text-decoration: none; }
   .tl-item::before { left: 23px; }
 }
 
-/* Accordion Troubleshooting */
 .accordion-container {
   max-width: 800px;
   margin: 0 auto;

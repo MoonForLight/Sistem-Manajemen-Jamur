@@ -37,7 +37,6 @@
       </div>
     </div>
 
-    <!-- Table content -->
     <div class="table-card-modern">
       <div class="table-header-modern media-grid green-header">
         <span>Nama Media</span>
@@ -237,7 +236,6 @@ onMounted(loadMedia)
   margin-top: 16px;
 }
 
-/* Modern Button */
 .modern-btn {
   padding: 10px 20px;
   border-radius: 8px;
@@ -260,7 +258,6 @@ onMounted(loadMedia)
   border: 1px solid #d1d5db;
 }
 
-/* Table Style */
 .table-card-modern {
   background: white;
   border-radius: 12px;
