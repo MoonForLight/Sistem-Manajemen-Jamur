@@ -98,7 +98,7 @@
         </div>
         <div class="mushroom-list">
           <div class="m-row">
-            <div class="m-image" style="background: linear-gradient(135deg, #e0f2fe, #bae6fd); font-size: 50px; display:flex; align-items:center; justify-content:center;">❄️</div>
+            <img class="m-image" src="/assets/jamur_tiram.png" alt="Jamur Tiram" style="object-fit: cover;" />
             <div class="m-details">
               <div class="m-title-row">
                 <h3>Jamur Tiram (Pleurotus ostreatus)</h3>
@@ -113,7 +113,7 @@
           </div>
 
           <div class="m-row">
-            <div class="m-image" style="background: linear-gradient(135deg, #ffedd5, #fdba74); font-size: 50px; display:flex; align-items:center; justify-content:center;">☁️</div>
+            <img class="m-image" src="/assets/jamur_kancing.png" alt="Jamur Kancing" style="object-fit: cover;" />
             <div class="m-details">
               <div class="m-title-row">
                 <h3>Jamur Kancing (Agaricus bisporus)</h3>
@@ -128,7 +128,7 @@
           </div>
 
           <div class="m-row">
-            <div class="m-image" style="background: linear-gradient(135deg, #dcfce7, #86efac); font-size: 50px; display:flex; align-items:center; justify-content:center;">🌾</div>
+            <img class="m-image" src="/assets/jamur_merang.png" alt="Jamur Merang" style="object-fit: cover;" />
             <div class="m-details">
               <div class="m-title-row">
                 <h3>Jamur Merang (Volvariella volvacea)</h3>
@@ -138,6 +138,21 @@
               <ul>
                 <li><strong>Media Tanam:</strong> Limbah jerami padi, ampas aren, kapas.</li>
                 <li><strong>Masa Panen:</strong> Sangat cepat, hanya 10-15 hari.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="m-row">
+            <img class="m-image" src="/assets/jamur_portobello.png" alt="Jamur Portobello" style="object-fit: cover;" />
+            <div class="m-details">
+              <div class="m-title-row">
+                <h3>Jamur Portobello (Agaricus bisporus)</h3>
+                <span class="m-badge medium">Tingkat: Menengah</span>
+              </div>
+              <p>Memiliki payung cokelat yang besar, lebar, dan berdaging tebal. Memiliki cita rasa "earthy" yang kuat dan tekstur menyerupai daging, sering dijadikan pengganti daging (steak jamur).</p>
+              <ul>
+                <li><strong>Media Tanam:</strong> Kompos jerami yang terfermentasi dan pupuk kandang.</li>
+                <li><strong>Masa Panen:</strong> Dipanen saat tudung sudah mekar penuh.</li>
               </ul>
             </div>
           </div>

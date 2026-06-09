@@ -617,3 +617,66 @@ main {
   color: var(--blue);
   border: 1px solid #c7d2fe;
 }
+
+/* --- RESPONSIVE UTILITIES --- */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .modal-content, .logout-modal {
+    width: 90% !important;
+    max-width: 90% !important;
+    padding: 24px !important;
+  }
+  
+  .feature-row {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .public-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Overlay for mobile sidebars */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 90; /* below sidebar which should be 100 */
+}
+
+/* Mobile Menu Toggle Button */
+.mobile-menu-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  color: var(--text);
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.table-card-modern { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-header-modern, .table-row-modern { min-width: 800px; }

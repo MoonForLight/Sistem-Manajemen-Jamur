@@ -168,28 +168,19 @@ const loading = ref(true)
 const d_now = new Date()
 const today = `${d_now.getFullYear()}-${String(d_now.getMonth() + 1).padStart(2, '0')}-${String(d_now.getDate()).padStart(2, '0')}`
 
+function getLocalDateString(d) {
+  if (!d) return '';
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 const activeBudidaya = computed(() => assignedBudidaya.value.filter(item => item.status === 'aktif').length)
-const todayTasks = computed(() => envRecords.value.filter(item => {
-  const d = item.tanggal_pengukuran
-  if (!d) return false
-  const dStr = typeof d === 'string' ? d : (() => {
-    const dx = new Date(d)
-    return `${dx.getFullYear()}-${String(dx.getMonth() + 1).padStart(2, '0')}-${String(dx.getDate()).padStart(2, '0')}`
-  })()
-  return dStr.startsWith(today)
-}).length)
+const todayTasks = computed(() => envRecords.value.filter(item => getLocalDateString(item.tanggal_pengukuran) === today).length)
 const monthlyHarvest = computed(() => {
   const currentMonth = today.slice(0, 7)
   return harvestRecords.value
-    .filter(item => {
-      const d = item.tanggal_panen
-      if (!d) return false
-      const dStr = typeof d === 'string' ? d : (() => {
-        const dx = new Date(d)
-        return `${dx.getFullYear()}-${String(dx.getMonth() + 1).padStart(2, '0')}`
-      })()
-      return dStr.startsWith(currentMonth)
-    })
+    .filter(item => getLocalDateString(item.tanggal_panen).startsWith(currentMonth))
     .reduce((sum, item) => sum + (Number(item.jumlah_panen) || 0), 0)
 })
 
@@ -228,17 +219,9 @@ const chartData = computed(() => {
   for (let i = 6; i >= 0; i--) {
     const d = new Date()
     d.setDate(d.getDate() - i)
-    const dateStr = d.toISOString().slice(0, 10)
+    const dateStr = getLocalDateString(d)
     labels.push(d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }))
-    dataList.push(growthRecords.value.filter(item => {
-      const dd = item.tanggal_pengamatan
-      if (!dd) return false
-      const ddStr = typeof dd === 'string' ? dd : (() => {
-        const dx = new Date(dd)
-        return `${dx.getFullYear()}-${String(dx.getMonth() + 1).padStart(2, '0')}-${String(dx.getDate()).padStart(2, '0')}`
-      })()
-      return ddStr.startsWith(dateStr)
-    }).length)
+    dataList.push(growthRecords.value.filter(item => getLocalDateString(item.tanggal_pengamatan) === dateStr).length)
   }
   return {
     labels,
@@ -256,8 +239,8 @@ const suhuChartData = computed(() => {
   for(let i=6; i>=0; i--) {
      const d = new Date(); d.setDate(d.getDate() - i)
      labels.push(d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }))
-     const dateStr = d.toISOString().slice(0, 10)
-     const recs = envRecords.value.filter(item => item.tanggal_pengukuran?.startsWith(dateStr))
+     const dateStr = getLocalDateString(d)
+     const recs = envRecords.value.filter(item => getLocalDateString(item.tanggal_pengukuran) === dateStr)
      
      const suhuRecs = recs.filter(item => item.suhu !== null && item.suhu !== undefined && item.suhu !== '')
      const humidRecs = recs.filter(item => item.kelembaban !== null && item.kelembaban !== undefined && item.kelembaban !== '')
@@ -342,15 +325,7 @@ async function loadDashboard() {
 
       const latestFase = records.find(r => r.fase !== null && r.fase !== undefined && r.fase !== '') || null
       
-      const hasDataToday = envForBudidaya.some(e => {
-        const d = e.tanggal_pengukuran
-        if (!d) return false
-        const dStr = typeof d === 'string' ? d : (() => {
-          const dx = new Date(d)
-          return `${dx.getFullYear()}-${String(dx.getMonth() + 1).padStart(2, '0')}-${String(dx.getDate()).padStart(2, '0')}`
-        })()
-        return dStr.startsWith(today)
-      })
+      const hasDataToday = envForBudidaya.some(e => getLocalDateString(e.tanggal_pengukuran) === today)
       
       let weather = await fetchRealWeather(b.nama_lokasi)
       if (weather === null) {

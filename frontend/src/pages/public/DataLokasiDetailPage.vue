@@ -18,15 +18,11 @@
           <h1>{{ lokasi.nama_lokasi }}</h1>
           <p class="page-description">{{ lokasi.alamat }} • {{ activeBudidaya.length }} Rak Aktif</p>
         </div>
-        <div class="header-actions" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <div class="header-actions">
           <input v-model="selectedMonth" type="month" class="modern-input" @change="processData" />
-          <button @click="exportBulananCSV" class="btn-primary" style="display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 10px 16px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            CSV
-          </button>
-          <button @click="exportPDF" class="btn-primary" style="background: #dc2626; display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 10px 16px;">
+          <button @click="exportBulananExcel" class="btn-export-csv">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-            PDF
+            Ekspor Excel
           </button>
         </div>
       </header>
@@ -75,13 +71,13 @@
         <div class="chart-box">
           <h4>Tren Suhu & Kelembapan Harian</h4>
           <div class="chart-wrapper">
-            <Line :data="envChartData" :options="chartOptions" />
+            <Line :data="envChartData" :options="chartOptions" ref="envChartRef" />
           </div>
         </div>
         <div class="chart-box">
           <h4>Akumulasi Panen Harian</h4>
           <div class="chart-wrapper">
-            <Bar :data="harvestChartData" :options="chartOptions" />
+            <Bar :data="harvestChartData" :options="chartOptions" ref="harvestChartRef" />
           </div>
         </div>
       </div>
@@ -89,10 +85,7 @@
       <div class="table-card-modern mt-24">
         <div class="table-header-flex">
           <h4 class="table-title" style="border-bottom: none;">Daftar Budidaya (Rak)</h4>
-          <button @click="exportRakCSV" class="btn-export">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Ekspor Data Rak
-          </button>
+
         </div>
         <div class="table-header-modern laporan-grid" style="border-top: 1px solid #e5e7eb;">
           <span>Kode</span>
@@ -125,6 +118,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { api } from '../../services/api'
+import ExcelJS from 'exceljs'
 
 import { Line, Bar } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, LinearScale, PointElement, CategoryScale, BarElement } from 'chart.js'
@@ -137,6 +131,9 @@ const loading = ref(true)
 const lokasi = ref(null)
 const budidayaList = ref([])
 const activeBudidaya = ref([])
+
+const envChartRef = ref(null)
+const harvestChartRef = ref(null)
 
 const allGrowthRecords = ref([])
 const allHarvestRecords = ref([])
@@ -170,18 +167,25 @@ const chartOptions = {
   scales: { y: { beginAtZero: true }, x: { ticks: { font: { family: 'Inter' } } } }
 }
 
+function getLocalDateString(d) {
+  if (!d) return '';
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function processData() {
   if (!selectedMonth.value || !lokasi.value) return
 
   const ym = selectedMonth.value
 
-  monthlyRecords.value = allGrowthRecords.value.filter(item => item.tanggal_pengamatan?.startsWith(ym))
+  monthlyRecords.value = allGrowthRecords.value.filter(item => getLocalDateString(item.tanggal_pengamatan).startsWith(ym))
     .sort((a, b) => new Date(a.tanggal_pengamatan) - new Date(b.tanggal_pengamatan))
     
-  monthlyHarvestRecords.value = allHarvestRecords.value.filter(item => item.tanggal_panen?.startsWith(ym))
+  monthlyHarvestRecords.value = allHarvestRecords.value.filter(item => getLocalDateString(item.tanggal_panen).startsWith(ym))
     .sort((a, b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen))
 
-  monthlyEnvRecords.value = allEnvRecords.value.filter(item => item.tanggal_pengukuran?.startsWith(ym))
+  monthlyEnvRecords.value = allEnvRecords.value.filter(item => getLocalDateString(item.tanggal_pengukuran).startsWith(ym))
     .sort((a, b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran))
 
   if (monthlyEnvRecords.value.length > 0) {
@@ -223,7 +227,7 @@ function processData() {
     const dayStr = String(i).padStart(2, '0')
     const dateStr = `${ym}-${dayStr}`
     
-    const dayRecs = monthlyEnvRecords.value.filter(r => r.tanggal_pengukuran?.startsWith(dateStr))
+    const dayRecs = monthlyEnvRecords.value.filter(r => getLocalDateString(r.tanggal_pengukuran) === dateStr)
     if (dayRecs.length > 0) {
       dailySuhu[i-1] = dayRecs.reduce((s, r) => s + Number(r.suhu || 0), 0) / dayRecs.length
       dailyKelembapan[i-1] = dayRecs.reduce((s, r) => s + Number(r.kelembaban || 0), 0) / dayRecs.length
@@ -240,7 +244,7 @@ function processData() {
 
   const dailyHarvest = Array(daysInMonth).fill(0)
   monthlyHarvestRecords.value.forEach(r => {
-    const dStr = r.tanggal_panen
+    const dStr = getLocalDateString(r.tanggal_panen)
     if (dStr) {
       const dayIndex = parseInt(dStr.split('-')[2], 10) - 1
       dailyHarvest[dayIndex] += Number(r.jumlah_panen) || 0
@@ -296,134 +300,277 @@ function getSuhuColorClass(val) {
   return 'text-green'
 }
 
-function exportBulananCSV() {
-  if (!lokasi.value) return;
-  
+async function exportBulananExcel() {
+  if (!lokasi.value || !selectedMonth.value) return;
   const ym = selectedMonth.value;
   const daysInMonth = new Date(ym.split('-')[0], ym.split('-')[1], 0).getDate();
   
-  const headers = ['Tanggal', 'Suhu Rata-rata (C)', 'Kelembapan Rata-rata (%)', 'Hasil Panen (Kg)'];
-  const rows = [];
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Laporan Bulanan', { views: [{ showGridLines: false }] });
+  
+  // Header
+  worksheet.mergeCells('A1:K1');
+  worksheet.getCell('A1').value = 'LAPORAN KOMPREHENSIF BUDIDAYA JAMUR - SISTEM MANAJEMEN JAMUR';
+  worksheet.getCell('A1').font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+  worksheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16A34A' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+  worksheet.getRow(1).height = 30;
+  
+  worksheet.addRow([]);
+  
+  // Informasi Umum
+  worksheet.mergeCells('A3:K3');
+  worksheet.getCell('A3').value = 'INFORMASI UMUM';
+  worksheet.getCell('A3').font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
+  worksheet.getCell('A3').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
+  worksheet.getCell('A3').alignment = { horizontal: 'left', vertical: 'middle' };
+  worksheet.getCell('A3').border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+  worksheet.getRow(3).height = 25;
+
+  const infoData = [
+    ['Lokasi', lokasi.value.nama_lokasi],
+    ['Bulan Laporan', formattedMonth.value],
+    ['Tanggal Diekspor', new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })],
+    ['Total Panen Bulan Ini', `${totalPanen.value} Kg`],
+    ['Total Pencatatan Sistem', `${monthlyEnvRecords.value.length} Kali`],
+    ['Catatan Analisis (AI)', aiInsight.value]
+  ];
+
+  infoData.forEach(info => {
+    const row = worksheet.addRow([info[0], info[1]]);
+    worksheet.mergeCells(`B${row.number}:K${row.number}`);
+    row.getCell(1).font = { bold: true };
+    row.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+    row.getCell(2).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+    row.getCell(2).alignment = { wrapText: true, vertical: 'middle' };
+    if(info[0] === 'Catatan Analisis (AI)') {
+      row.height = 45;
+    }
+  });
+
+  worksheet.addRow([]);
+  
+  // Section 1
+  const s1Title = worksheet.addRow(['1. RINGKASAN PERFORMA LINGKUNGAN & PANEN HARIAN']);
+  worksheet.mergeCells(`A${s1Title.number}:K${s1Title.number}`);
+  s1Title.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
+  s1Title.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
+  s1Title.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+  s1Title.height = 25;
+  s1Title.getCell(1).alignment = { vertical: 'middle' };
+
+  const header1 = [
+    'Tanggal', 'Suhu Rata-rata (°C)', 'Suhu Terendah (°C)', 'Suhu Tertinggi (°C)',
+    'Kelembapan Rata-rata (%)', 'Kelembapan Terendah (%)', 'Kelembapan Tertinggi (%)',
+    'Intensitas Cahaya (lux)', 'Frekuensi Catat', 'Total Hasil Panen (Kg)', 'Status Lingkungan'
+  ];
+  const rowH1 = worksheet.addRow(header1);
+  rowH1.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  rowH1.height = 30;
+  rowH1.eachCell((cell) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF374151' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+  });
   
   for (let i = 1; i <= daysInMonth; i++) {
     const dayStr = String(i).padStart(2, '0');
     const dateStr = `${ym}-${dayStr}`;
     
-    const dayRecs = monthlyEnvRecords.value.filter(r => r.tanggal_pengukuran?.startsWith(dateStr));
-    let avgS = '';
-    let avgK = '';
-    if (dayRecs.length > 0) {
-      avgS = (dayRecs.reduce((s, r) => s + Number(r.suhu || 0), 0) / dayRecs.length).toFixed(1);
-      avgK = (dayRecs.reduce((s, r) => s + Number(r.kelembaban || 0), 0) / dayRecs.length).toFixed(1);
+    const dayRecs = monthlyEnvRecords.value.filter(r => getLocalDateString(r.tanggal_pengukuran) === dateStr);
+    
+    let avgS = '', minS = '', maxS = '';
+    let avgK = '', minK = '', maxK = '';
+    let avgC = '';
+    let countEnv = dayRecs.length;
+    let insight = '-';
+    
+    if (countEnv > 0) {
+      const suhus = dayRecs.map(r => Number(r.suhu || 0));
+      const kelembabans = dayRecs.map(r => Number(r.kelembaban || 0));
+      const cahayas = dayRecs.map(r => Number(r.intensitas_cahaya || 0));
+      
+      avgS = Number((suhus.reduce((a,b) => a+b, 0) / countEnv).toFixed(1));
+      minS = Number(Math.min(...suhus).toFixed(1));
+      maxS = Number(Math.max(...suhus).toFixed(1));
+      
+      avgK = Number((kelembabans.reduce((a,b) => a+b, 0) / countEnv).toFixed(1));
+      minK = Number(Math.min(...kelembabans).toFixed(1));
+      maxK = Number(Math.max(...kelembabans).toFixed(1));
+      
+      avgC = Number((cahayas.reduce((a,b) => a+b, 0) / countEnv).toFixed(1));
+
+      if (avgS > 28) insight = 'Suhu Panas';
+      else if (avgS < 20) insight = 'Suhu Dingin';
+      else insight = 'Optimal';
     }
     
-    const harvRecs = monthlyHarvestRecords.value.filter(r => r.tanggal_panen?.startsWith(dateStr));
-    let totHarv = 0;
-    if (harvRecs.length > 0) {
-      totHarv = harvRecs.reduce((acc, r) => acc + Number(r.jumlah_panen || 0), 0);
-    }
+    const harvRecs = monthlyHarvestRecords.value.filter(r => getLocalDateString(r.tanggal_panen) === dateStr);
+    let totHarv = harvRecs.reduce((acc, r) => acc + Number(r.jumlah_panen || 0), 0);
     
-    rows.push([
+    const row = worksheet.addRow([
       dateStr,
-      avgS,
-      avgK,
-      totHarv > 0 ? totHarv.toFixed(1) : '0'
+      avgS, minS, maxS,
+      avgK, minK, maxK,
+      avgC,
+      countEnv,
+      totHarv > 0 ? Number(totHarv.toFixed(1)) : 0,
+      insight
     ]);
-  }
-  
-  const csvContent = [
-    headers.join(','),
-    ...rows.map(e => e.join(','))
-  ].join('\n');
-  
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  link.setAttribute('href', url);
-  link.setAttribute('download', `Laporan_Bulanan_${lokasi.value.nama_lokasi.replace(/\s+/g, '_')}_${ym}.csv`);
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-function exportRakCSV() {
-  if (budidayaList.value.length === 0) return;
-  
-  const headers = ['Kode', 'Jenis Jamur', 'Status', 'Tanggal Mulai', 'Tanggal Selesai'];
-  const rows = budidayaList.value.map(b => [
-    `BDY-${String(b.id_budidaya).padStart(3, '0')}`,
-    b.nama_jamur || '-',
-    b.status === 'aktif' ? 'Aktif' : 'Selesai',
-    formatDate(b.tanggal_mulai),
-    formatDate(b.tanggal_selesai)
-  ]);
-  
-  const csvContent = [
-    headers.join(','),
-    ...rows.map(e => e.join(','))
-  ].join('\n');
-  
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  link.setAttribute('href', url);
-  link.setAttribute('download', `Data_Rak_${lokasi.value?.nama_lokasi?.replace(/\s+/g, '_') || 'Lokasi'}.csv`);
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-function loadHtml2Pdf() {
-  return new Promise((resolve, reject) => {
-    if (window.html2pdf) return resolve(window.html2pdf);
-    const script = document.createElement('script');
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-    script.onload = () => resolve(window.html2pdf);
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-}
-
-async function exportPDF() {
-  try {
-    const html2pdf = await loadHtml2Pdf();
-    const element = document.querySelector('.public-container');
     
-    const noPrintElements = document.querySelectorAll('.header-actions, .btn-export, .back-link');
-    noPrintElements.forEach(el => el.style.display = 'none');
-
-    // Pastikan background putih saat capture
-    const originalBg = element.style.backgroundColor;
-    element.style.backgroundColor = '#ffffff';
-
-    const opt = {
-      margin:       0.4,
-      filename:     `Laporan_${lokasi.value.nama_lokasi.replace(/\s+/g, '_')}_${selectedMonth.value}.pdf`,
-      image:        { type: 'jpeg', quality: 1 },
-      html2canvas:  { 
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        windowWidth: 1200,
-        backgroundColor: '#ffffff'
-      },
-      jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
-      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-
-    await html2pdf().set(opt).from(element).save();
-
-    // Restore styles
-    element.style.backgroundColor = originalBg;
-    noPrintElements.forEach(el => el.style.display = '');
-
-  } catch (error) {
-    console.error("Gagal mengekspor PDF:", error);
-    alert("Gagal memuat pustaka PDF. Periksa koneksi internet.");
+    row.eachCell((cell, colNumber) => {
+      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+      cell.alignment = { horizontal: colNumber === 1 || colNumber === 11 ? 'left' : 'right', vertical: 'middle' };
+    });
   }
+  
+  worksheet.addRow([]);
+  
+  // Charts Section
+  const chartStartRow = worksheet.lastRow.number + 2;
+  worksheet.getCell(`A${chartStartRow}`).value = 'GRAFIK ANALISIS BULANAN';
+  worksheet.getCell(`A${chartStartRow}`).font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
+  worksheet.getCell(`A${chartStartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
+  worksheet.mergeCells(`A${chartStartRow}:K${chartStartRow}`);
+  worksheet.getCell(`A${chartStartRow}`).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+  worksheet.getRow(chartStartRow).height = 25;
+  worksheet.getCell(`A${chartStartRow}`).alignment = { vertical: 'middle' };
+  
+  let imagesAdded = false;
+  if (envChartRef.value?.chart?.canvas) {
+    try {
+      const imgData = envChartRef.value.chart.canvas.toDataURL('image/png');
+      const imageId = workbook.addImage({ base64: imgData, extension: 'png' });
+      worksheet.addImage(imageId, {
+        tl: { col: 0, row: chartStartRow + 1 },
+        ext: { width: 500, height: 250 }
+      });
+      imagesAdded = true;
+    } catch(e) { console.error('Error adding env chart', e); }
+  }
+  if (harvestChartRef.value?.chart?.canvas) {
+    try {
+      const imgData2 = harvestChartRef.value.chart.canvas.toDataURL('image/png');
+      const imageId2 = workbook.addImage({ base64: imgData2, extension: 'png' });
+      worksheet.addImage(imageId2, {
+        tl: { col: 6, row: chartStartRow + 1 },
+        ext: { width: 500, height: 250 }
+      });
+      imagesAdded = true;
+    } catch(e) { console.error('Error adding harvest chart', e); }
+  }
+  
+  if (imagesAdded) {
+    for(let i=0; i<15; i++) worksheet.addRow([]);
+  }
+
+  worksheet.addRow([]);
+  
+  // Section 2
+  const s2Title = worksheet.addRow(['2. LOG DATA MENTAH LINGKUNGAN (SENSOR & MANUAL)']);
+  worksheet.mergeCells(`A${s2Title.number}:K${s2Title.number}`);
+  s2Title.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
+  s2Title.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
+  s2Title.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+  s2Title.height = 25;
+  s2Title.getCell(1).alignment = { vertical: 'middle' };
+
+  const header2 = ['Kode Rak (Budidaya)', 'Waktu Pencatatan', 'Suhu (°C)', 'Kelembapan (%)', 'Intensitas Cahaya (lux)', 'Petugas Pencatat', '', '', '', '', ''];
+  const rowH2 = worksheet.addRow(header2.slice(0, 6)); // We will merge across but let's just make columns look fine
+  rowH2.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  rowH2.height = 30;
+  rowH2.eachCell((cell) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF374151' } };
+    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  });
+  
+  if (monthlyEnvRecords.value.length === 0) {
+    const emptyRow = worksheet.addRow(['(Tidak ada data lingkungan tercatat pada bulan ini)']);
+    worksheet.mergeCells(`A${emptyRow.number}:F${emptyRow.number}`);
+    emptyRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+  } else {
+    monthlyEnvRecords.value.forEach(r => {
+      const row = worksheet.addRow([
+        `BDY-${String(r.id_budidaya).padStart(3, '0')}`,
+        `${formatDate(r.tanggal_pengukuran)} ${new Date(r.tanggal_pengukuran).toLocaleTimeString('id-ID')}`,
+        r.suhu ? Number(r.suhu) : '-',
+        r.kelembaban ? Number(r.kelembaban) : '-',
+        r.intensitas_cahaya ? Number(r.intensitas_cahaya) : '-',
+        r.nama_petugas || '-'
+      ]);
+      row.eachCell((cell, colNumber) => {
+        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        cell.alignment = { horizontal: colNumber <= 2 || colNumber === 6 ? 'left' : 'right', vertical: 'middle' };
+      });
+    });
+  }
+
+  worksheet.addRow([]);
+  
+  // Section 3
+  const s3Title = worksheet.addRow(['3. LOG DATA MENTAH PANEN (HASIL PRODUKSI)']);
+  worksheet.mergeCells(`A${s3Title.number}:K${s3Title.number}`);
+  s3Title.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
+  s3Title.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
+  s3Title.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+  s3Title.height = 25;
+  s3Title.getCell(1).alignment = { vertical: 'middle' };
+
+  const header3 = ['Kode Rak (Budidaya)', 'Tanggal Panen', 'Jumlah Bersih (Kg)', 'Petugas Pencatat'];
+  const rowH3 = worksheet.addRow(header3);
+  rowH3.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  rowH3.height = 30;
+  rowH3.eachCell((cell) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF374151' } };
+    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  });
+  
+  if (monthlyHarvestRecords.value.length === 0) {
+    const emptyRow = worksheet.addRow(['(Tidak ada data panen tercatat pada bulan ini)']);
+    worksheet.mergeCells(`A${emptyRow.number}:D${emptyRow.number}`);
+    emptyRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+  } else {
+    monthlyHarvestRecords.value.forEach(r => {
+      const row = worksheet.addRow([
+        `BDY-${String(r.id_budidaya).padStart(3, '0')}`,
+        formatDate(r.tanggal_panen),
+        r.jumlah_panen ? Number(r.jumlah_panen) : '-',
+        r.nama_petugas || '-'
+      ]);
+      row.eachCell((cell, colNumber) => {
+        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        cell.alignment = { horizontal: colNumber >= 7 ? 'right' : 'left', vertical: 'middle' };
+      });
+    });
+  }
+
+  // Adjust columns widths
+  worksheet.columns = [
+    { width: 15 }, // Tanggal / Kode Rak
+    { width: 18 }, // Suhu Rata-rata / Waktu / Tanggal
+    { width: 18 }, // Suhu Terendah / Suhu
+    { width: 18 }, // Suhu Tertinggi / Kelembapan
+    { width: 18 }, // Kelembapan Rata / Intensitas
+    { width: 18 }, // Kelembapan Min / Petugas
+    { width: 18 }, // Kelembapan Max
+    { width: 15 }, // Cahaya
+    { width: 15 }, // Frekuensi
+    { width: 18 }, // Total Panen
+    { width: 18 }  // Status
+  ];
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Laporan_Lengkap_${lokasi.value.nama_lokasi.replace(/\s+/g, '_')}_${ym}.xlsx`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 onMounted(loadData)
@@ -468,8 +615,13 @@ onMounted(loadData)
 .table-card-modern { background: white; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb; }
 .table-header-flex { display: flex; justify-content: space-between; align-items: center; padding-right: 24px; }
 .table-title { margin: 0; padding: 20px 24px; border-bottom: 1px solid #e5e7eb; font-size: 16px; color: #111827; font-weight: 800; }
-.btn-export { background: white; color: #111827; border: 1px solid #d1d5db; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
-.btn-export:hover { background: #f9fafb; border-color: #9ca3af; }
+.header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.btn-export-csv { background: #16a34a; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2); }
+.btn-export-csv:hover { background: #15803d; transform: translateY(-1px); box-shadow: 0 6px 8px -1px rgba(22, 163, 74, 0.3); }
+.btn-export-pdf { background: #dc2626; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2); }
+.btn-export-pdf:hover { background: #b91c1c; transform: translateY(-1px); box-shadow: 0 6px 8px -1px rgba(220, 38, 38, 0.3); }
+.btn-export { background: white; color: #16a34a; border: 1px solid #16a34a; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+.btn-export:hover { background: #f0fdf4; border-color: #15803d; color: #15803d; box-shadow: 0 2px 4px rgba(22, 163, 74, 0.1); }
 .mt-24 { margin-top: 24px; }
 .laporan-grid { display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 1fr; gap: 16px; align-items: center; padding: 16px 24px; font-size: 14px; }
 .table-header-modern { background: #f9fafb; font-weight: 700; color: #4b5563; border-bottom: 1px solid #e5e7eb; text-transform: uppercase; font-size: 12px; }
@@ -557,7 +709,11 @@ onMounted(loadData)
 
 @media(max-width: 640px) {
   .stats-row { grid-template-columns: 1fr; }
-  .laporan-grid { grid-template-columns: 1fr 1fr; }
-  .laporan-grid span:nth-child(n+3) { display: none; }
+  .header-actions { flex-direction: column; align-items: stretch; width: 100%; }
+  .modern-input, .btn-export-csv, .btn-export-pdf { width: 100%; justify-content: center; box-sizing: border-box; }
+  .table-card-modern { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
+  .laporan-grid { min-width: 800px; }
+  .table-header-flex { flex-direction: column; align-items: flex-start; gap: 12px; padding-bottom: 16px; }
+  .btn-export { width: 100%; justify-content: center; margin-left: 24px; width: calc(100% - 48px); }
 }
 </style>

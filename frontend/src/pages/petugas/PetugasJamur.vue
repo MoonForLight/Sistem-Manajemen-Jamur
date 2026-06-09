@@ -123,7 +123,26 @@
             <span class="label">Update Hari Ini</span>
             <span class="value text-green fw-bold">{{ todayFormatted }}</span>
           </div>
+          <div class="info-actions" style="margin-left: auto; display: flex; align-items: center;">
+            <button @click="openSelesaiModal" class="btn-warning" style="background-color: #f59e0b; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.2s;">
+              Selesaikan Siklus
+            </button>
+          </div>
         </div>
+
+      <div v-if="isSelesaiModalOpen" class="modal-overlay">
+        <div class="logout-modal fade-in-up" style="background: white; border-radius: 16px; padding: 32px; width: 340px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
+          <div class="modal-icon" style="font-size: 48px; margin-bottom: 16px;">📦</div>
+          <h3 class="modal-title" style="margin: 0 0 8px 0; font-size: 20px; font-weight: 800; color: #111827;">Selesaikan Siklus?</h3>
+          <p class="modal-text" style="margin: 0 0 24px 0; color: #6b7280; font-size: 14px;">Rak yang digunakan akan kembali tersedia. Siklus ini tidak dapat dikembalikan ke status aktif.</p>
+          <div class="modal-actions" style="display: flex; gap: 12px;">
+            <button class="btn-cancel" @click="closeSelesaiModal" style="flex: 1; padding: 10px; border: 1px solid #d1d5db; background: white; border-radius: 8px; font-weight: 600; color: #374151; cursor: pointer;">Batal</button>
+            <button class="btn-confirm" @click="confirmSelesai" :disabled="isSubmittingSelesai" style="flex: 1; padding: 10px; border: none; background: #f59e0b; color: white; border-radius: 8px; font-weight: 600; cursor: pointer;">
+              {{ isSubmittingSelesai ? 'Tunggu...' : 'Ya, Selesaikan' }}
+            </button>
+          </div>
+        </div>
+      </div>
 
         <div class="tabs-container">
           <button :class="['tab-btn', { active: activeForm === 'lingkungan' }]" @click="setActiveForm('lingkungan')">Data Lingkungan</button>
@@ -251,6 +270,37 @@ const loading = ref(true)
 const selectedBudidaya = ref(null)
 const activeForm = ref('lingkungan')
 const isSubmitting = ref(false)
+const isSelesaiModalOpen = ref(false)
+const isSubmittingSelesai = ref(false)
+
+function openSelesaiModal() {
+  isSelesaiModalOpen.value = true
+}
+
+function closeSelesaiModal() {
+  isSelesaiModalOpen.value = false
+}
+
+async function confirmSelesai() {
+  isSubmittingSelesai.value = true
+  try {
+    const payload = { ...selectedBudidaya.value, status: 'selesai' }
+    const res = await budidayaService.update(selectedBudidaya.value.id_budidaya, payload)
+    if (res?.success) {
+      showToast('Siklus budidaya berhasil diselesaikan!', 'success')
+      closeSelesaiModal()
+      selectedBudidaya.value = null
+      await fetchBudidaya()
+    } else {
+      showToast('Gagal: ' + (res?.message || 'Terjadi kesalahan'), 'error')
+    }
+  } catch (e) {
+    console.error(e)
+    showToast(e.response?.data?.message || 'Koneksi ke server gagal', 'error')
+  } finally {
+    isSubmittingSelesai.value = false
+  }
+}
 
 const toast = ref({ show: false, message: '', type: 'success' })
 let toastTimer = null
@@ -891,15 +941,15 @@ onMounted(async () => {
 }
 
 .modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(17, 24, 39, 0.5);
-  backdrop-filter: blur(2px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 50;
-}
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 24, 39, 0.5);
+    backdrop-filter: blur(2px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
 
 .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }

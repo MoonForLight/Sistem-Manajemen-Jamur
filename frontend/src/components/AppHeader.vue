@@ -2,10 +2,16 @@
   <header class="navbar">
     <div class="navbar-inner">
       <RouterLink to="/" class="brand" style="text-decoration: none; color: #005F05;">Myco<span style="color: #66BB69;">Flow</span></RouterLink>
-      <nav class="navlinks">
-        <RouterLink to="/edukasi">Edukasi</RouterLink>
-        <RouterLink to="/data">Data</RouterLink>
-        <a href="#" @click.prevent="showLoginModal = true" style="color: #005F05; cursor: pointer; text-decoration:none; font-weight: 800;">Login</a>
+      
+      <!-- Mobile toggle button -->
+      <button class="mobile-menu-btn" @click="isMobileMenuOpen = !isMobileMenuOpen">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
+
+      <nav class="navlinks" :class="{ 'is-open': isMobileMenuOpen }">
+        <RouterLink to="/edukasi" @click="isMobileMenuOpen = false">Edukasi</RouterLink>
+        <RouterLink to="/data" @click="isMobileMenuOpen = false">Data</RouterLink>
+        <a href="#" @click.prevent="showLoginModal = true; isMobileMenuOpen = false" style="color: #005F05; cursor: pointer; text-decoration:none; font-weight: 800;">Login</a>
       </nav>
     </div>
 
@@ -46,6 +52,7 @@ import { authService } from '../services/authService.js'
 
 const router = useRouter()
 const showLoginModal = ref(false)
+const isMobileMenuOpen = ref(false)
 const username = ref('')
 const password = ref('')
 const isLoading = ref(false)
@@ -78,6 +85,24 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
+@media (max-width: 768px) {
+  .navlinks {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 60px; /* Adjust according to navbar height */
+    left: 0;
+    width: 100%;
+    background: white;
+    padding: 20px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-top: 1px solid #eee;
+  }
+  .navlinks.is-open {
+    display: flex;
+  }
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;

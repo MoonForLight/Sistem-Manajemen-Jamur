@@ -155,6 +155,13 @@ const d_now = new Date()
 const today = `${d_now.getFullYear()}-${String(d_now.getMonth() + 1).padStart(2, '0')}-${String(d_now.getDate()).padStart(2, '0')}`
 const currentMonth = today.slice(0, 7)
 
+function getLocalDateString(d) {
+  if (!d) return '';
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 const locationStats = computed(() => {
   return locations.value.slice(0, 5).map(loc => {
     const actives = budidayaList.value.filter(b => b.id_lokasi === loc.id_lokasi && b.status === 'aktif')
@@ -218,12 +225,8 @@ const suhuChartData = computed(() => {
   for(let i=6; i>=0; i--) {
      const d = new Date(); d.setDate(d.getDate() - i)
      labels.push(d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }))
-     const dateStr = d.toISOString().slice(0, 10)
-     const recs = envRecords.value.filter(item => {
-       const dd = item.tanggal_pengukuran
-       const ddStr = typeof dd === 'string' ? dd : new Date(dd).toISOString()
-       return ddStr.startsWith(dateStr)
-     })
+     const dateStr = getLocalDateString(d)
+     const recs = envRecords.value.filter(item => getLocalDateString(item.tanggal_pengukuran) === dateStr)
      
      const suhuRecs = recs.filter(item => item.suhu !== null && item.suhu !== undefined && item.suhu !== '')
      const humidRecs = recs.filter(item => item.kelembaban !== null && item.kelembaban !== undefined && item.kelembaban !== '')
@@ -293,7 +296,7 @@ async function loadDashboard() {
     if (panenRes?.success) {
       harvestRecords.value = panenRes.data
       stats.value.panenBulanIni = harvestRecords.value
-        .filter(p => p.tanggal_panen?.startsWith(currentMonth))
+        .filter(p => getLocalDateString(p.tanggal_panen).startsWith(currentMonth))
         .reduce((acc, curr) => acc + (Number(curr.jumlah_panen) || 0), 0)
         .toFixed(1)
     }

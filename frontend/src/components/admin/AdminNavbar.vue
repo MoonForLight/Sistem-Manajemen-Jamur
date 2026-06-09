@@ -1,7 +1,12 @@
 <template>
   <header class="top-header">
-    <div class="logo">
-      <span style="color: #005F05;">Myco</span><span style="color: #66BB69;">Flow</span>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <button class="mobile-menu-btn" @click="$emit('toggle-sidebar')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
+      <div class="logo">
+        <span style="color: #005F05;">Myco</span><span style="color: #66BB69;">Flow</span>
+      </div>
     </div>
     <div class="header-right">
       <span class="greeting">Halo, Admin!!</span>
@@ -10,7 +15,7 @@
 
     <div v-if="showLogoutModal" class="modal-overlay">
       <div class="logout-modal fade-in-up">
-        <div class="modal-icon">👋</div>
+        <div class="modal-icon">🚪</div>
         <h3 class="modal-title">Konfirmasi Logout</h3>
         <p class="modal-text">Apakah Anda yakin ingin keluar dari halaman Admin?</p>
         <div class="modal-actions">
@@ -25,6 +30,8 @@
 <script setup>
 import { ref } from 'vue'
 import { authService } from '../../services/authService.js'
+
+defineEmits(['toggle-sidebar'])
 
 const showLogoutModal = ref(false)
 
@@ -41,8 +48,13 @@ const confirmLogout = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 32px;
+  padding: 0 16px;
   border-bottom: 1px solid #eee;
+}
+@media (min-width: 768px) {
+  .top-header {
+    padding: 0 32px;
+  }
 }
 .logo {
   font-size: 24px;

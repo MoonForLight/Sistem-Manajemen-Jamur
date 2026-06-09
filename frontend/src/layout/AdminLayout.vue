@@ -1,8 +1,15 @@
 <template>
   <div class="admin-layout">
-    <AdminNavbar />
+    <AdminNavbar @toggle-sidebar="isSidebarOpen = !isSidebarOpen" />
     <div class="layout-body">
-      <AdminSidebar />
+      <!-- Overlay for mobile when sidebar is open -->
+      <div 
+        v-if="isSidebarOpen" 
+        class="sidebar-overlay" 
+        @click="isSidebarOpen = false"
+      ></div>
+      
+      <AdminSidebar :is-open="isSidebarOpen" @close="isSidebarOpen = false" />
       <main class="content-area">
         <RouterView />
       </main>
@@ -11,9 +18,18 @@
 </template>
 
 <script setup>
-import { RouterView } from 'vue-router'
+import { ref, watch } from 'vue'
+import { RouterView, useRoute } from 'vue-router'
 import AdminSidebar from '../components/admin/AdminSidebar.vue'
 import AdminNavbar from '../components/admin/AdminNavbar.vue'
+
+const isSidebarOpen = ref(false)
+const route = useRoute()
+
+// Tutup sidebar otomatis saat pindah halaman di mobile
+watch(() => route.path, () => {
+  isSidebarOpen.value = false
+})
 </script>
 
 <style scoped>
@@ -29,11 +45,19 @@ import AdminNavbar from '../components/admin/AdminNavbar.vue'
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 .content-area {
   flex: 1;
   padding: 24px 32px;
   overflow-y: auto;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .content-area {
+    padding: 16px;
+  }
 }
 
 @media print {

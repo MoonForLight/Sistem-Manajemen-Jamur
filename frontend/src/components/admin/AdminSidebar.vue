@@ -1,5 +1,5 @@
 <template>
-  <aside class="sidebar">
+  <aside class="sidebar" :class="{ 'is-open': isOpen }">
     <nav class="sidebar-nav">
       <RouterLink to="/admin/dashboard" class="nav-item">
         <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M11 3H3v8h8V3zm10 0h-8v8h8V3zm-10 10H3v8h8v-8zm10 0h-8v8h8v-8z"/></svg>
@@ -49,6 +49,13 @@
 import { ref, watchEffect } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
+defineProps({
+  isOpen: {
+    type: Boolean,
+    default: false
+  }
+})
+
 const route = useRoute()
 const isMasterOpen = ref(false)
 
@@ -67,6 +74,20 @@ watchEffect(() => {
   padding: 16px;
   display: flex;
   flex-direction: column;
+  transition: transform 0.3s ease;
+  z-index: 100;
+}
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+  }
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
 }
 .sidebar-nav {
   display: flex;

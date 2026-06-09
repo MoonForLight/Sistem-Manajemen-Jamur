@@ -1,5 +1,14 @@
 <template>
   <div class="petugas-page profile-page">
+    <Transition name="toast">
+      <div v-if="toast.show" :class="['toast-notification', toast.type]">
+        <div class="toast-icon">
+          <svg v-if="toast.type === 'success'" viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          <svg v-else viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        </div>
+        <span class="toast-message">{{ toast.message }}</span>
+      </div>
+    </Transition>
     <div v-if="loading" class="status-message loading-state py-4">Memuat data profil Anda...</div>
     <div v-if="error" class="status-message error py-4">{{ error }}</div>
 
@@ -161,6 +170,15 @@ const isSavingInfo = ref(false)
 const isSavingPass = ref(false)
 const showPasswordModal = ref(false)
 
+const toast = ref({ show: false, message: '', type: 'success' })
+let toastTimer = null
+
+function showToast(message, type = 'success') {
+  if (toastTimer) clearTimeout(toastTimer)
+  toast.value = { show: true, message, type }
+  toastTimer = setTimeout(() => { toast.value.show = false }, 3500)
+}
+
 const fileInput = ref(null)
 
 const formInfo = ref({
@@ -261,13 +279,13 @@ async function handleFileChange(event) {
     if (uploadRes.success) {
       formInfo.value.foto_profil = uploadRes.filename
       profile.value.foto_profil = uploadRes.filename
-      alert('Foto profil berhasil diunggah! Jangan lupa klik Simpan Perubahan.')
+      showToast('Foto profil diunggah! Jangan lupa Simpan Perubahan.', 'success')
     } else {
-      alert(uploadRes.message || 'Gagal mengunggah foto.')
+      showToast(uploadRes.message || 'Gagal mengunggah foto.', 'error')
     }
   } catch (err) {
     console.error(err)
-    alert('Terjadi kesalahan saat mengunggah foto.')
+    showToast('Terjadi kesalahan saat mengunggah foto.', 'error')
   }
 }
 
@@ -282,7 +300,7 @@ async function updateProfile() {
       foto_profil: formInfo.value.foto_profil
     })
     if (res?.success) {
-      alert('Profil berhasil diperbarui!')
+      showToast('Profil berhasil diperbarui!', 'success')
       const user = JSON.parse(localStorage.getItem('user'))
       if (user) {
         user.nama = formInfo.value.nama
@@ -291,11 +309,11 @@ async function updateProfile() {
       }
       loadProfile()
     } else {
-      alert(res?.message || 'Gagal memperbarui profil.')
+      showToast(res?.message || 'Gagal memperbarui profil.', 'error')
     }
   } catch (err) {
     console.error(err)
-    alert('Terjadi kesalahan saat memperbarui profil.')
+    showToast('Terjadi kesalahan saat memperbarui profil.', 'error')
   } finally {
     isSavingInfo.value = false
   }
@@ -322,7 +340,7 @@ async function updatePassword() {
     })
     
     if (res?.success) {
-      alert('Kata sandi berhasil diperbarui!')
+      showToast('Kata sandi berhasil diperbarui!', 'success')
       closePasswordModal()
     } else {
       passError.value = res?.message || 'Gagal memperbarui kata sandi.'
@@ -339,6 +357,40 @@ onMounted(loadProfile)
 </script>
 
 <style scoped>
+.toast-notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 28px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+  min-width: 320px;
+  max-width: 500px;
+}
+.toast-notification.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.toast-notification.success .toast-icon { color: #16a34a; }
+.toast-notification.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.toast-notification.error .toast-icon { color: #dc2626; }
+.toast-icon { display: flex; align-items: center; flex-shrink: 0; }
+.toast-message { flex: 1; line-height: 1.4; }
+.toast-enter-active { animation: toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+.toast-leave-active { animation: toastOut 0.25s ease-in forwards; }
+@keyframes toastIn {
+  from { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+@keyframes toastOut {
+  from { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  to { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
+}
+
 .petugas-page { display: flex; flex-direction: column; gap: 24px; padding-bottom: 40px; }
 
 
@@ -410,7 +462,7 @@ onMounted(loadProfile)
 .bg-green-light { background: #f0fdf4; color: #16a34a; }
 .bg-yellow-light { background: #fffbeb; color: #d97706; }
 
-.modal-overlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.5); backdrop-filter: blur(2px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(17, 24, 39, 0.5); backdrop-filter: blur(2px); display: flex; justify-content: center; align-items: center; z-index: 9999; }
 .password-modal { background: white; border-radius: 16px; padding: 32px; width: 100%; max-width: 450px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .modal-title { margin: 0; font-size: 20px; font-weight: 800; color: #111827; }

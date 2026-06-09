@@ -18,24 +18,29 @@
     </header>
 
 
-    <div class="table-card">
-      <div class="table-header budidaya-grid">
+    <div class="table-card-modern">
+      <div class="table-header-modern budidaya-grid green-header">
         <span>ID</span>
         <span>Lokasi</span>
         <span>Jenis Jamur</span>
         <span>Rak</span>
         <span>Petugas</span>
         <span>Status</span>
+        <span class="text-center">Aksi</span>
       </div>
 
       <div class="table-body">
-        <div v-if="loading" class="empty-state">Memuat data budidaya...</div>
-        <div v-else-if="!loading && !filteredBudidayaList.length" class="empty-state">
-          <svg viewBox="0 0 24 24" width="48" height="48" class="text-muted mb-4 mx-auto block"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/></svg>
-          <p>Belum ada data budidaya yang cocok.</p>
+        <div v-if="loading" class="table-row-modern budidaya-grid empty-row">
+          <span style="grid-column: 1 / -1; text-align: center;">Memuat data budidaya...</span>
+        </div>
+        <div v-else-if="!loading && !filteredBudidayaList.length" class="table-row-modern budidaya-grid empty-row">
+          <div style="grid-column: 1 / -1; text-align: center;">
+            <svg viewBox="0 0 24 24" width="48" height="48" class="text-muted mb-4 mx-auto block"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/></svg>
+            <p>Belum ada data budidaya yang cocok.</p>
+          </div>
         </div>
 
-        <div v-for="item in filteredBudidayaList" :key="item.id_budidaya" class="table-row budidaya-grid">
+        <div v-for="item in filteredBudidayaList" :key="item.id_budidaya" class="table-row-modern budidaya-grid has-divider">
           <span class="id-col">BDY-{{ item.id_budidaya?.toString().padStart(3, '0') || '000' }}</span>
           <span class="fw-bold">{{ item.nama_lokasi }}</span>
           <span>{{ item.nama_jamur }}</span>
@@ -49,9 +54,35 @@
               {{ item.status || 'Aktif' }}
             </span>
           </span>
+          <span class="text-center">
+            <button 
+              v-if="item.status !== 'selesai'" 
+              @click="openSelesaiModal(item)" 
+              class="btn-selesai-small" 
+              title="Selesaikan Siklus"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            </button>
+          </span>
         </div>
       </div>
     </div>
+
+    <!-- Modal Konfirmasi Selesai -->
+    <div v-if="isSelesaiModalOpen" class="modal-overlay">
+      <div class="logout-modal fade-in-up" style="background: white; border-radius: 16px; padding: 32px; width: 340px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
+        <div class="modal-icon" style="font-size: 48px; margin-bottom: 16px;">📦</div>
+        <h3 class="modal-title" style="margin: 0 0 8px 0; font-size: 20px; font-weight: 800; color: #111827;">Selesaikan Siklus?</h3>
+        <p class="modal-text" style="margin: 0 0 24px 0; color: #6b7280; font-size: 14px;">Rak yang digunakan akan kembali tersedia. Siklus ini tidak dapat dikembalikan ke status aktif.</p>
+        <div class="modal-actions" style="display: flex; gap: 12px;">
+          <button class="btn-cancel" @click="closeSelesaiModal" style="flex: 1; padding: 10px; border: 1px solid #d1d5db; background: white; border-radius: 8px; font-weight: 600; color: #374151; cursor: pointer;">Batal</button>
+          <button class="btn-confirm" @click="confirmSelesai" :disabled="isSubmittingSelesai" style="flex: 1; padding: 10px; border: none; background: #f59e0b; color: white; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            {{ isSubmittingSelesai ? 'Tunggu...' : 'Ya, Selesaikan' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -63,6 +94,10 @@ import { budidayaService, lokasiService, jenisJamurService, mediaTanamService, u
 const budidayaList = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
+
+const isSelesaiModalOpen = ref(false)
+const isSubmittingSelesai = ref(false)
+const selectedItem = ref(null)
 
 const filteredBudidayaList = computed(() => {
   if (!searchQuery.value) return budidayaList.value
@@ -92,6 +127,38 @@ async function loadBudidaya() {
 
 async function refreshData() {
   await loadBudidaya()
+}
+
+function openSelesaiModal(item) {
+  selectedItem.value = item
+  isSelesaiModalOpen.value = true
+}
+
+function closeSelesaiModal() {
+  isSelesaiModalOpen.value = false
+  selectedItem.value = null
+}
+
+async function confirmSelesai() {
+  if (!selectedItem.value) return
+  isSubmittingSelesai.value = true
+  
+  try {
+    const payload = { ...selectedItem.value, status: 'selesai' }
+    const res = await budidayaService.update(selectedItem.value.id_budidaya, payload)
+    if (res?.success) {
+      await loadBudidaya()
+      eventBus.emit('refreshBudidayaData')
+      closeSelesaiModal()
+    } else {
+      alert('Gagal: ' + (res?.message || 'Terjadi kesalahan'))
+    }
+  } catch (err) {
+    console.error(err)
+    alert('Koneksi ke server gagal')
+  } finally {
+    isSubmittingSelesai.value = false
+  }
 }
 
 const refreshListener = async () => {
@@ -242,24 +309,33 @@ onUnmounted(() => {
 .text-muted { color: #6b7280; font-size: 12px; }
 .text-center { text-align: center; }
 
-.table-card {
+.table-card-modern {
   background: white;
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #f3f4f6;
+  overflow-x: auto;
 }
 
 .budidaya-grid {
   display: grid;
-  grid-template-columns: 90px 1.5fr 1.2fr 100px 1.5fr 100px;
+  grid-template-columns: 90px 1.5fr 1.2fr 100px 1.5fr 100px 70px;
+  min-width: 800px;
   gap: 16px;
   align-items: center;
   padding: 16px 24px;
   font-size: 14px;
 }
 
-.table-header {
+.green-header {
+  background: #e9fbef;
+  border-bottom: none;
+  font-weight: 800;
+  color: var(--green-dark, #16a34a);
+}
+
+.table-header-modern {
   background: #f9fafb;
   font-weight: 700;
   color: #4b5563;
@@ -269,15 +345,20 @@ onUnmounted(() => {
   letter-spacing: 0.05em;
 }
 
-.table-row {
-  border-bottom: 1px solid #f3f4f6;
+.has-divider {
+  border-top: 1px solid #f3f4f6;
+  background: white;
+}
+
+.table-row-modern {
   transition: background 0.2s;
   color: #111827;
 }
-.table-row:last-child { border-bottom: none; }
-.table-row:hover { background: #f9fafb; }
+.table-row-modern:last-child { border-bottom: none; }
+.table-row-modern:hover { background: #f9fafb; }
 
-.empty-state { padding: 48px 24px; text-align: center; color: #6b7280; }
+.empty-row { display: block; padding: 48px; text-align: center; color: #6b7280; }
+
 .mx-auto { margin-left: auto; margin-right: auto; }
 .block { display: block; }
 .mb-4 { margin-bottom: 16px; }
@@ -285,6 +366,20 @@ onUnmounted(() => {
 .id-col { font-weight: 700; color: #374151; font-size: 13px; }
 .fw-bold { font-weight: 600; }
 .petugas-badge { display: inline-flex; align-items: center; background: #f3f4f6; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #4b5563; }
+
+.btn-selesai-small {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.btn-selesai-small:hover { background: #d97706; }
 
 .status-pill {
   display: inline-flex;
@@ -297,6 +392,24 @@ onUnmounted(() => {
 .status-pill.aktif { background: #dcfce7; color: #166534; }
 .status-pill.inisiasi { background: #fef3c7; color: #b45309; }
 .status-pill.selesai { background: #f3f4f6; color: #4b5563; }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+.fade-in-up {
+  animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 
 </style>
