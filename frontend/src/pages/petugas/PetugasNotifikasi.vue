@@ -9,39 +9,25 @@
       </div>
     </div>
 
-    <div class="card mt-16">
+    <div v-if="loading" class="card mt-16" style="text-align: center; padding: 40px; color: #6b7280;">
+      Memuat notifikasi...
+    </div>
+
+    <div v-else class="card mt-16">
       <div class="widget-body">
-        <div class="notif-item">
-           <span class="badge badge-warning">WARNING</span>
-           <div class="notif-text">
-             <strong>Pengamatan terlambat</strong>
-             <span>BDY-101 belum dicatat 3 hari.</span>
-           </div>
-           <span class="notif-time">08:10</span>
+        <div v-if="notificationsList.length === 0" style="text-align: center; padding: 48px 16px; color: #6b7280;">
+          <div style="font-size: 56px; margin-bottom: 16px;">🎉</div>
+          <h3 style="margin: 0 0 8px 0; color: #111827; font-weight: 800; font-size: 18px;">Tidak Ada Notifikasi Baru</h3>
+          <p style="margin: 0; font-size: 14px; color: #6b7280;">Semua rumah jamur terpantau dengan baik dan pengamatan harian diperbarui.</p>
         </div>
-        <div class="notif-item mt-16">
-           <span class="badge badge-info">INFO</span>
+        
+        <div v-else v-for="(notif, index) in notificationsList" :key="index" :class="['notif-item', { 'mt-16': index > 0 }]">
+           <span :class="['badge', getBadgeClass(notif.type)]">{{ notif.type.toUpperCase() }}</span>
            <div class="notif-text">
-             <strong>Jadwal pengamatan</strong>
-             <span>Ada 2 budidaya perlu dicek hari ini.</span>
+             <strong>{{ notif.title }}</strong>
+             <span>{{ notif.text }}</span>
            </div>
-           <span class="notif-time">07:30</span>
-        </div>
-        <div class="notif-item mt-16">
-           <span class="badge badge-success">SUCCESS</span>
-           <div class="notif-text">
-             <strong>Data tersimpan</strong>
-             <span>Pertumbuhan tersimpan untuk BDY-102.</span>
-           </div>
-           <span class="notif-time">kemarin</span>
-        </div>
-        <div class="notif-item mt-16">
-           <span class="badge badge-success">SUCCESS</span>
-           <div class="notif-text">
-             <strong>Panen berhasil dicatat</strong>
-             <span>Panen sebesar 12kg pada BDY-098 telah dimasukkan.</span>
-           </div>
-           <span class="notif-time">2 hari lalu</span>
+           <span class="notif-time">{{ notif.time }}</span>
         </div>
       </div>
     </div>
@@ -49,6 +35,190 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
+import { usersService, budidayaService, lingkunganService, pertumbuhanService, panenService } from '../../services/dataService.js'
+
+const loading = ref(true)
+const notificationsList = ref([])
+
+function getBadgeClass(type) {
+  if (type === 'warning') return 'badge-warning'
+  if (type === 'info') return 'badge-info'
+  return 'badge-success'
+}
+
+function getLocalDateString(d) {
+  if (!d) return ''
+  const date = new Date(d)
+  if (isNaN(date.getTime())) return ''
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+function formatDate(value) {
+  if (!value) return '-'
+  return new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function getRelativeTimeString(dateStr) {
+  const d = new Date(dateStr)
+  d.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  const diffTime = today - d
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 0) return 'Hari ini'
+  if (diffDays === 1) return 'Kemarin'
+  if (diffDays > 1) return `${diffDays} hari lalu`
+  return formatDate(dateStr)
+}
+
+async function loadNotifications() {
+  loading.value = true
+  try {
+    const meRes = await usersService.getMe()
+    let isAdmin = false
+    if (meRes?.success && meRes.data) {
+      isAdmin = meRes.data.role === 'admin'
+    }
+
+    const [budRes, envRes, growthRes, panenRes] = await Promise.all([
+      isAdmin ? budidayaService.getAll() : budidayaService.getByPetugas(),
+      lingkunganService.getAll(),
+      pertumbuhanService.getAll(),
+      panenService.getAll()
+    ])
+
+    const list = []
+    
+    if (budRes?.success && envRes?.success) {
+      const activeBudidaya = budRes.data.filter(b => b.status === 'aktif')
+      const todayStr = getLocalDateString(new Date())
+
+      activeBudidaya.forEach(b => {
+        const records = envRes.data.filter(e => Number(e.id_budidaya) === Number(b.id_budidaya))
+        
+        // 1. Check if logged today
+        const hasTodayRecord = records.some(e => getLocalDateString(e.tanggal_pengukuran) === todayStr)
+        if (!hasTodayRecord) {
+          list.push({
+            type: 'info',
+            title: 'Jadwal Pengamatan',
+            text: `Rak BDY-${String(b.id_budidaya).padStart(3, '0')} (${b.nama_jamur}) belum dicatat hari ini.`,
+            time: 'Hari ini',
+            date: new Date(),
+            weight: 2
+          })
+        }
+
+        // 2. Check for lateness (no records for 3 days or more)
+        if (records.length > 0) {
+          records.sort((x, y) => new Date(y.tanggal_pengukuran) - new Date(x.tanggal_pengukuran))
+          const latestRecord = records[0]
+          const lastDate = new Date(latestRecord.tanggal_pengukuran)
+          lastDate.setHours(0, 0, 0, 0)
+          
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          
+          const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24))
+          if (diffDays >= 3) {
+            list.push({
+              type: 'warning',
+              title: 'Pengamatan Terlambat',
+              text: `Rak BDY-${String(b.id_budidaya).padStart(3, '0')} (${b.nama_jamur}) belum dicatat selama ${diffDays} hari.`,
+              time: `${diffDays} hari lalu`,
+              date: lastDate,
+              weight: 1
+            })
+          }
+        } else {
+          // Never recorded, check start date
+          const startDate = new Date(b.tanggal_mulai)
+          startDate.setHours(0, 0, 0, 0)
+          
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          
+          const diffDays = Math.floor((today - startDate) / (1000 * 60 * 60 * 24))
+          if (diffDays >= 3) {
+            list.push({
+              type: 'warning',
+              title: 'Pengamatan Terlambat',
+              text: `Rak BDY-${String(b.id_budidaya).padStart(3, '0')} (${b.nama_jamur}) belum pernah dicatat sejak dimulai (${diffDays} hari lalu).`,
+              time: `${diffDays} hari lalu`,
+              date: startDate,
+              weight: 1
+            })
+          }
+        }
+      })
+    }
+
+    // 3. Recent panen (last 7 days)
+    if (panenRes?.success && budRes?.success) {
+      const assignedIds = new Set(budRes.data.map(item => Number(item.id_budidaya)))
+      const myPanen = panenRes.data.filter(p => assignedIds.has(Number(p.id_budidaya)))
+      
+      const oneWeekAgo = new Date()
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+
+      myPanen.forEach(p => {
+        const pDate = new Date(p.tanggal_panen)
+        if (pDate >= oneWeekAgo) {
+          list.push({
+            type: 'success',
+            title: 'Panen Berhasil Dicatat',
+            text: `Panen sebesar ${p.jumlah_panen} gram pada BDY-${String(p.id_budidaya).padStart(3, '0')} telah dimasukkan.`,
+            time: getRelativeTimeString(p.tanggal_panen),
+            date: pDate,
+            weight: 3
+          })
+        }
+      })
+    }
+
+    // 4. Recent growth records (last 7 days)
+    if (growthRes?.success && budRes?.success) {
+      const assignedIds = new Set(budRes.data.map(item => Number(item.id_budidaya)))
+      const myGrowth = growthRes.data.filter(g => assignedIds.has(Number(g.id_budidaya)))
+      
+      const oneWeekAgo = new Date()
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+
+      myGrowth.forEach(g => {
+        const gDate = new Date(g.tanggal_pengamatan)
+        if (gDate >= oneWeekAgo) {
+          list.push({
+            type: 'success',
+            title: 'Data Pertumbuhan Tersimpan',
+            text: `Fase pertumbuhan diperbarui ke '${g.fase}' untuk BDY-${String(g.id_budidaya).padStart(3, '0')}.`,
+            time: getRelativeTimeString(g.tanggal_pengamatan),
+            date: gDate,
+            weight: 4
+          })
+        }
+      })
+    }
+
+    // Sort by priority weight, then by date descending
+    list.sort((a, b) => {
+      if (a.weight !== b.weight) {
+        return a.weight - b.weight
+      }
+      return new Date(b.date) - new Date(a.date)
+    })
+
+    notificationsList.value = list
+  } catch (err) {
+    console.error('Gagal memproses notifikasi:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadNotifications)
 </script>
 
 <style scoped>
@@ -136,6 +306,8 @@
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid;
+  min-width: 65px;
+  text-align: center;
 }
 
 .badge-warning {

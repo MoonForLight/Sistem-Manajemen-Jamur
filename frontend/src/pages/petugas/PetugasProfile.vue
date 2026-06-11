@@ -114,7 +114,7 @@
               <div class="stat-icon-wrap bg-yellow-light">📦</div>
               <div class="stat-text-wrap">
                 <span class="s-label">Akumulasi Panen</span>
-                <span class="s-val">{{ stats.monthlyHarvest }} <small>Kg</small></span>
+                <span class="s-val">{{ stats.monthlyHarvest }} <small>gram</small></span>
               </div>
             </div>
           </div>

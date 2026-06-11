@@ -161,7 +161,7 @@
 
       <section id="tahapan" class="edu-section alt-bg">
         <div class="section-header">
-          <h2>🛤️ Panduan Tahapan Budidaya (Step by Step)</h2>
+          <h2>Panduan Tahapan Budidaya</h2>
           <p>Langkah operasional standar agar baglog menghasilkan panen berkualitas.</p>
         </div>
         <div class="timeline">
@@ -304,7 +304,7 @@ a { text-decoration: none; }
   content: "";
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(closest-side at 70% 30%, rgba(34, 197, 94, .35), transparent 60%);
+
   z-index: 1;
 }
 

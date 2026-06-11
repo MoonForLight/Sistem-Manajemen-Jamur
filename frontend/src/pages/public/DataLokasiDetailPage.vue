@@ -57,7 +57,7 @@
         </div>
         <div class="stat-card">
           <span class="stat-label">Total Panen</span>
-          <span class="stat-value text-green">{{ totalPanen }} Kg</span>
+          <span class="stat-value text-green">{{ totalPanen }} gram</span>
         </div>
         <div class="stat-card">
           <span class="stat-label">Status Lokasi</span>
@@ -211,7 +211,7 @@ function processData() {
     if (avgKelembapan.value < 70) insight += "Kelembapan relatif rendah. "
     else insight += "Kelembapan terjaga dengan baik. "
 
-    if (totalPanen.value > 0) insight += `Total hasil panen yang dilaporkan mencapai ${totalPanen.value} Kg.`
+    if (totalPanen.value > 0) insight += `Total hasil panen yang dilaporkan mencapai ${totalPanen.value} gram.`
     else insight += "Belum ada aktivitas panen yang tercatat bulan ini."
     
     aiInsight.value = insight
@@ -253,7 +253,7 @@ function processData() {
 
   harvestChartData.value = {
     labels,
-    datasets: [{ label: 'Hasil Panen (Kg)', backgroundColor: '#16a34a', data: dailyHarvest, borderRadius: 4 }]
+    datasets: [{ label: 'Hasil Panen (gram)', backgroundColor: '#16a34a', data: dailyHarvest, borderRadius: 4 }]
   }
 }
 
@@ -331,7 +331,7 @@ async function exportBulananExcel() {
     ['Lokasi', lokasi.value.nama_lokasi],
     ['Bulan Laporan', formattedMonth.value],
     ['Tanggal Diekspor', new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })],
-    ['Total Panen Bulan Ini', `${totalPanen.value} Kg`],
+    ['Total Panen Bulan Ini', `${totalPanen.value} gram`],
     ['Total Pencatatan Sistem', `${monthlyEnvRecords.value.length} Kali`],
     ['Catatan Analisis (AI)', aiInsight.value]
   ];
@@ -362,7 +362,7 @@ async function exportBulananExcel() {
   const header1 = [
     'Tanggal', 'Suhu Rata-rata (°C)', 'Suhu Terendah (°C)', 'Suhu Tertinggi (°C)',
     'Kelembapan Rata-rata (%)', 'Kelembapan Terendah (%)', 'Kelembapan Tertinggi (%)',
-    'Intensitas Cahaya (lux)', 'Frekuensi Catat', 'Total Hasil Panen (Kg)', 'Status Lingkungan'
+    'Intensitas Cahaya (lux)', 'Frekuensi Catat', 'Total Hasil Panen (gram)', 'Status Lingkungan'
   ];
   const rowH1 = worksheet.addRow(header1);
   rowH1.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -517,7 +517,7 @@ async function exportBulananExcel() {
   s3Title.height = 25;
   s3Title.getCell(1).alignment = { vertical: 'middle' };
 
-  const header3 = ['Kode Rak (Budidaya)', 'Tanggal Panen', 'Jumlah Bersih (Kg)', 'Petugas Pencatat'];
+  const header3 = ['Kode Rak (Budidaya)', 'Tanggal Panen', 'Jumlah Bersih (gram)', 'Petugas Pencatat'];
   const rowH3 = worksheet.addRow(header3);
   rowH3.font = { bold: true, color: { argb: 'FFFFFFFF' } };
   rowH3.height = 30;

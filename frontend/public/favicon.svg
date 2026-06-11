@@ -1,0 +1,52 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cap" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399"></stop>
+      <stop offset="100%" stop-color="#16A34A"></stop>
+    </linearGradient>
+
+    <linearGradient id="stem" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22C55E"></stop>
+      <stop offset="100%" stop-color="#15803D"></stop>
+    </linearGradient>
+  </defs>
+
+  <!-- Mushroom Cap -->
+  <path d="M96 248
+       C96 132 176 72 256 72
+       C336 72 416 132 416 248
+       C416 280 390 304 356 304
+       L156 304
+       C122 304 96 280 96 248Z" fill="url(#cap)"></path>
+
+  <!-- White Spots -->
+  <ellipse cx="180" cy="170" rx="28" ry="22" fill="white"></ellipse>
+  <ellipse cx="260" cy="145" rx="34" ry="28" fill="white"></ellipse>
+  <ellipse cx="340" cy="185" rx="22" ry="18" fill="white"></ellipse>
+
+  <!-- Underside -->
+  <path d="M140 270
+       C180 240 332 240 372 270
+       C332 290 180 290 140 270Z" fill="#0F7A37" opacity="0.25"></path>
+
+  <!-- Stem -->
+  <path d="M215 290
+       C190 360 190 420 220 455
+       C240 478 272 478 292 455
+       C322 420 322 360 297 290Z" fill="url(#stem)"></path>
+
+  <!-- Negative Space Leaf -->
+  <path d="M255 325
+       C290 350 290 410 255 445
+       C270 400 270 370 255 325Z" fill="white" opacity="0.85"></path>
+
+  <!-- Left Leaf -->
+  <path d="M125 400
+       C160 340 220 340 240 405
+       C195 430 150 430 125 400Z" fill="#22C55E"></path>
+
+  <!-- Right Leaf -->
+  <path d="M387 400
+       C352 340 292 340 272 405
+       C317 430 362 430 387 400Z" fill="#22C55E"></path>
+</svg>

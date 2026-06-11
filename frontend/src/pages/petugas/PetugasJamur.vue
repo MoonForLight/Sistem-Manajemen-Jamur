@@ -239,8 +239,8 @@
                 <input type="date" v-model="formPanen.tanggal_panen" required class="modern-input" />
               </div>
               <div class="form-group">
-                <label>Jumlah Panen (Kg)</label>
-                <input type="number" step="0.01" v-model="formPanen.jumlah_panen" placeholder="Misal: 12.5" required class="modern-input" />
+                <label>Jumlah Panen (gram)</label>
+                <input type="number" step="0.1" v-model="formPanen.jumlah_panen" placeholder="Misal: 500" required class="modern-input" />
               </div>
               <div class="form-group full-width">
                 <label>Catatan Panen</label>

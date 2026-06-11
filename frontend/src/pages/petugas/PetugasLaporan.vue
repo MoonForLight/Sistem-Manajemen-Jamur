@@ -23,7 +23,7 @@
         </div>
         <div>
           <span class="meta-label">Total Panen</span>
-          <span class="meta-value">{{ totalPanen }} Kg</span>
+          <span class="meta-value">{{ totalPanen }} gram</span>
         </div>
         <div>
           <span class="meta-label">Total Pencatatan</span>
@@ -67,7 +67,7 @@
         </div>
         <div class="stat-card">
           <span class="stat-label">Total Panen</span>
-          <span class="stat-value text-green">{{ totalPanen }} Kg</span>
+          <span class="stat-value text-green">{{ totalPanen }} gram</span>
         </div>
         <div class="stat-card">
           <span class="stat-label">Total Pencatatan Lingkungan</span>
@@ -219,7 +219,7 @@ function processMonthlyData() {
     if (avgKelembapan.value < 70) insight += "Kelembapan tergolong rendah, jamur mungkin akan cepat kering. "
     else insight += "Kelembapan terjaga dengan baik. "
 
-    if (totalPanen.value > 0) insight += `Total hasil panen bulan ini mencapai ${totalPanen.value} Kg.`
+    if (totalPanen.value > 0) insight += `Total hasil panen bulan ini mencapai ${totalPanen.value} gram.`
     else insight += "Belum ada panen yang tercatat bulan ini."
     
     aiInsight.value = insight
@@ -266,7 +266,7 @@ function processMonthlyData() {
 
   harvestChartData.value = {
     labels,
-    datasets: [{ label: 'Hasil Panen (Kg)', backgroundColor: '#16a34a', data: dailyHarvest, borderRadius: 4 }]
+    datasets: [{ label: 'Hasil Panen (gram)', backgroundColor: '#16a34a', data: dailyHarvest, borderRadius: 4 }]
   }
 }
 
@@ -322,7 +322,7 @@ async function exportExcel() {
     ['Bulan Laporan', formattedMonth.value],
     ['Petugas Pelapor', userName.value || '-'],
     ['Tanggal Diekspor', new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })],
-    ['Total Panen Bulan Ini', `${totalPanen.value} Kg`],
+    ['Total Panen Bulan Ini', `${totalPanen.value} gram`],
     ['Total Pencatatan Sistem', `${monthlyEnvRecords.value.length} Kali`],
     ['Catatan Analisis (AI)', aiInsight.value]
   ];
@@ -353,7 +353,7 @@ async function exportExcel() {
   const header1 = [
     'Tanggal', 'Suhu Rata-rata (°C)', 'Suhu Terendah (°C)', 'Suhu Tertinggi (°C)',
     'Kelembapan Rata-rata (%)', 'Kelembapan Terendah (%)', 'Kelembapan Tertinggi (%)',
-    'Intensitas Cahaya (lux)', 'Frekuensi Catat', 'Total Hasil Panen (Kg)', 'Status Lingkungan'
+    'Intensitas Cahaya (lux)', 'Frekuensi Catat', 'Total Hasil Panen (gram)', 'Status Lingkungan'
   ];
   const rowH1 = worksheet.addRow(header1);
   rowH1.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -515,7 +515,7 @@ async function exportExcel() {
   s3Title.height = 25;
   s3Title.getCell(1).alignment = { vertical: 'middle' };
 
-  const header3 = ['Kode Rak (Budidaya)', 'Tanggal Panen', 'Jumlah Bersih (Kg)', 'Petugas Pencatat'];
+  const header3 = ['Kode Rak (Budidaya)', 'Tanggal Panen', 'Jumlah Bersih (gram)', 'Petugas Pencatat'];
   const rowH3 = worksheet.addRow(header3);
   rowH3.font = { bold: true, color: { argb: 'FFFFFFFF' } };
   rowH3.height = 30;
@@ -558,8 +558,8 @@ async function exportExcel() {
   const header4 = [
     'Kode Rak', 'Jenis Jamur', 'Media Tanam', 'Status Operasional', 
     'Tanggal Mulai (Inkubasi)', 'Tanggal Selesai (Afkir)',
-    'Frekuensi Catat Lingkungan', 'Suhu Rata-rata Sepanjang Hidup (°C)',
-    'Kelembapan Rata-rata Sepanjang Hidup (%)', 'Total Akumulasi Panen (Kg)'
+    'Suhu Rata-rata Sepanjang Hidup (°C)',
+    'Kelembapan Rata-rata Sepanjang Hidup (%)', 'Total Akumulasi Panen (gram)'
   ];
   const rowH4 = worksheet.addRow(header4);
   rowH4.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -572,7 +572,7 @@ async function exportExcel() {
 
   if (assignedBudidaya.value.length === 0) {
     const emptyRow = worksheet.addRow(['(Tidak ada data rak yang ditugaskan)']);
-    worksheet.mergeCells(`A${emptyRow.number}:J${emptyRow.number}`);
+    worksheet.mergeCells(`A${emptyRow.number}:I${emptyRow.number}`);
     emptyRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
   } else {
     assignedBudidaya.value.forEach(b => {
@@ -594,7 +594,6 @@ async function exportExcel() {
         b.status === 'aktif' ? 'Aktif' : 'Selesai',
         formatDate(b.tanggal_mulai),
         formatDate(b.tanggal_selesai),
-        envs.length,
         avgS,
         avgK,
         totHarv > 0 ? Number(totHarv.toFixed(1)) : 0
