@@ -20,12 +20,63 @@
         </div>
         <div class="header-actions">
           <input v-model="selectedMonth" type="month" class="modern-input" @change="processData" />
-          <button @click="exportBulananExcel" class="btn-export-csv">
+          <button @click="openDownloadModal" class="btn-export-csv">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
             Ekspor Excel
           </button>
         </div>
       </header>
+
+      <div v-if="showDownloadModal" class="modal-overlay" @click.self="closeDownloadModal">
+        <div class="form-modal slide-up">
+          <div class="modal-header">
+            <h3 class="modal-title">Lengkapi Identitas & Pilih Tipe Ekspor</h3>
+            <button class="close-btn" @click="closeDownloadModal">&times;</button>
+          </div>
+          <form @submit.prevent="submitDownloadForm" class="modern-form" style="max-height: 80vh; overflow-y: auto;">
+            <div class="form-grid">
+              <div class="form-group full-width">
+                <label>Nama Lengkap <span class="text-danger">*</span></label>
+                <input type="text" v-model="downloadForm.nama" required class="modern-input" placeholder="Masukkan nama Anda">
+              </div>
+              <div class="form-group full-width">
+                <label>Email <span class="text-danger">*</span></label>
+                <input type="email" v-model="downloadForm.email" required class="modern-input" placeholder="Masukkan email aktif">
+              </div>
+              <div class="form-group full-width">
+                <label>Instansi/Pekerjaan <span class="text-danger">*</span></label>
+                <input type="text" v-model="downloadForm.instansi" required class="modern-input" placeholder="Misal: Mahasiswa / Petani">
+              </div>
+              <div class="form-group full-width">
+                <label>Tujuan Unduh <span class="text-danger">*</span></label>
+                <textarea v-model="downloadForm.tujuan" required class="modern-input" rows="2" placeholder="Jelaskan tujuan penggunaan data..."></textarea>
+              </div>
+              <div class="form-group full-width">
+                <label>Tipe Ekspor Data <span class="text-danger">*</span></label>
+                <select v-model="downloadForm.tipe_ekspor" required class="modern-select">
+                  <option value="3_bulan">Laporan Umum (3 Bulan Terakhir)</option>
+                  <option value="per_jamur">Laporan Siklus Jamur (Hanya yang Selesai)</option>
+                </select>
+              </div>
+              <div v-if="downloadForm.tipe_ekspor === 'per_jamur'" class="form-group full-width">
+                <label>Pilih Siklus Jamur (Selesai) <span class="text-danger">*</span></label>
+                <select v-model="downloadForm.id_budidaya" required class="modern-select">
+                  <option value="" disabled>Pilih Jamur...</option>
+                  <option v-for="b in budidayaSelesaiList" :key="b.id_budidaya" :value="b.id_budidaya">
+                    BDY-{{ String(b.id_budidaya).padStart(3, '0') }} - {{ b.nama_jamur }} (Selesai: {{ formatDate(b.tanggal_selesai) }})
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn-cancel" @click="closeDownloadModal">Batal</button>
+              <button type="submit" class="btn-primary" :disabled="isDownloading">
+                {{ isDownloading ? 'Memproses...' : 'Mulai Unduh' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
 
       <div class="detail-image">
         <img v-if="lokasi.foto_lokasi" :src="`http://localhost:3000/uploads/${lokasi.foto_lokasi}`" :alt="`Foto ${lokasi.nama_lokasi}`" />
@@ -131,6 +182,20 @@ const loading = ref(true)
 const lokasi = ref(null)
 const budidayaList = ref([])
 const activeBudidaya = ref([])
+const budidayaSelesaiList = computed(() => {
+  return budidayaList.value.filter(b => b.status === 'selesai')
+})
+
+const isDownloading = ref(false)
+const showDownloadModal = ref(false)
+const downloadForm = ref({
+  nama: '',
+  email: '',
+  instansi: '',
+  tujuan: '',
+  tipe_ekspor: '3_bulan',
+  id_budidaya: ''
+})
 
 const envChartRef = ref(null)
 const harvestChartRef = ref(null)
@@ -331,10 +396,20 @@ async function exportBulananExcel() {
     ['Lokasi', lokasi.value.nama_lokasi],
     ['Bulan Laporan', formattedMonth.value],
     ['Tanggal Diekspor', new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })],
-    ['Total Panen Bulan Ini', `${totalPanen.value} gram`],
-    ['Total Pencatatan Sistem', `${monthlyEnvRecords.value.length} Kali`],
-    ['Catatan Analisis (AI)', aiInsight.value]
+    ['Tipe Ekspor', downloadForm.value.tipe_ekspor === '3_bulan' ? 'Laporan Umum (3 Bulan Terakhir)' : 'Laporan Spesifik Siklus Jamur'],
+    ['Pihak Pengunduh', `${downloadForm.value.nama} (${downloadForm.value.instansi})`]
   ];
+
+  if (downloadForm.value.tipe_ekspor === '3_bulan') {
+    infoData.push(['Total Panen Bulan Ini', `${totalPanen.value} gram`]);
+    infoData.push(['Catatan Analisis (AI)', aiInsight.value]);
+  } else {
+    const bud = budidayaList.value.find(b => b.id_budidaya === downloadForm.value.id_budidaya);
+    if (bud) {
+      infoData.push(['Fokus Budidaya', `BDY-${String(bud.id_budidaya).padStart(3, '0')} - ${bud.nama_jamur}`]);
+      infoData.push(['Alasan Selesai', bud.alasan_selesai || '-']);
+    }
+  }
 
   infoData.forEach(info => {
     const row = worksheet.addRow([info[0], info[1]]);
@@ -350,124 +425,39 @@ async function exportBulananExcel() {
 
   worksheet.addRow([]);
   
-  // Section 1
-  const s1Title = worksheet.addRow(['1. RINGKASAN PERFORMA LINGKUNGAN & PANEN HARIAN']);
-  worksheet.mergeCells(`A${s1Title.number}:K${s1Title.number}`);
-  s1Title.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
-  s1Title.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
-  s1Title.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-  s1Title.height = 25;
-  s1Title.getCell(1).alignment = { vertical: 'middle' };
-
-  const header1 = [
-    'Tanggal', 'Suhu Rata-rata (°C)', 'Suhu Terendah (°C)', 'Suhu Tertinggi (°C)',
-    'Kelembapan Rata-rata (%)', 'Kelembapan Terendah (%)', 'Kelembapan Tertinggi (%)',
-    'Intensitas Cahaya (lux)', 'Frekuensi Catat', 'Total Hasil Panen (gram)', 'Status Lingkungan'
-  ];
-  const rowH1 = worksheet.addRow(header1);
-  rowH1.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-  rowH1.height = 30;
-  rowH1.eachCell((cell) => {
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF374151' } };
-    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-  });
+  // Mempersiapkan data mentah yang akan diekspor sesuai tipe
+  let envRecordsToExport = [];
+  let harvestRecordsToExport = [];
   
-  for (let i = 1; i <= daysInMonth; i++) {
-    const dayStr = String(i).padStart(2, '0');
-    const dateStr = `${ym}-${dayStr}`;
-    
-    const dayRecs = monthlyEnvRecords.value.filter(r => getLocalDateString(r.tanggal_pengukuran) === dateStr);
-    
-    let avgS = '', minS = '', maxS = '';
-    let avgK = '', minK = '', maxK = '';
-    let avgC = '';
-    let countEnv = dayRecs.length;
-    let insight = '-';
-    
-    if (countEnv > 0) {
-      const suhus = dayRecs.map(r => Number(r.suhu || 0));
-      const kelembabans = dayRecs.map(r => Number(r.kelembaban || 0));
-      const cahayas = dayRecs.map(r => Number(r.intensitas_cahaya || 0));
-      
-      avgS = Number((suhus.reduce((a,b) => a+b, 0) / countEnv).toFixed(1));
-      minS = Number(Math.min(...suhus).toFixed(1));
-      maxS = Number(Math.max(...suhus).toFixed(1));
-      
-      avgK = Number((kelembabans.reduce((a,b) => a+b, 0) / countEnv).toFixed(1));
-      minK = Number(Math.min(...kelembabans).toFixed(1));
-      maxK = Number(Math.max(...kelembabans).toFixed(1));
-      
-      avgC = Number((cahayas.reduce((a,b) => a+b, 0) / countEnv).toFixed(1));
-
-      if (avgS > 28) insight = 'Suhu Panas';
-      else if (avgS < 20) insight = 'Suhu Dingin';
-      else insight = 'Optimal';
+  if (downloadForm.value.tipe_ekspor === '3_bulan') {
+    const d = new Date(ym.split('-')[0], ym.split('-')[1] - 1);
+    const months = [];
+    for(let i = 0; i < 3; i++) {
+      const iterD = new Date(d.getFullYear(), d.getMonth() - i, 1);
+      months.push(`${iterD.getFullYear()}-${String(iterD.getMonth() + 1).padStart(2, '0')}`);
     }
     
-    const harvRecs = monthlyHarvestRecords.value.filter(r => getLocalDateString(r.tanggal_panen) === dateStr);
-    let totHarv = harvRecs.reduce((acc, r) => acc + Number(r.jumlah_panen || 0), 0);
+    envRecordsToExport = allEnvRecords.value.filter(r => {
+      const dStr = getLocalDateString(r.tanggal_pengukuran);
+      return months.some(m => dStr.startsWith(m));
+    }).sort((a,b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran));
     
-    const row = worksheet.addRow([
-      dateStr,
-      avgS, minS, maxS,
-      avgK, minK, maxK,
-      avgC,
-      countEnv,
-      totHarv > 0 ? Number(totHarv.toFixed(1)) : 0,
-      insight
-    ]);
-    
-    row.eachCell((cell, colNumber) => {
-      cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-      cell.alignment = { horizontal: colNumber === 1 || colNumber === 11 ? 'left' : 'right', vertical: 'middle' };
-    });
-  }
-  
-  worksheet.addRow([]);
-  
-  // Charts Section
-  const chartStartRow = worksheet.lastRow.number + 2;
-  worksheet.getCell(`A${chartStartRow}`).value = 'GRAFIK ANALISIS BULANAN';
-  worksheet.getCell(`A${chartStartRow}`).font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
-  worksheet.getCell(`A${chartStartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
-  worksheet.mergeCells(`A${chartStartRow}:K${chartStartRow}`);
-  worksheet.getCell(`A${chartStartRow}`).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-  worksheet.getRow(chartStartRow).height = 25;
-  worksheet.getCell(`A${chartStartRow}`).alignment = { vertical: 'middle' };
-  
-  let imagesAdded = false;
-  if (envChartRef.value?.chart?.canvas) {
-    try {
-      const imgData = envChartRef.value.chart.canvas.toDataURL('image/png');
-      const imageId = workbook.addImage({ base64: imgData, extension: 'png' });
-      worksheet.addImage(imageId, {
-        tl: { col: 0, row: chartStartRow + 1 },
-        ext: { width: 500, height: 250 }
-      });
-      imagesAdded = true;
-    } catch(e) { console.error('Error adding env chart', e); }
-  }
-  if (harvestChartRef.value?.chart?.canvas) {
-    try {
-      const imgData2 = harvestChartRef.value.chart.canvas.toDataURL('image/png');
-      const imageId2 = workbook.addImage({ base64: imgData2, extension: 'png' });
-      worksheet.addImage(imageId2, {
-        tl: { col: 6, row: chartStartRow + 1 },
-        ext: { width: 500, height: 250 }
-      });
-      imagesAdded = true;
-    } catch(e) { console.error('Error adding harvest chart', e); }
-  }
-  
-  if (imagesAdded) {
-    for(let i=0; i<15; i++) worksheet.addRow([]);
+    harvestRecordsToExport = allHarvestRecords.value.filter(r => {
+      const dStr = getLocalDateString(r.tanggal_panen);
+      return months.some(m => dStr.startsWith(m));
+    }).sort((a,b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen));
+
+  } else {
+    // Per Jamur
+    envRecordsToExport = allEnvRecords.value.filter(r => r.id_budidaya === downloadForm.value.id_budidaya)
+      .sort((a,b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran));
+      
+    harvestRecordsToExport = allHarvestRecords.value.filter(r => r.id_budidaya === downloadForm.value.id_budidaya)
+      .sort((a,b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen));
   }
 
-  worksheet.addRow([]);
-  
-  // Section 2
-  const s2Title = worksheet.addRow(['2. LOG DATA MENTAH LINGKUNGAN (SENSOR & MANUAL)']);
+  // Section 2: Log Data Mentah Lingkungan
+  const s2Title = worksheet.addRow(['1. LOG DATA MENTAH LINGKUNGAN (SENSOR & MANUAL)']);
   worksheet.mergeCells(`A${s2Title.number}:K${s2Title.number}`);
   s2Title.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
   s2Title.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
@@ -485,12 +475,12 @@ async function exportBulananExcel() {
     cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
   });
   
-  if (monthlyEnvRecords.value.length === 0) {
-    const emptyRow = worksheet.addRow(['(Tidak ada data lingkungan tercatat pada bulan ini)']);
+  if (envRecordsToExport.length === 0) {
+    const emptyRow = worksheet.addRow(['(Tidak ada data lingkungan tercatat pada periode ini)']);
     worksheet.mergeCells(`A${emptyRow.number}:F${emptyRow.number}`);
     emptyRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
   } else {
-    monthlyEnvRecords.value.forEach(r => {
+    envRecordsToExport.forEach(r => {
       const row = worksheet.addRow([
         `BDY-${String(r.id_budidaya).padStart(3, '0')}`,
         `${formatDate(r.tanggal_pengukuran)} ${new Date(r.tanggal_pengukuran).toLocaleTimeString('id-ID')}`,
@@ -509,7 +499,7 @@ async function exportBulananExcel() {
   worksheet.addRow([]);
   
   // Section 3
-  const s3Title = worksheet.addRow(['3. LOG DATA MENTAH PANEN (HASIL PRODUKSI)']);
+  const s3Title = worksheet.addRow(['2. LOG DATA MENTAH PANEN (HASIL PRODUKSI)']);
   worksheet.mergeCells(`A${s3Title.number}:K${s3Title.number}`);
   s3Title.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
   s3Title.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
@@ -527,12 +517,12 @@ async function exportBulananExcel() {
     cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
   });
   
-  if (monthlyHarvestRecords.value.length === 0) {
-    const emptyRow = worksheet.addRow(['(Tidak ada data panen tercatat pada bulan ini)']);
+  if (harvestRecordsToExport.length === 0) {
+    const emptyRow = worksheet.addRow(['(Tidak ada data panen tercatat pada periode ini)']);
     worksheet.mergeCells(`A${emptyRow.number}:D${emptyRow.number}`);
     emptyRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
   } else {
-    monthlyHarvestRecords.value.forEach(r => {
+    harvestRecordsToExport.forEach(r => {
       const row = worksheet.addRow([
         `BDY-${String(r.id_budidaya).padStart(3, '0')}`,
         formatDate(r.tanggal_panen),
@@ -611,6 +601,28 @@ onMounted(loadData)
 .chart-box { background: white; border-radius: 16px; padding: 20px; border: 1px solid #e5e7eb; }
 .chart-box h4 { margin: 0 0 16px 0; font-size: 15px; color: #111827; font-weight: 700; }
 .chart-wrapper { height: 250px; position: relative; }
+
+/* Modal CSS */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.form-modal { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 540px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.modal-title { font-size: 20px; font-weight: 800; color: #111827; margin: 0; }
+.close-btn { background: none; border: none; font-size: 28px; line-height: 1; color: #9ca3af; cursor: pointer; transition: color 0.2s; }
+.close-btn:hover { color: #111827; }
+.modern-form { display: flex; flex-direction: column; gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 14px; font-weight: 600; color: #374151; }
+.text-danger { color: #dc2626; }
+.modern-input, .modern-select { width: 100%; padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: #f9fafb; transition: all 0.2s; box-sizing: border-box; }
+.modern-input:focus, .modern-select:focus { outline: none; border-color: #16a34a; background: white; box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1); }
+.modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px; }
+.btn-cancel { background: white; border: 1px solid #d1d5db; color: #374151; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-cancel:hover { background: #f3f4f6; }
+.btn-primary { background: #16a34a; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.btn-primary:hover:not(:disabled) { background: #15803d; }
+.btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+.slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
 .table-card-modern { background: white; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb; }
 .table-header-flex { display: flex; justify-content: space-between; align-items: center; padding-right: 24px; }

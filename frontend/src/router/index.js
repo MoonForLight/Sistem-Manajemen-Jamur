@@ -11,6 +11,7 @@ import PublicLayout from '../layout/PublicLayout.vue'
 import PetugasLayout from '../layout/PetugasLayout.vue'
 import PetugasDashboard from '../pages/petugas/PetugasDashboard.vue'
 import PetugasJamur from '../pages/petugas/PetugasJamur.vue'
+import PetugasLingkungan from '../pages/petugas/PetugasLingkungan.vue'
 import PetugasLaporan from '../pages/petugas/PetugasLaporan.vue'
 import PetugasRiwayat from '../pages/petugas/PetugasRiwayat.vue'
 import PetugasProfile from '../pages/petugas/PetugasProfile.vue'
@@ -59,7 +60,13 @@ const routes = [
         path: 'jamur',
         name: 'petugas-jamur',
         component: PetugasJamur,
-        meta: { title: 'Jenis Jamur' }
+        meta: { title: 'Kelola Jamur' }
+      },
+      {
+        path: 'lingkungan',
+        name: 'petugas-lingkungan',
+        component: PetugasLingkungan,
+        meta: { title: 'Kondisi Lingkungan' }
       },
       {
         path: 'laporan',

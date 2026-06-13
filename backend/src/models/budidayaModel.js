@@ -7,6 +7,7 @@ async function getAll() {
         b.tanggal_mulai,
         b.status,
         b.jumlah_rak,
+        b.alasan_selesai,
         l.id_lokasi, l.nama_lokasi,
         j.id_jenis, j.nama_jamur,
         m.id_media, m.nama_media,
@@ -28,6 +29,7 @@ async function getById(id) {
         b.tanggal_mulai,
         b.status,
         b.jumlah_rak,
+        b.alasan_selesai,
         l.id_lokasi, l.nama_lokasi,
         j.id_jenis, j.nama_jamur,
         m.id_media, m.nama_media,
@@ -52,12 +54,12 @@ async function create({ id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai
   return result.insertId;
 }
 
-async function update(id, { id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status, jumlah_rak }) {
+async function update(id, { id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status, jumlah_rak, alasan_selesai }) {
   const [result] = await db.query(
     `UPDATE budidaya
-     SET id_lokasi = ?, id_jenis = ?, id_media = ?, id_petugas = ?, tanggal_mulai = ?, status = ?, jumlah_rak = ?
+     SET id_lokasi = ?, id_jenis = ?, id_media = ?, id_petugas = ?, tanggal_mulai = ?, status = ?, jumlah_rak = ?, alasan_selesai = ?
      WHERE id_budidaya = ?`,
-    [id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status, jumlah_rak || 1, id]
+    [id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status, jumlah_rak || 1, alasan_selesai || null, id]
   );
   return result.affectedRows;
 }
@@ -83,6 +85,7 @@ async function getByLokasi(id_lokasi) {
         b.tanggal_mulai,
         b.status,
         b.jumlah_rak,
+        b.alasan_selesai,
         j.nama_jamur AS jenis
      FROM budidaya b
      JOIN jenis_jamur j ON b.id_jenis = j.id_jenis
@@ -100,6 +103,7 @@ async function getByPetugas(id_petugas) {
         b.tanggal_mulai,
         b.status,
         b.jumlah_rak,
+        b.alasan_selesai,
         l.id_lokasi, l.nama_lokasi,
         j.id_jenis, j.nama_jamur,
         m.id_media, m.nama_media,
@@ -123,6 +127,7 @@ async function getSummary() {
         b.tanggal_mulai,
         b.status,
         b.jumlah_rak,
+        b.alasan_selesai,
         l.nama_lokasi,
         j.nama_jamur,
         m.nama_media,

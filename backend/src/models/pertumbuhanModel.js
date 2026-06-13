@@ -10,7 +10,8 @@ async function getAll() {
         p.tanggal_pengamatan,
         p.fase,
         p.detail_fase,
-        p.catatan
+        p.catatan,
+        p.foto
      FROM pertumbuhan p
      JOIN users u ON p.id_petugas = u.id_user
      ORDER BY p.id_pertumbuhan DESC`
@@ -28,7 +29,8 @@ async function getById(id) {
         p.tanggal_pengamatan,
         p.fase,
         p.detail_fase,
-        p.catatan
+        p.catatan,
+        p.foto
      FROM pertumbuhan p
      JOIN users u ON p.id_petugas = u.id_user
      WHERE p.id_pertumbuhan = ?`,
@@ -47,7 +49,8 @@ async function getByBudidaya(id_budidaya) {
         p.tanggal_pengamatan,
         p.fase,
         p.detail_fase,
-        p.catatan
+        p.catatan,
+        p.foto
      FROM pertumbuhan p
      JOIN users u ON p.id_petugas = u.id_user
      WHERE p.id_budidaya = ?
@@ -65,12 +68,13 @@ async function create(data) {
     fase,
     detail_fase,
     catatan,
+    foto,
   } = data;
 
   const [result] = await db.query(
     `INSERT INTO pertumbuhan
-     (id_budidaya, id_petugas, tanggal_pengamatan, fase, detail_fase, catatan)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+     (id_budidaya, id_petugas, tanggal_pengamatan, fase, detail_fase, catatan, foto)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
       id_budidaya,
       id_petugas,
@@ -78,6 +82,7 @@ async function create(data) {
       fase || null,
       detail_fase || null,
       catatan || null,
+      foto || null,
     ]
   );
 
@@ -92,11 +97,12 @@ async function update(id, data) {
     fase,
     detail_fase,
     catatan,
+    foto,
   } = data;
 
   const [result] = await db.query(
     `UPDATE pertumbuhan
-     SET id_budidaya = ?, id_petugas = ?, tanggal_pengamatan = ?, fase = ?, detail_fase = ?, catatan = ?
+     SET id_budidaya = ?, id_petugas = ?, tanggal_pengamatan = ?, fase = ?, detail_fase = ?, catatan = ?, foto = ?
      WHERE id_pertumbuhan = ?`,
     [
       id_budidaya,
@@ -105,6 +111,7 @@ async function update(id, data) {
       fase || null,
       detail_fase || null,
       catatan || null,
+      foto || null,
       id,
     ]
   );
@@ -122,7 +129,8 @@ async function getByLokasi(id_lokasi) {
         p.tanggal_pengamatan,
         p.fase,
         p.detail_fase,
-        p.catatan
+        p.catatan,
+        p.foto
      FROM pertumbuhan p
      JOIN budidaya b ON p.id_budidaya = b.id_budidaya
      JOIN users u ON p.id_petugas = u.id_user

@@ -30,10 +30,10 @@ exports.getByBudidaya = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  const { id_budidaya, tanggal_pengukuran, suhu, kelembaban, intensitas_cahaya } = req.body;
+  const { id_budidaya, tanggal_pengukuran, waktu_pengukuran, suhu, kelembaban, intensitas_cahaya } = req.body;
 
-  if (!id_budidaya || !tanggal_pengukuran) {
-    return res.status(400).json({ success: false, message: "id_budidaya dan tanggal_pengukuran wajib diisi" });
+  if (!id_budidaya || !tanggal_pengukuran || !waktu_pengukuran || suhu == null || kelembaban == null) {
+    return res.status(400).json({ success: false, message: "id_budidaya, tanggal, waktu, suhu, dan kelembaban wajib diisi" });
   }
 
   if (!(await budidayaModel.exists(id_budidaya))) {
@@ -56,6 +56,7 @@ exports.create = async (req, res) => {
     id_budidaya,
     id_petugas,
     tanggal_pengukuran,
+    waktu_pengukuran,
     suhu,
     kelembaban,
     intensitas_cahaya
@@ -66,10 +67,10 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   const id = Number(req.params.id);
-  const { id_budidaya, tanggal_pengukuran, suhu, kelembaban, intensitas_cahaya } = req.body;
+  const { id_budidaya, tanggal_pengukuran, waktu_pengukuran, suhu, kelembaban, intensitas_cahaya } = req.body;
 
-  if (!id_budidaya || !tanggal_pengukuran) {
-    return res.status(400).json({ success: false, message: "id_budidaya dan tanggal_pengukuran wajib diisi" });
+  if (!id_budidaya || !tanggal_pengukuran || !waktu_pengukuran || suhu == null || kelembaban == null) {
+    return res.status(400).json({ success: false, message: "id_budidaya, tanggal, waktu, suhu, dan kelembaban wajib diisi" });
   }
 
   if (!(await budidayaModel.exists(id_budidaya))) {
@@ -95,6 +96,7 @@ exports.update = async (req, res) => {
     id_budidaya,
     id_petugas,
     tanggal_pengukuran,
+    waktu_pengukuran,
     suhu,
     kelembaban,
     intensitas_cahaya

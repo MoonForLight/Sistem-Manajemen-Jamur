@@ -82,7 +82,11 @@ async function ensureSchema() {
         id_media INT(11) NOT NULL,
         id_petugas INT(11) NOT NULL,
         tanggal_mulai DATE DEFAULT NULL,
+        tanggal_selesai DATE DEFAULT NULL,
         status VARCHAR(50) DEFAULT NULL,
+        alasan_selesai VARCHAR(100) DEFAULT NULL,
+        jumlah_rak INT(11) NOT NULL DEFAULT 1,
+        catatan TEXT DEFAULT NULL,
         PRIMARY KEY (id_budidaya),
         KEY fk_budidaya_lokasi_idx (id_lokasi),
         KEY fk_budidaya_jenis_idx (id_jenis),
@@ -104,6 +108,7 @@ async function ensureSchema() {
         fase VARCHAR(100) DEFAULT NULL,
         detail_fase TEXT DEFAULT NULL,
         catatan TEXT DEFAULT NULL,
+        foto VARCHAR(255) DEFAULT NULL,
         PRIMARY KEY (id_pertumbuhan),
         KEY fk_pertumbuhan_budidaya_idx (id_budidaya),
         KEY fk_pertumbuhan_petugas_idx (id_petugas),
@@ -118,6 +123,7 @@ async function ensureSchema() {
         id_budidaya INT(11) NOT NULL,
         id_petugas INT(11) NOT NULL,
         tanggal_pengukuran DATE NOT NULL,
+        waktu_pengukuran VARCHAR(20) DEFAULT 'Pagi',
         suhu DECIMAL(5,2) DEFAULT NULL,
         kelembaban DECIMAL(5,2) DEFAULT NULL,
         intensitas_cahaya DECIMAL(5,2) DEFAULT NULL,
@@ -142,6 +148,19 @@ async function ensureSchema() {
         KEY fk_panen_petugas_idx (id_petugas),
         CONSTRAINT fk_panen_budidaya FOREIGN KEY (id_budidaya) REFERENCES budidaya(id_budidaya) ON DELETE CASCADE ON UPDATE CASCADE,
         CONSTRAINT fk_panen_petugas FOREIGN KEY (id_petugas) REFERENCES users(id_user) ON DELETE RESTRICT ON UPDATE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
+    },
+    {
+      name: 'download_logs',
+      sql: `CREATE TABLE IF NOT EXISTS download_logs (
+        id_log INT(11) NOT NULL AUTO_INCREMENT,
+        nama VARCHAR(150) NOT NULL,
+        email VARCHAR(150) NOT NULL,
+        instansi VARCHAR(150) NOT NULL,
+        tujuan TEXT NOT NULL,
+        tanggal_download DATETIME DEFAULT CURRENT_TIMESTAMP,
+        tipe_laporan VARCHAR(100) NOT NULL,
+        PRIMARY KEY (id_log)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
     },
   ];
@@ -227,6 +246,22 @@ async function migrateLegacySchema() {
 
       await db.query(`ALTER TABLE pertumbuhan DROP COLUMN suhu, DROP COLUMN kelembaban, DROP COLUMN intensitas_cahaya`);
     }
+
+    const [budidayaSelesaiCol] = await db.query("SHOW COLUMNS FROM budidaya LIKE 'alasan_selesai'");
+    if (budidayaSelesaiCol.length === 0) {
+      await db.query("ALTER TABLE budidaya ADD COLUMN alasan_selesai VARCHAR(100) DEFAULT NULL");
+    }
+
+    const [pertumbuhanFotoCol] = await db.query("SHOW COLUMNS FROM pertumbuhan LIKE 'foto'");
+    if (pertumbuhanFotoCol.length === 0) {
+      await db.query("ALTER TABLE pertumbuhan ADD COLUMN foto VARCHAR(255) DEFAULT NULL");
+    }
+
+    const [lingkunganWaktuCol] = await db.query("SHOW COLUMNS FROM lingkungan_harian LIKE 'waktu_pengukuran'");
+    if (lingkunganWaktuCol.length === 0) {
+      await db.query("ALTER TABLE lingkungan_harian ADD COLUMN waktu_pengukuran VARCHAR(20) DEFAULT 'Pagi'");
+    }
+
   } catch (err) {
     console.warn('Legacy schema migration failed:', err.code || err.message);
   }

@@ -93,7 +93,7 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   const id = Number(req.params.id);
-  const { id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status, jumlah_rak } = req.body;
+  const { id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status, jumlah_rak, alasan_selesai } = req.body;
 
   if (!id_lokasi || !id_jenis || !id_media || !id_petugas || !tanggal_mulai) {
     return res.status(400).json({
@@ -137,7 +137,8 @@ exports.update = async (req, res) => {
     id_petugas,
     tanggal_mulai,
     status: status || "aktif",
-    jumlah_rak: Number(jumlah_rak) || 1
+    jumlah_rak: Number(jumlah_rak) || 1,
+    alasan_selesai: alasan_selesai || null
   });
 
   if (affected === 0) {

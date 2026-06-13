@@ -134,10 +134,20 @@
         <div class="logout-modal fade-in-up" style="background: white; border-radius: 16px; padding: 32px; width: 340px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
           <div class="modal-icon" style="font-size: 48px; margin-bottom: 16px;">📦</div>
           <h3 class="modal-title" style="margin: 0 0 8px 0; font-size: 20px; font-weight: 800; color: #111827;">Selesaikan Siklus?</h3>
-          <p class="modal-text" style="margin: 0 0 24px 0; color: #6b7280; font-size: 14px;">Rak yang digunakan akan kembali tersedia. Siklus ini tidak dapat dikembalikan ke status aktif.</p>
-          <div class="modal-actions" style="display: flex; gap: 12px;">
+          <p class="modal-text" style="margin: 0 0 16px 0; color: #6b7280; font-size: 14px;">Rak yang digunakan akan kembali tersedia. Siklus ini tidak dapat dikembalikan ke status aktif.</p>
+          <div class="form-group" style="text-align: left; margin-bottom: 16px;">
+            <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px;">Penyebab Selesai <span class="text-danger">*</span></label>
+            <select v-model="alasanSelesai" class="modern-select" style="width: 100%;" required>
+              <option value="" disabled>Pilih Alasan</option>
+              <option value="Berhasil (Panen Selesai)">Berhasil (Panen Selesai)</option>
+              <option value="Gagal (Kontaminasi/Hama)">Gagal (Kontaminasi/Hama)</option>
+              <option value="Rusak">Rusak</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+          </div>
+          <div class="modal-actions" style="display: flex; gap: 12px; margin-top: 16px;">
             <button class="btn-cancel" @click="closeSelesaiModal" style="flex: 1; padding: 10px; border: 1px solid #d1d5db; background: white; border-radius: 8px; font-weight: 600; color: #374151; cursor: pointer;">Batal</button>
-            <button class="btn-confirm" @click="confirmSelesai" :disabled="isSubmittingSelesai" style="flex: 1; padding: 10px; border: none; background: #f59e0b; color: white; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            <button class="btn-confirm" @click="confirmSelesai" :disabled="isSubmittingSelesai || !alasanSelesai" style="flex: 1; padding: 10px; border: none; background: #f59e0b; color: white; border-radius: 8px; font-weight: 600; cursor: pointer;">
               {{ isSubmittingSelesai ? 'Tunggu...' : 'Ya, Selesaikan' }}
             </button>
           </div>
@@ -145,7 +155,6 @@
       </div>
 
         <div class="tabs-container">
-          <button :class="['tab-btn', { active: activeForm === 'lingkungan' }]" @click="setActiveForm('lingkungan')">Data Lingkungan</button>
           <button :class="['tab-btn', { active: activeForm === 'pertumbuhan' }]" @click="setActiveForm('pertumbuhan')">Fase Pertumbuhan</button>
           
           <div class="tab-wrapper" :title="!isPanenAllowed ? 'Terkunci: Ubah fase pertumbuhan ke \'Siap Panen\' terlebih dahulu.' : ''">
@@ -157,35 +166,6 @@
               <span v-if="!isPanenAllowed" style="margin-right: 6px;">🔒</span> Input Panen
             </button>
           </div>
-        </div>
-
-        <div v-if="activeForm === 'lingkungan'" class="form-card fade-in">
-          <h2 class="form-title">Pencatatan Lingkungan Harian</h2>
-          <form @submit.prevent="submitLingkungan">
-            <div class="form-grid">
-              <div class="form-group full-width">
-                <label>Tanggal Pengukuran</label>
-                <input type="date" v-model="formLingkungan.tanggal_pengukuran" required class="modern-input" />
-              </div>
-              <div class="form-group">
-                <label>Suhu Lingkungan (°C)</label>
-                <input type="number" step="0.1" v-model="formLingkungan.suhu" placeholder="Misal: 25.5" class="modern-input" required />
-              </div>
-              <div class="form-group">
-                <label>Kelembapan Lingkungan (%)</label>
-                <input type="number" step="0.1" v-model="formLingkungan.kelembaban" placeholder="Misal: 85.0" class="modern-input" required />
-              </div>
-              <div class="form-group full-width">
-                <label>Intensitas Cahaya (Lux/Lumens) <span class="text-muted">- Opsional</span></label>
-                <input type="number" step="0.1" v-model="formLingkungan.intensitas_cahaya" placeholder="Misal: 300" class="modern-input" />
-              </div>
-            </div>
-            <div class="form-actions">
-              <button type="submit" class="btn-primary" :disabled="isSubmitting">
-                 {{ isSubmitting ? 'Menyimpan...' : 'Simpan Data Lingkungan' }}
-              </button>
-            </div>
-          </form>
         </div>
 
         <div v-if="activeForm === 'pertumbuhan'" class="form-card fade-in">
@@ -215,6 +195,11 @@
                   <button type="button" @click="removeDetail(index)" class="btn-remove">Hapus</button>
                 </div>
                 <button type="button" @click="addDetail" class="btn-add-detail">+ Tambah Parameter</button>
+              </div>
+
+              <div class="form-group full-width">
+                <label>Upload Foto (Opsional)</label>
+                <input type="file" @change="handleFotoUpload" accept="image/*" class="modern-input" />
               </div>
 
               <div class="form-group full-width">
@@ -268,10 +253,12 @@ const budidayaList = ref([])
 const growthRecords = ref([])
 const loading = ref(true)
 const selectedBudidaya = ref(null)
-const activeForm = ref('lingkungan')
+const activeForm = ref('pertumbuhan')
 const isSubmitting = ref(false)
 const isSelesaiModalOpen = ref(false)
 const isSubmittingSelesai = ref(false)
+const alasanSelesai = ref('')
+const selectedFoto = ref(null)
 
 function openSelesaiModal() {
   isSelesaiModalOpen.value = true
@@ -282,14 +269,26 @@ function closeSelesaiModal() {
 }
 
 async function confirmSelesai() {
+  if (!alasanSelesai.value) {
+    showToast('Pilih penyebab selesai terlebih dahulu', 'error')
+    return
+  }
   isSubmittingSelesai.value = true
   try {
-    const payload = { ...selectedBudidaya.value, status: 'selesai' }
+    const payload = { 
+      ...selectedBudidaya.value, 
+      status: 'selesai',
+      alasan_selesai: alasanSelesai.value
+    }
+    if (payload.tanggal_mulai) {
+      payload.tanggal_mulai = String(payload.tanggal_mulai).split('T')[0]
+    }
     const res = await budidayaService.update(selectedBudidaya.value.id_budidaya, payload)
     if (res?.success) {
       showToast('Siklus budidaya berhasil diselesaikan!', 'success')
       closeSelesaiModal()
       selectedBudidaya.value = null
+      alasanSelesai.value = ''
       await fetchBudidaya()
     } else {
       showToast('Gagal: ' + (res?.message || 'Terjadi kesalahan'), 'error')
@@ -332,13 +331,6 @@ const isPanenAllowed = computed(() => {
 
 const d_init = new Date()
 const localDateInit = `${d_init.getFullYear()}-${String(d_init.getMonth() + 1).padStart(2, '0')}-${String(d_init.getDate()).padStart(2, '0')}`
-
-const formLingkungan = ref({
-  tanggal_pengukuran: localDateInit,
-  suhu: '',
-  kelembaban: '',
-  intensitas_cahaya: ''
-})
 
 const formPertumbuhan = ref({
   tanggal_pengamatan: localDateInit,
@@ -459,17 +451,12 @@ function handleSelectChange() {
   const d = new Date()
   const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   
-  formLingkungan.value = {
-    tanggal_pengukuran: localDate,
-    suhu: '',
-    kelembaban: '',
-    intensitas_cahaya: ''
-  }
   formPertumbuhan.value = {
     tanggal_pengamatan: localDate,
     fase: '',
     catatan: ''
   }
+  selectedFoto.value = null
   dynamicDetails.value = []
   formPanen.value = {
     tanggal_panen: localDate,
@@ -491,26 +478,24 @@ function setActiveForm(form) {
   localStorage.setItem('petugasActiveForm', form)
 }
 
-async function submitLingkungan() {
-  isSubmitting.value = true
-  try {
-    const payload = {
-      ...formLingkungan.value,
-      id_budidaya: selectedBudidaya.value.id_budidaya,
-      intensitas_cahaya: formLingkungan.value.intensitas_cahaya || 0
+function handleFotoUpload(event) {
+  const file = event.target.files[0]
+  if (file) {
+    if (!file.type.startsWith('image/')) {
+      showToast('Harus file gambar', 'error')
+      event.target.value = ''
+      selectedFoto.value = null
+      return
     }
-    const res = await lingkunganService.create(payload)
-    if (res?.success) {
-      showToast('Kondisi lingkungan harian berhasil dicatat!', 'success')
-      handleSelectChange()
-    } else {
-      showToast('Gagal: ' + (res?.message || 'Terjadi kesalahan'), 'error')
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Maksimal ukuran foto 5MB', 'error')
+      event.target.value = ''
+      selectedFoto.value = null
+      return
     }
-  } catch (e) {
-    console.error(e)
-    showToast(e.response?.data?.message || 'Koneksi ke server gagal', 'error')
-  } finally {
-    isSubmitting.value = false
+    selectedFoto.value = file
+  } else {
+    selectedFoto.value = null
   }
 }
 
@@ -524,12 +509,21 @@ async function submitPertumbuhan() {
       }
     })
 
-    const payload = {
-      ...formPertumbuhan.value,
-      id_budidaya: selectedBudidaya.value.id_budidaya,
-      detail_fase: Object.keys(detailObj).length > 0 ? JSON.stringify(detailObj) : null
+    const formData = new FormData();
+    formData.append('id_budidaya', selectedBudidaya.value.id_budidaya);
+    formData.append('tanggal_pengamatan', formPertumbuhan.value.tanggal_pengamatan);
+    formData.append('fase', formPertumbuhan.value.fase);
+    if (formPertumbuhan.value.catatan) {
+      formData.append('catatan', formPertumbuhan.value.catatan);
     }
-    const res = await pertumbuhanService.create(payload)
+    if (Object.keys(detailObj).length > 0) {
+      formData.append('detail_fase', JSON.stringify(detailObj));
+    }
+    if (selectedFoto.value) {
+      formData.append('foto', selectedFoto.value);
+    }
+
+    const res = await pertumbuhanService.create(formData)
     if (res?.success) {
       showToast('Fase pertumbuhan berhasil dicatat!', 'success')
 
@@ -583,7 +577,7 @@ function formatDate(dateString) {
 
 onMounted(async () => {
   const savedForm = localStorage.getItem('petugasActiveForm')
-  if (savedForm) {
+  if (savedForm && savedForm !== 'lingkungan') {
     activeForm.value = savedForm
   }
   await fetchBudidaya()

@@ -31,6 +31,7 @@ exports.getByBudidaya = async (req, res) => {
 
 exports.create = async (req, res) => {
   const { id_budidaya, tanggal_pengamatan, fase, detail_fase, catatan } = req.body;
+  const foto = req.file ? req.file.filename : null;
 
   if (!id_budidaya || !tanggal_pengamatan) {
     return res.status(400).json({ success: false, message: "id_budidaya dan tanggal_pengamatan wajib diisi" });
@@ -59,6 +60,7 @@ exports.create = async (req, res) => {
     fase,
     detail_fase,
     catatan,
+    foto,
   });
 
   res.status(201).json({ success: true, message: "Pertumbuhan berhasil dicatat", data: { id_pertumbuhan: newId } });
@@ -67,6 +69,7 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
   const id = Number(req.params.id);
   const { id_budidaya, tanggal_pengamatan, fase, detail_fase, catatan } = req.body;
+  const foto = req.file ? req.file.filename : req.body.foto;
 
   if (!id_budidaya || !tanggal_pengamatan) {
     return res.status(400).json({ success: false, message: "id_budidaya dan tanggal_pengamatan wajib diisi" });
@@ -98,6 +101,7 @@ exports.update = async (req, res) => {
     fase,
     detail_fase,
     catatan,
+    foto,
   });
 
   if (affected === 0) return res.status(404).json({ success: false, message: "Data pertumbuhan tidak ditemukan" });

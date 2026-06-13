@@ -8,12 +8,13 @@ async function getAll() {
         l.id_petugas,
         u.nama AS nama_petugas,
         l.tanggal_pengukuran,
+        l.waktu_pengukuran,
         l.suhu,
         l.kelembaban,
         l.intensitas_cahaya
      FROM lingkungan_harian l
      JOIN users u ON l.id_petugas = u.id_user
-     ORDER BY l.tanggal_pengukuran DESC, l.id_lingkungan DESC`
+     ORDER BY l.tanggal_pengukuran DESC, l.waktu_pengukuran DESC, l.id_lingkungan DESC`
   );
   return rows;
 }
@@ -26,6 +27,7 @@ async function getById(id) {
         l.id_petugas,
         u.nama AS nama_petugas,
         l.tanggal_pengukuran,
+        l.waktu_pengukuran,
         l.suhu,
         l.kelembaban,
         l.intensitas_cahaya
@@ -45,6 +47,7 @@ async function getByBudidaya(id_budidaya) {
         l.id_petugas,
         u.nama AS nama_petugas,
         l.tanggal_pengukuran,
+        l.waktu_pengukuran,
         l.suhu,
         l.kelembaban,
         l.intensitas_cahaya
@@ -62,6 +65,7 @@ async function create(data) {
     id_budidaya,
     id_petugas,
     tanggal_pengukuran,
+    waktu_pengukuran,
     suhu,
     kelembaban,
     intensitas_cahaya
@@ -69,12 +73,13 @@ async function create(data) {
 
   const [result] = await db.query(
     `INSERT INTO lingkungan_harian
-     (id_budidaya, id_petugas, tanggal_pengukuran, suhu, kelembaban, intensitas_cahaya)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+     (id_budidaya, id_petugas, tanggal_pengukuran, waktu_pengukuran, suhu, kelembaban, intensitas_cahaya)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
       id_budidaya,
       id_petugas,
       tanggal_pengukuran,
+      waktu_pengukuran || 'Pagi',
       suhu || null,
       kelembaban || null,
       intensitas_cahaya || null,
@@ -89,6 +94,7 @@ async function update(id, data) {
     id_budidaya,
     id_petugas,
     tanggal_pengukuran,
+    waktu_pengukuran,
     suhu,
     kelembaban,
     intensitas_cahaya
@@ -96,12 +102,13 @@ async function update(id, data) {
 
   const [result] = await db.query(
     `UPDATE lingkungan_harian
-     SET id_budidaya = ?, id_petugas = ?, tanggal_pengukuran = ?, suhu = ?, kelembaban = ?, intensitas_cahaya = ?
+     SET id_budidaya = ?, id_petugas = ?, tanggal_pengukuran = ?, waktu_pengukuran = ?, suhu = ?, kelembaban = ?, intensitas_cahaya = ?
      WHERE id_lingkungan = ?`,
     [
       id_budidaya,
       id_petugas,
       tanggal_pengukuran,
+      waktu_pengukuran || 'Pagi',
       suhu || null,
       kelembaban || null,
       intensitas_cahaya || null,
@@ -120,6 +127,7 @@ async function getByLokasi(id_lokasi) {
         l.id_petugas,
         u.nama AS nama_petugas,
         l.tanggal_pengukuran,
+        l.waktu_pengukuran,
         l.suhu,
         l.kelembaban,
         l.intensitas_cahaya
