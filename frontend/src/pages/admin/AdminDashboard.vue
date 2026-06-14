@@ -128,12 +128,45 @@
         </div>
       </div>
     </div>
+
+    <div class="panel mt-24 download-panel">
+      <div class="panel-header flex-between">
+        <div>
+          <h3 class="panel-title">Peminat & Riwayat Ekspor Data</h3>
+          <p class="panel-subtitle">Identitas wajib dicatat sebelum file dapat diunduh.</p>
+        </div>
+        <button class="btn-link button-link" @click="loadDownloadRecap">Muat Ulang</button>
+      </div>
+      <div class="download-summary-grid">
+        <div class="download-summary"><strong>{{ downloadRecap.ringkasan.total_download }}</strong><span>Total unduhan</span></div>
+        <div class="download-summary"><strong>{{ downloadRecap.ringkasan.download_bulan_ini }}</strong><span>Bulan ini</span></div>
+        <div class="download-summary"><strong>{{ downloadRecap.ringkasan.pengunduh_unik }}</strong><span>Pengunduh unik</span></div>
+        <div class="download-summary"><strong>{{ downloadRecap.ringkasan.instansi_unik }}</strong><span>Instansi unik</span></div>
+      </div>
+      <div class="download-grid">
+        <div>
+          <h4>Tipe laporan terpopuler</h4>
+          <div v-if="!downloadRecap.top_tipe_laporan.length" class="empty-state py-4">Belum ada unduhan.</div>
+          <div v-for="item in downloadRecap.top_tipe_laporan" :key="item.tipe_laporan" class="download-row">
+            <span>{{ item.tipe_laporan }}</span><strong>{{ item.total }}×</strong>
+          </div>
+        </div>
+        <div>
+          <h4>Unduhan terbaru</h4>
+          <div v-if="!downloadRecap.terbaru.length" class="empty-state py-4">Belum ada riwayat.</div>
+          <div v-for="item in downloadRecap.terbaru.slice(0, 5)" :key="item.id_log" class="download-row download-recent">
+            <span><b>{{ item.nama }}</b><small>{{ item.instansi }} · {{ item.tipe_laporan }}</small></span>
+            <strong>{{ formatDate(item.tanggal_download) }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { lokasiService, budidayaService, jenisJamurService, mediaTanamService, usersService, pertumbuhanService, panenService, lingkunganService } from '../../services/dataService.js'
+import { lokasiService, budidayaService, jenisJamurService, mediaTanamService, usersService, pertumbuhanService, panenService, lingkunganService, downloadService } from '../../services/dataService.js'
 
 import { Line, Doughnut } from 'vue-chartjs'
 import {
@@ -150,6 +183,13 @@ const budidayaList = ref([])
 const growthRecords = ref([])
 const harvestRecords = ref([])
 const envRecords = ref([])
+const downloadRecap = ref({
+  ringkasan: { total_download: 0, download_bulan_ini: 0, pengunduh_unik: 0, instansi_unik: 0 },
+  top_tipe_laporan: [],
+  top_id_budidaya: [],
+  top_pengunduh: [],
+  terbaru: []
+})
 
 const d_now = new Date()
 const today = `${d_now.getFullYear()}-${String(d_now.getMonth() + 1).padStart(2, '0')}-${String(d_now.getDate()).padStart(2, '0')}`
@@ -270,17 +310,27 @@ function getSuhuColor(val) {
   return 'text-green'
 }
 
+async function loadDownloadRecap() {
+  try {
+    const response = await downloadService.getRekapTop(10)
+    if (response?.success && response.data) downloadRecap.value = response.data
+  } catch (error) {
+    console.error('Gagal memuat rekap download:', error)
+  }
+}
+
 async function loadDashboard() {
   isLoading.value = true
   try {
-    const [lokasiRes, jenisRes, petugasRes, budidayaRes, growthRes, panenRes, envRes] = await Promise.all([
+    const [lokasiRes, jenisRes, petugasRes, budidayaRes, growthRes, panenRes, envRes, downloadRes] = await Promise.all([
       lokasiService.getAll(),
       jenisJamurService.getAll(),
       usersService.getPetugasList(),
       budidayaService.getAll(),
       pertumbuhanService.getAll(),
       panenService.getAll(),
-      lingkunganService.getAll()
+      lingkunganService.getAll(),
+      downloadService.getRekapTop(10)
     ])
 
     if (lokasiRes?.success) { locations.value = lokasiRes.data; stats.value.lokasi = locations.value.length }
@@ -293,6 +343,7 @@ async function loadDashboard() {
     }
     if (growthRes?.success) growthRecords.value = growthRes.data
     if (envRes?.success) envRecords.value = envRes.data
+    if (downloadRes?.success && downloadRes.data) downloadRecap.value = downloadRes.data
     if (panenRes?.success) {
       harvestRecords.value = panenRes.data
       stats.value.panenBulanIni = harvestRecords.value
@@ -352,6 +403,18 @@ onMounted(loadDashboard)
 .chart-container { height: 300px; position: relative; width: 100%; }
 .chart-container-pie { height: 260px; position: relative; width: 100%; display: flex; justify-content: center; }
 
+.download-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+.download-summary { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 4px; }
+.download-summary strong { font-size: 24px; color: #166534; }
+.download-summary span { font-size: 12px; color: #6b7280; font-weight: 700; text-transform: uppercase; }
+.download-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.download-grid h4 { margin: 0 0 12px; color: #111827; }
+.download-row { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+.download-row strong { white-space: nowrap; color: #166534; }
+.download-recent span { display: flex; flex-direction: column; gap: 3px; }
+.download-recent small { color: #6b7280; }
+.button-link { border: 0; cursor: pointer; }
+@media (max-width: 900px) { .download-summary-grid { grid-template-columns: repeat(2, 1fr); } .download-grid { grid-template-columns: 1fr; } }
 .location-list { display: flex; flex-direction: column; gap: 12px; }
 .location-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-radius: 12px; border: 1px solid #f3f4f6; background: #fafbfc; transition: all 0.2s; }
 .location-item:hover { background: white; border-color: #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }

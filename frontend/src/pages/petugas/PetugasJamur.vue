@@ -112,6 +112,10 @@
             <span class="value">{{ selectedBudidaya.nama_lokasi }}</span>
           </div>
           <div class="info-item">
+            <span class="label">Rak Fokus</span>
+            <span class="value fw-bold">{{ selectedRak ? `Rak ${selectedRak} dari ${selectedBudidaya.jumlah_rak || 1}` : `${selectedBudidaya.jumlah_rak || 1} rak (semua)` }}</span>
+          </div>
+          <div class="info-item">
             <span class="label">Fase Saat Ini</span>
             <span class="value fw-bold text-blue">{{ latestFase || 'Belum Ada' }}</span>
           </div>
@@ -144,10 +148,18 @@
               <option value="Rusak">Rusak</option>
               <option value="Lainnya">Lainnya</option>
             </select>
+            <input
+              v-if="alasanSelesai === 'Lainnya'"
+              v-model.trim="alasanLainnya"
+              maxlength="100"
+              class="modern-input"
+              style="margin-top: 10px;"
+              placeholder="Jelaskan alasan selesai"
+            />
           </div>
           <div class="modal-actions" style="display: flex; gap: 12px; margin-top: 16px;">
             <button class="btn-cancel" @click="closeSelesaiModal" style="flex: 1; padding: 10px; border: 1px solid #d1d5db; background: white; border-radius: 8px; font-weight: 600; color: #374151; cursor: pointer;">Batal</button>
-            <button class="btn-confirm" @click="confirmSelesai" :disabled="isSubmittingSelesai || !alasanSelesai" style="flex: 1; padding: 10px; border: none; background: #f59e0b; color: white; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            <button class="btn-confirm" @click="confirmSelesai" :disabled="isSubmittingSelesai || !alasanSelesai || (alasanSelesai === 'Lainnya' && alasanLainnya.length < 3)" style="flex: 1; padding: 10px; border: none; background: #f59e0b; color: white; border-radius: 8px; font-weight: 600; cursor: pointer;">
               {{ isSubmittingSelesai ? 'Tunggu...' : 'Ya, Selesaikan' }}
             </button>
           </div>
@@ -170,11 +182,15 @@
 
         <div v-if="activeForm === 'pertumbuhan'" class="form-card fade-in">
           <h2 class="form-title">Laporan Fase Pertumbuhan</h2>
+          <p class="daily-progress" :class="{ complete: todayGrowthCount >= (selectedBudidaya.target_pertumbuhan_harian || 2) }">
+            Hari ini: {{ todayGrowthCount }}/{{ selectedBudidaya.target_pertumbuhan_harian || 2 }} pencatatan minimum. Input tambahan tetap diperbolehkan.
+          </p>
           <form @submit.prevent="submitPertumbuhan">
             <div class="form-grid">
               <div class="form-group">
                 <label>Tanggal Pengamatan</label>
-                <input type="date" v-model="formPertumbuhan.tanggal_pengamatan" required class="modern-input" />
+                <input type="date" v-model="formPertumbuhan.tanggal_pengamatan" :min="todayISO" :max="todayISO" disabled required class="modern-input" />
+                <small class="date-lock-note">Tanggal dikunci ke hari ini untuk pencatatan real-time.</small>
               </div>
               <div class="form-group">
                 <label>Fase Pertumbuhan</label>
@@ -188,7 +204,7 @@
               </div>
               
               <div class="form-group full-width">
-                <label>Detail Tambahan (Opsional)</label>
+                <label>Detail Tambahan</label>
                 <div v-for="(item, index) in dynamicDetails" :key="index" style="display: flex; gap: 8px; margin-bottom: 8px;">
                   <input v-model="item.key" placeholder="Nama Parameter (misal: Warna)" class="modern-input" style="flex: 1;" />
                   <input v-model="item.value" placeholder="Nilai (misal: Putih)" class="modern-input" style="flex: 1;" />
@@ -198,12 +214,16 @@
               </div>
 
               <div class="form-group full-width">
-                <label>Upload Foto (Opsional)</label>
-                <input type="file" @change="handleFotoUpload" accept="image/*" class="modern-input" />
+                <label>Upload Foto Pertumbuhan </label>
+                <input :key="growthFileInputKey" type="file" @change="handlePertumbuhanFotoUpload" accept="image/jpeg,image/png,image/webp,image/gif" class="modern-input" />
+                <div v-if="growthPhotoPreview" class="photo-preview-wrap">
+                  <img :src="growthPhotoPreview" alt="Preview foto pertumbuhan" class="photo-preview" />
+                  <span>{{ growthPhoto?.name }}</span>
+                </div>
               </div>
 
               <div class="form-group full-width">
-                <label>Catatan Ekstra</label>
+                <label>Catatan</label>
                 <textarea v-model="formPertumbuhan.catatan" class="modern-input" rows="3" placeholder="Contoh: Terlihat sedikit hama..."></textarea>
               </div>
             </div>
@@ -221,11 +241,20 @@
             <div class="form-grid">
               <div class="form-group">
                 <label>Tanggal Panen</label>
-                <input type="date" v-model="formPanen.tanggal_panen" required class="modern-input" />
+                <input type="date" v-model="formPanen.tanggal_panen" :min="todayISO" :max="todayISO" disabled required class="modern-input" />
+                <small class="date-lock-note">Tanggal dikunci ke hari ini untuk pencatatan real-time.</small>
               </div>
               <div class="form-group">
                 <label>Jumlah Panen (gram)</label>
-                <input type="number" step="0.1" v-model="formPanen.jumlah_panen" placeholder="Misal: 500" required class="modern-input" />
+                <input type="number" step="0.1" min="0.1" max="100000" v-model.number="formPanen.jumlah_panen" placeholder="Misal: 500" required class="modern-input" />
+              </div>
+              <div class="form-group full-width">
+                <label>Upload Foto Panen <span class="text-muted">- Opsional</span></label>
+                <input :key="harvestFileInputKey" type="file" @change="handlePanenFotoUpload" accept="image/jpeg,image/png,image/webp,image/gif" class="modern-input" />
+                <div v-if="harvestPhotoPreview" class="photo-preview-wrap">
+                  <img :src="harvestPhotoPreview" alt="Preview foto panen" class="photo-preview" />
+                  <span>{{ harvestPhoto?.name }}</span>
+                </div>
               </div>
               <div class="form-group full-width">
                 <label>Catatan Panen</label>
@@ -246,63 +275,53 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { budidayaService, pertumbuhanService, panenService, lingkunganService, usersService, jenisJamurService, mediaTanamService } from '../../services/dataService.js'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
+import { budidayaService, pertumbuhanService, panenService, usersService, jenisJamurService, mediaTanamService } from '../../services/dataService.js'
+
+const route = useRoute()
+const dInit = new Date()
+const todayISO = `${dInit.getFullYear()}-${String(dInit.getMonth() + 1).padStart(2, '0')}-${String(dInit.getDate()).padStart(2, '0')}`
+const allowedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 
 const budidayaList = ref([])
 const growthRecords = ref([])
 const loading = ref(true)
 const selectedBudidaya = ref(null)
+const selectedRak = ref(null)
 const activeForm = ref('pertumbuhan')
 const isSubmitting = ref(false)
 const isSelesaiModalOpen = ref(false)
 const isSubmittingSelesai = ref(false)
 const alasanSelesai = ref('')
-const selectedFoto = ref(null)
+const alasanLainnya = ref('')
 
-function openSelesaiModal() {
-  isSelesaiModalOpen.value = true
-}
-
-function closeSelesaiModal() {
-  isSelesaiModalOpen.value = false
-}
-
-async function confirmSelesai() {
-  if (!alasanSelesai.value) {
-    showToast('Pilih penyebab selesai terlebih dahulu', 'error')
-    return
-  }
-  isSubmittingSelesai.value = true
-  try {
-    const payload = { 
-      ...selectedBudidaya.value, 
-      status: 'selesai',
-      alasan_selesai: alasanSelesai.value
-    }
-    if (payload.tanggal_mulai) {
-      payload.tanggal_mulai = String(payload.tanggal_mulai).split('T')[0]
-    }
-    const res = await budidayaService.update(selectedBudidaya.value.id_budidaya, payload)
-    if (res?.success) {
-      showToast('Siklus budidaya berhasil diselesaikan!', 'success')
-      closeSelesaiModal()
-      selectedBudidaya.value = null
-      alasanSelesai.value = ''
-      await fetchBudidaya()
-    } else {
-      showToast('Gagal: ' + (res?.message || 'Terjadi kesalahan'), 'error')
-    }
-  } catch (e) {
-    console.error(e)
-    showToast(e.response?.data?.message || 'Koneksi ke server gagal', 'error')
-  } finally {
-    isSubmittingSelesai.value = false
-  }
-}
+const growthPhoto = ref(null)
+const growthPhotoPreview = ref('')
+const growthFileInputKey = ref(0)
+const harvestPhoto = ref(null)
+const harvestPhotoPreview = ref('')
+const harvestFileInputKey = ref(0)
 
 const toast = ref({ show: false, message: '', type: 'success' })
 let toastTimer = null
+
+const formPertumbuhan = ref({ tanggal_pengamatan: todayISO, fase: '', catatan: '' })
+const dynamicDetails = ref([])
+const formPanen = ref({ tanggal_panen: todayISO, jumlah_panen: '', catatan: '' })
+
+const myLokasi = ref({ nama_lokasi: '', rak_tersedia: 0, kapasitas_rak: 0 })
+const showNewBudidayaForm = ref(false)
+const isSubmittingNew = ref(false)
+const jenisOptions = ref([])
+const mediaOptions = ref([])
+const formNewBudidaya = ref({
+  id_jenis: '',
+  id_media: '',
+  jumlah_rak: 1,
+  tanggal_mulai: todayISO,
+  status: 'aktif'
+})
 
 function showToast(message, type = 'success') {
   if (toastTimer) clearTimeout(toastTimer)
@@ -310,76 +329,150 @@ function showToast(message, type = 'success') {
   toastTimer = setTimeout(() => { toast.value.show = false }, 3500)
 }
 
-const todayFormatted = computed(() => {
-  return new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
-})
+const todayFormatted = computed(() => (
+  new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+))
 
 const latestFase = computed(() => {
-  if (!selectedBudidaya.value) return ''
-  if (!growthRecords.value || !Array.isArray(growthRecords.value)) return ''
+  if (!selectedBudidaya.value || !Array.isArray(growthRecords.value)) return ''
   const selectedId = String(selectedBudidaya.value.id_budidaya)
-  const myRecords = growthRecords.value
-    .filter(g => String(g.id_budidaya) === selectedId)
-  if (myRecords.length === 0) return ''
-  myRecords.sort((a, b) => new Date(b.tanggal_pengamatan) - new Date(a.tanggal_pengamatan))
-  return myRecords[0]?.fase || ''
+  const records = growthRecords.value
+    .filter((item) => String(item.id_budidaya) === selectedId)
+    .slice()
+    .sort((a, b) => new Date(b.tanggal_pengamatan) - new Date(a.tanggal_pengamatan))
+  return records[0]?.fase || ''
 })
 
-const isPanenAllowed = computed(() => {
-  return latestFase.value === 'Panen'
+const todayGrowthCount = computed(() => {
+  if (!selectedBudidaya.value) return 0
+  return growthRecords.value.filter((item) =>
+    String(item.id_budidaya) === String(selectedBudidaya.value.id_budidaya) &&
+    String(item.tanggal_pengamatan || '').split('T')[0] === todayISO
+  ).length
 })
 
-const d_init = new Date()
-const localDateInit = `${d_init.getFullYear()}-${String(d_init.getMonth() + 1).padStart(2, '0')}-${String(d_init.getDate()).padStart(2, '0')}`
+const isPanenAllowed = computed(() => latestFase.value === 'Panen')
 
-const formPertumbuhan = ref({
-  tanggal_pengamatan: localDateInit,
-  fase: '',
-  catatan: ''
-})
+function revokePreview(previewRef) {
+  if (previewRef.value?.startsWith('blob:')) URL.revokeObjectURL(previewRef.value)
+  previewRef.value = ''
+}
 
-const dynamicDetails = ref([])
+function clearGrowthPhoto() {
+  revokePreview(growthPhotoPreview)
+  growthPhoto.value = null
+  growthFileInputKey.value += 1
+}
 
-const formPanen = ref({
-  tanggal_panen: localDateInit,
-  jumlah_panen: '',
-  catatan: ''
-})
+function clearHarvestPhoto() {
+  revokePreview(harvestPhotoPreview)
+  harvestPhoto.value = null
+  harvestFileInputKey.value += 1
+}
 
-const myLokasi = ref({ nama_lokasi: '', rak_tersedia: 0, kapasitas_rak: 0 })
-const showNewBudidayaForm = ref(false)
-const isSubmittingNew = ref(false)
-const jenisOptions = ref([])
-const mediaOptions = ref([])
+function validatePhoto(file) {
+  if (!allowedImageTypes.has(file.type)) return 'Format foto harus JPG, PNG, WEBP, atau GIF'
+  if (file.size > 5 * 1024 * 1024) return 'Ukuran foto maksimal 5 MB'
+  return null
+}
 
-const formNewBudidaya = ref({
-  id_jenis: '',
-  id_media: '',
-  jumlah_rak: 1,
-  tanggal_mulai: localDateInit,
-  status: 'aktif'
-})
+function handlePertumbuhanFotoUpload(event) {
+  const file = event.target.files?.[0]
+  clearGrowthPhoto()
+  if (!file) return
+  const error = validatePhoto(file)
+  if (error) {
+    showToast(error, 'error')
+    return
+  }
+  growthPhoto.value = file
+  growthPhotoPreview.value = URL.createObjectURL(file)
+}
 
-async function openNewBudidayaForm() {
-  // Fetch latest capacity & options
-  const [meRes, jRes, mRes] = await Promise.all([
-    usersService.getMe(),
-    jenisJamurService.getAll(),
-    mediaTanamService.getAll()
-  ])
-  
-  if (meRes?.success && meRes.data) {
-    myLokasi.value = {
-      nama_lokasi: meRes.data.nama_lokasi,
-      rak_tersedia: meRes.data.rak_tersedia || 0,
-      kapasitas_rak: meRes.data.kapasitas_rak || 0
-    }
+function handlePanenFotoUpload(event) {
+  const file = event.target.files?.[0]
+  clearHarvestPhoto()
+  if (!file) return
+  const error = validatePhoto(file)
+  if (error) {
+    showToast(error, 'error')
+    return
+  }
+  harvestPhoto.value = file
+  harvestPhotoPreview.value = URL.createObjectURL(file)
+}
+
+function resetForms() {
+  formPertumbuhan.value = { tanggal_pengamatan: todayISO, fase: '', catatan: '' }
+  dynamicDetails.value = []
+  formPanen.value = { tanggal_panen: todayISO, jumlah_panen: '', catatan: '' }
+  clearGrowthPhoto()
+  clearHarvestPhoto()
+}
+
+function openSelesaiModal() {
+  alasanSelesai.value = ''
+  alasanLainnya.value = ''
+  isSelesaiModalOpen.value = true
+}
+
+function closeSelesaiModal() {
+  isSelesaiModalOpen.value = false
+  alasanSelesai.value = ''
+  alasanLainnya.value = ''
+}
+
+async function confirmSelesai() {
+  if (!selectedBudidaya.value) {
+    showToast('Budidaya tidak ditemukan', 'error')
+    return
+  }
+  const alasan = alasanSelesai.value === 'Lainnya'
+    ? alasanLainnya.value.trim()
+    : alasanSelesai.value
+  if (alasan.length < 3) {
+    showToast('Jelaskan penyebab selesai dengan jelas', 'error')
+    return
   }
 
-  if (jRes?.success) jenisOptions.value = jRes.data
-  if (mRes?.success) mediaOptions.value = mRes.data
+  isSubmittingSelesai.value = true
+  try {
+    const res = await budidayaService.selesaikan(selectedBudidaya.value.id_budidaya, alasan)
+    if (res?.success) {
+      showToast('Siklus budidaya berhasil diselesaikan!', 'success')
+      closeSelesaiModal()
+      selectedBudidaya.value = null
+      selectedRak.value = null
+      await fetchBudidaya()
+    }
+  } catch (error) {
+    console.error(error)
+    showToast(error.message || 'Gagal menyelesaikan siklus', 'error')
+  } finally {
+    isSubmittingSelesai.value = false
+  }
+}
 
-  showNewBudidayaForm.value = true
+async function openNewBudidayaForm() {
+  try {
+    const [meRes, jRes, mRes] = await Promise.all([
+      usersService.getMe(),
+      jenisJamurService.getAll(),
+      mediaTanamService.getAll()
+    ])
+    if (meRes?.success && meRes.data) {
+      myLokasi.value = {
+        nama_lokasi: meRes.data.nama_lokasi,
+        rak_tersedia: meRes.data.rak_tersedia || 0,
+        kapasitas_rak: meRes.data.kapasitas_rak || 0
+      }
+    }
+    if (jRes?.success) jenisOptions.value = jRes.data
+    if (mRes?.success) mediaOptions.value = mRes.data
+    showNewBudidayaForm.value = true
+  } catch (error) {
+    showToast(error.message || 'Gagal memuat form budidaya', 'error')
+  }
 }
 
 function closeNewBudidayaForm() {
@@ -388,26 +481,19 @@ function closeNewBudidayaForm() {
 
 async function submitNewBudidaya() {
   if (formNewBudidaya.value.jumlah_rak > myLokasi.value.rak_tersedia) {
-    showToast(`Gagal: Jumlah rak melebihi sisa kapasitas (${myLokasi.value.rak_tersedia}).`, 'error')
+    showToast(`Jumlah rak melebihi sisa kapasitas (${myLokasi.value.rak_tersedia}).`, 'error')
     return
   }
-
   isSubmittingNew.value = true
   try {
-    const payload = {
-      ...formNewBudidaya.value
-    }
-    const res = await budidayaService.create(payload)
+    const res = await budidayaService.create({ ...formNewBudidaya.value })
     if (res?.success) {
       showToast('Budidaya berhasil ditambahkan!', 'success')
       closeNewBudidayaForm()
       await fetchBudidaya()
-    } else {
-      showToast('Gagal: ' + (res?.message || 'Terjadi kesalahan'), 'error')
     }
-  } catch(e) {
-    console.error(e)
-    showToast(e.response?.data?.message || 'Koneksi ke server gagal', 'error')
+  } catch (error) {
+    showToast(error.message || 'Gagal membuat budidaya', 'error')
   } finally {
     isSubmittingNew.value = false
   }
@@ -417,52 +503,43 @@ async function fetchBudidaya() {
   loading.value = true
   try {
     const [res, growthRes] = await Promise.all([
-      budidayaService.getByPetugas(),
+      budidayaService.getByPetugas({ status: 'aktif,inisiasi' }),
       pertumbuhanService.getAll()
     ])
-    
-    if (res?.success) {
-      budidayaList.value = res.data.filter(b => b.status !== 'selesai')
-      
-      if (growthRes?.success) {
-        growthRecords.value = growthRes.data
-      }
 
-      if (budidayaList.value.length > 0) {
-        const savedId = localStorage.getItem('selectedBudidayaId')
-        const found = savedId ? budidayaList.value.find(b => String(b.id_budidaya) === String(savedId)) : null
-        selectedBudidaya.value = found || budidayaList.value[0]
-        handleSelectChange()
-      }
+    budidayaList.value = res?.success ? res.data : []
+    growthRecords.value = growthRes?.success ? growthRes.data : []
+
+    if (budidayaList.value.length > 0) {
+      const queryId = route.query.budidaya
+      const savedId = localStorage.getItem('selectedBudidayaId')
+      const desiredId = queryId || savedId
+      selectedBudidaya.value = budidayaList.value.find(
+        (item) => String(item.id_budidaya) === String(desiredId)
+      ) || budidayaList.value[0]
+
+      const requestedRack = Number(route.query.rak)
+      const maxRack = Number(selectedBudidaya.value.jumlah_rak || 1)
+      selectedRak.value = Number.isInteger(requestedRack) && requestedRack >= 1 && requestedRack <= maxRack
+        ? requestedRack
+        : null
+      localStorage.setItem('selectedBudidayaId', String(selectedBudidaya.value.id_budidaya))
+      resetForms()
     }
-  } catch (err) {
-    console.error(err)
+  } catch (error) {
+    console.error(error)
+    showToast(error.message || 'Gagal memuat data budidaya', 'error')
   } finally {
     loading.value = false
   }
 }
 
 function handleSelectChange() {
+  selectedRak.value = null
   if (selectedBudidaya.value) {
     localStorage.setItem('selectedBudidayaId', String(selectedBudidaya.value.id_budidaya))
   }
-  localStorage.setItem('petugasActiveForm', activeForm.value)
-
-  const d = new Date()
-  const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  
-  formPertumbuhan.value = {
-    tanggal_pengamatan: localDate,
-    fase: '',
-    catatan: ''
-  }
-  selectedFoto.value = null
-  dynamicDetails.value = []
-  formPanen.value = {
-    tanggal_panen: localDate,
-    jumlah_panen: '',
-    catatan: ''
-  }
+  resetForms()
 }
 
 function addDetail() {
@@ -478,92 +555,57 @@ function setActiveForm(form) {
   localStorage.setItem('petugasActiveForm', form)
 }
 
-function handleFotoUpload(event) {
-  const file = event.target.files[0]
-  if (file) {
-    if (!file.type.startsWith('image/')) {
-      showToast('Harus file gambar', 'error')
-      event.target.value = ''
-      selectedFoto.value = null
-      return
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('Maksimal ukuran foto 5MB', 'error')
-      event.target.value = ''
-      selectedFoto.value = null
-      return
-    }
-    selectedFoto.value = file
-  } else {
-    selectedFoto.value = null
-  }
-}
-
 async function submitPertumbuhan() {
+  if (!selectedBudidaya.value) return
   isSubmitting.value = true
   try {
     const detailObj = {}
-    dynamicDetails.value.forEach(d => {
-      if (d.key && d.value) {
-        detailObj[d.key] = d.value
-      }
+    dynamicDetails.value.forEach((item) => {
+      if (item.key && item.value) detailObj[item.key] = item.value
     })
 
-    const formData = new FormData();
-    formData.append('id_budidaya', selectedBudidaya.value.id_budidaya);
-    formData.append('tanggal_pengamatan', formPertumbuhan.value.tanggal_pengamatan);
-    formData.append('fase', formPertumbuhan.value.fase);
-    if (formPertumbuhan.value.catatan) {
-      formData.append('catatan', formPertumbuhan.value.catatan);
-    }
-    if (Object.keys(detailObj).length > 0) {
-      formData.append('detail_fase', JSON.stringify(detailObj));
-    }
-    if (selectedFoto.value) {
-      formData.append('foto', selectedFoto.value);
-    }
+    const formData = new FormData()
+    formData.append('id_budidaya', selectedBudidaya.value.id_budidaya)
+    formData.append('tanggal_pengamatan', todayISO)
+    formData.append('fase', formPertumbuhan.value.fase)
+    if (formPertumbuhan.value.catatan) formData.append('catatan', formPertumbuhan.value.catatan)
+    if (Object.keys(detailObj).length) formData.append('detail_fase', JSON.stringify(detailObj))
+    if (growthPhoto.value) formData.append('foto', growthPhoto.value)
 
     const res = await pertumbuhanService.create(formData)
     if (res?.success) {
       showToast('Fase pertumbuhan berhasil dicatat!', 'success')
-
-      // Ambil data terbaru dari server lalu update growthRecords secara reaktif
       const growthRes = await pertumbuhanService.getAll()
-      if (growthRes?.success) {
-        // Ganti seluruh array agar computed latestFase & isPanenAllowed langsung reaktif
-        growthRecords.value = growthRes.data.slice()
-      }
-
-      // Reset form input pertumbuhan
-      handleSelectChange()
-    } else {
-      showToast('Gagal: ' + (res?.message || 'Terjadi kesalahan'), 'error')
+      if (growthRes?.success) growthRecords.value = growthRes.data.slice()
+      resetForms()
     }
-  } catch (e) {
-    console.error(e)
-    showToast(e.response?.data?.message || 'Koneksi ke server gagal', 'error')
+  } catch (error) {
+    console.error(error)
+    showToast(error.message || 'Gagal menyimpan pertumbuhan', 'error')
   } finally {
     isSubmitting.value = false
   }
 }
 
 async function submitPanen() {
+  if (!selectedBudidaya.value) return
   isSubmitting.value = true
   try {
-    const payload = {
-      ...formPanen.value,
-      id_budidaya: selectedBudidaya.value.id_budidaya
-    }
-    const res = await panenService.create(payload)
+    const formData = new FormData()
+    formData.append('id_budidaya', selectedBudidaya.value.id_budidaya)
+    formData.append('tanggal_panen', todayISO)
+    formData.append('jumlah_panen', formPanen.value.jumlah_panen)
+    if (formPanen.value.catatan) formData.append('catatan', formPanen.value.catatan)
+    if (harvestPhoto.value) formData.append('foto', harvestPhoto.value)
+
+    const res = await panenService.create(formData)
     if (res?.success) {
       showToast('Hasil panen berhasil disimpan!', 'success')
-      handleSelectChange()
-    } else {
-      showToast('Gagal: ' + (res?.message || 'Terjadi kesalahan'), 'error')
+      resetForms()
     }
-  } catch (e) {
-    console.error(e)
-    showToast(e.response?.data?.message || 'Koneksi ke server gagal', 'error')
+  } catch (error) {
+    console.error(error)
+    showToast(error.message || 'Gagal menyimpan panen', 'error')
   } finally {
     isSubmitting.value = false
   }
@@ -571,23 +613,22 @@ async function submitPanen() {
 
 function formatDate(dateString) {
   if (!dateString) return '-'
-  const d = new Date(dateString)
-  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+  return new Date(dateString).toLocaleDateString('id-ID', {
+    day: 'numeric', month: 'long', year: 'numeric'
+  })
 }
 
 onMounted(async () => {
   const savedForm = localStorage.getItem('petugasActiveForm')
-  if (savedForm && savedForm !== 'lingkungan') {
-    activeForm.value = savedForm
-  }
+  if (savedForm && savedForm !== 'lingkungan') activeForm.value = savedForm
   await fetchBudidaya()
+  if (activeForm.value === 'panen' && !isPanenAllowed.value) setActiveForm('pertumbuhan')
+})
 
-  // Setelah data dimuat: cek apakah tab yang tersimpan boleh diakses
-  // Jika tab 'panen' tapi belum boleh panen, fallback ke 'pertumbuhan'
-  if (activeForm.value === 'panen' && !isPanenAllowed.value) {
-    activeForm.value = 'pertumbuhan'
-    localStorage.setItem('petugasActiveForm', 'pertumbuhan')
-  }
+onBeforeUnmount(() => {
+  revokePreview(growthPhotoPreview)
+  revokePreview(harvestPhotoPreview)
+  if (toastTimer) clearTimeout(toastTimer)
 })
 </script>
 
@@ -647,6 +688,8 @@ onMounted(async () => {
   to { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
 }
 
+.daily-progress { margin: -6px 0 18px; font-size: 13px; color: #b45309; font-weight: 700; }
+.daily-progress.complete { color: #15803d; }
 .petugas-operasional {
   display: flex;
   flex-direction: column;
@@ -999,4 +1042,9 @@ onMounted(async () => {
   .info-banner { gap: 16px; }
   .header-content { flex-direction: column; align-items: flex-start; }
 }
+
+.date-lock-note { color: #6b7280; font-size: 12px; line-height: 1.4; }
+.modern-input:disabled { background: #f3f4f6; color: #4b5563; cursor: not-allowed; }
+.photo-preview-wrap { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid #d1fae5; background: #f0fdf4; border-radius: 10px; font-size: 13px; color: #166534; }
+.photo-preview { width: 88px; height: 66px; border-radius: 8px; object-fit: cover; border: 1px solid #bbf7d0; }
 </style>

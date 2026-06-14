@@ -26,12 +26,12 @@
 
           <div class="form-group">
             <label>Suhu Optimal (°C)</label>
-            <input v-model.number="formData.suhu_optimal" type="number" min="0" placeholder="20" />
+            <input v-model.number="formData.suhu_optimal" type="number" min="0" max="60" step="0.1" placeholder="20" />
           </div>
 
           <div class="form-group">
             <label>Kelembapan Optimal (%)</label>
-            <input v-model.number="formData.kelembapan_optimal" type="number" min="0" placeholder="80" />
+            <input v-model.number="formData.kelembapan_optimal" type="number" min="0" max="100" step="0.1" placeholder="80" />
           </div>
 
           <div class="form-actions right">

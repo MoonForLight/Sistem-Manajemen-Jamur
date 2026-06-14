@@ -365,6 +365,51 @@ function getSuhuColorClass(val) {
   return 'text-green'
 }
 
+function openDownloadModal() {
+  showDownloadModal.value = true
+}
+
+function closeDownloadModal() {
+  if (isDownloading.value) return
+  showDownloadModal.value = false
+}
+
+async function submitDownloadForm() {
+  const form = downloadForm.value
+  if (!form.nama.trim() || !form.email.trim() || !form.instansi.trim() || !form.tujuan.trim()) {
+    alert('Nama, email, instansi, dan tujuan unduh wajib diisi.')
+    return
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+    alert('Format email tidak valid.')
+    return
+  }
+  if (form.tipe_ekspor === 'per_jamur' && !form.id_budidaya) {
+    alert('Pilih siklus jamur yang akan diekspor.')
+    return
+  }
+
+  isDownloading.value = true
+  try {
+    await api.post('/public/download-log', {
+      nama: form.nama.trim(),
+      email: form.email.trim(),
+      instansi: form.instansi.trim(),
+      tujuan: form.tujuan.trim(),
+      tipe_laporan: form.tipe_ekspor === '3_bulan' ? 'Laporan Umum (3 Bulan Terakhir)' : 'Laporan Siklus Jamur (Selesai)',
+      bulan: selectedMonth.value,
+      id_budidaya: form.tipe_ekspor === 'per_jamur' ? Number(form.id_budidaya) : null
+    })
+    await exportBulananExcel()
+    showDownloadModal.value = false
+  } catch (error) {
+    console.error('Gagal memulai unduhan:', error)
+    alert(error.message || 'Gagal mencatat identitas atau membuat file ekspor.')
+  } finally {
+    isDownloading.value = false
+  }
+}
+
 async function exportBulananExcel() {
   if (!lokasi.value || !selectedMonth.value) return;
   const ym = selectedMonth.value;
@@ -404,7 +449,7 @@ async function exportBulananExcel() {
     infoData.push(['Total Panen Bulan Ini', `${totalPanen.value} gram`]);
     infoData.push(['Catatan Analisis (AI)', aiInsight.value]);
   } else {
-    const bud = budidayaList.value.find(b => b.id_budidaya === downloadForm.value.id_budidaya);
+    const bud = budidayaList.value.find(b => Number(b.id_budidaya) === Number(downloadForm.value.id_budidaya));
     if (bud) {
       infoData.push(['Fokus Budidaya', `BDY-${String(bud.id_budidaya).padStart(3, '0')} - ${bud.nama_jamur}`]);
       infoData.push(['Alasan Selesai', bud.alasan_selesai || '-']);
@@ -449,10 +494,10 @@ async function exportBulananExcel() {
 
   } else {
     // Per Jamur
-    envRecordsToExport = allEnvRecords.value.filter(r => r.id_budidaya === downloadForm.value.id_budidaya)
+    envRecordsToExport = allEnvRecords.value.filter(r => Number(r.id_budidaya) === Number(downloadForm.value.id_budidaya))
       .sort((a,b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran));
       
-    harvestRecordsToExport = allHarvestRecords.value.filter(r => r.id_budidaya === downloadForm.value.id_budidaya)
+    harvestRecordsToExport = allHarvestRecords.value.filter(r => Number(r.id_budidaya) === Number(downloadForm.value.id_budidaya))
       .sort((a,b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen));
   }
 

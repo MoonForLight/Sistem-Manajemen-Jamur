@@ -32,8 +32,13 @@ export const budidayaService = {
     return await api.get('/budidaya');
   },
 
-  async getByPetugas() {
-    return await api.get('/budidaya/petugas/me');
+  async getByPetugas(filters = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') params.set(key, value);
+    });
+    const query = params.toString();
+    return await api.get(`/budidaya/petugas/me${query ? `?${query}` : ''}`);
   },
 
   async getSummary() {
@@ -50,6 +55,14 @@ export const budidayaService = {
 
   async update(id, data) {
     return await api.put(`/budidaya/${id}`, data);
+  },
+
+  async updateDailyTargets(id, data) {
+    return await api.patch(`/budidaya/${id}/target-harian`, data);
+  },
+
+  async selesaikan(id, alasan_selesai) {
+    return await api.patch(`/budidaya/${id}/selesaikan`, { alasan_selesai });
   },
 
   async delete(id) {
@@ -194,6 +207,12 @@ export const usersService = {
 
   async deletePetugas(id) {
     return await api.delete(`/users/${id}`);
+  },
+};
+
+export const downloadService = {
+  async getRekapTop(limit = 10) {
+    return await api.get(`/public/admin/rekap-download-top?limit=${encodeURIComponent(limit)}`);
   },
 };
 

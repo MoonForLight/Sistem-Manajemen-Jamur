@@ -21,7 +21,7 @@
 
           <div class="form-group">
             <label>Kadar Air Optimal (%)</label>
-            <input v-model.number="formData.kadar_air_optimal" type="number" min="0" placeholder="65" />
+            <input v-model.number="formData.kadar_air_optimal" type="number" min="0" max="100" step="0.1" placeholder="65" />
           </div>
 
           <div class="form-group">

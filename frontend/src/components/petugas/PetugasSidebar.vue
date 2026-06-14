@@ -11,6 +11,11 @@
         Kelola Jamur
       </RouterLink>
 
+      <RouterLink to="/petugas/rak" class="nav-item">
+        <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M4 3h16a1 1 0 0 1 1 1v16h-2v-3H5v3H3V4a1 1 0 0 1 1-1zm1 2v4h14V5H5zm0 6v4h14v-4H5z"/></svg>
+        Rak & Jenis
+      </RouterLink>
+
       <RouterLink to="/petugas/lingkungan" class="nav-item">
         <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
         Kondisi Lingkungan

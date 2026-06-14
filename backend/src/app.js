@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
-const { testDbConnection } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const lokasiRoutes = require("./routes/lokasiRoutes");
 const jenisJamurRoutes = require("./routes/jenisJamurRoutes");
@@ -23,7 +22,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-testDbConnection();
 
 app.get("/health", (req, res) => {
   res.send("API Jamur Running");

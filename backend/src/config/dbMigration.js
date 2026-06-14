@@ -86,6 +86,8 @@ async function ensureSchema() {
         status VARCHAR(50) DEFAULT NULL,
         alasan_selesai VARCHAR(100) DEFAULT NULL,
         jumlah_rak INT(11) NOT NULL DEFAULT 1,
+        target_lingkungan_harian TINYINT UNSIGNED NOT NULL DEFAULT 2,
+        target_pertumbuhan_harian TINYINT UNSIGNED NOT NULL DEFAULT 2,
         catatan TEXT DEFAULT NULL,
         PRIMARY KEY (id_budidaya),
         KEY fk_budidaya_lokasi_idx (id_lokasi),
@@ -126,7 +128,8 @@ async function ensureSchema() {
         waktu_pengukuran VARCHAR(20) DEFAULT 'Pagi',
         suhu DECIMAL(5,2) DEFAULT NULL,
         kelembaban DECIMAL(5,2) DEFAULT NULL,
-        intensitas_cahaya DECIMAL(5,2) DEFAULT NULL,
+        intensitas_cahaya DECIMAL(10,2) DEFAULT NULL,
+        foto VARCHAR(255) DEFAULT NULL,
         PRIMARY KEY (id_lingkungan),
         KEY fk_lingkungan_budidaya_idx (id_budidaya),
         KEY fk_lingkungan_petugas_idx (id_petugas),
@@ -141,8 +144,9 @@ async function ensureSchema() {
         id_budidaya INT(11) NOT NULL,
         id_petugas INT(11) NOT NULL,
         tanggal_panen DATE DEFAULT NULL,
-        jumlah_panen INT(11) DEFAULT NULL,
+        jumlah_panen DECIMAL(10,2) DEFAULT NULL,
         catatan TEXT DEFAULT NULL,
+        foto VARCHAR(255) DEFAULT NULL,
         PRIMARY KEY (id_panen),
         KEY fk_panen_budidaya_idx (id_budidaya),
         KEY fk_panen_petugas_idx (id_petugas),
@@ -160,6 +164,8 @@ async function ensureSchema() {
         tujuan TEXT NOT NULL,
         tanggal_download DATETIME DEFAULT CURRENT_TIMESTAMP,
         tipe_laporan VARCHAR(100) NOT NULL,
+        bulan VARCHAR(7) DEFAULT NULL,
+        id_budidaya INT(11) DEFAULT NULL,
         PRIMARY KEY (id_log)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
     },
@@ -225,6 +231,16 @@ async function migrateLegacySchema() {
       await db.query("ALTER TABLE budidaya ADD COLUMN jumlah_rak INT(11) DEFAULT 1");
     }
 
+    const [targetLingkunganCol] = await db.query("SHOW COLUMNS FROM budidaya LIKE 'target_lingkungan_harian'");
+    if (targetLingkunganCol.length === 0) {
+      await db.query("ALTER TABLE budidaya ADD COLUMN target_lingkungan_harian TINYINT UNSIGNED NOT NULL DEFAULT 2 AFTER jumlah_rak");
+    }
+
+    const [targetPertumbuhanCol] = await db.query("SHOW COLUMNS FROM budidaya LIKE 'target_pertumbuhan_harian'");
+    if (targetPertumbuhanCol.length === 0) {
+      await db.query("ALTER TABLE budidaya ADD COLUMN target_pertumbuhan_harian TINYINT UNSIGNED NOT NULL DEFAULT 2 AFTER target_lingkungan_harian");
+    }
+
     const [detailCol] = await db.query("SHOW COLUMNS FROM pertumbuhan LIKE 'detail_fase'");
     if (detailCol.length === 0) {
       await db.query("ALTER TABLE pertumbuhan ADD COLUMN detail_fase TEXT DEFAULT NULL");
@@ -261,6 +277,34 @@ async function migrateLegacySchema() {
     if (lingkunganWaktuCol.length === 0) {
       await db.query("ALTER TABLE lingkungan_harian ADD COLUMN waktu_pengukuran VARCHAR(20) DEFAULT 'Pagi'");
     }
+
+    const [lingkunganFotoCol] = await db.query("SHOW COLUMNS FROM lingkungan_harian LIKE 'foto'");
+    if (lingkunganFotoCol.length === 0) {
+      await db.query("ALTER TABLE lingkungan_harian ADD COLUMN foto VARCHAR(255) DEFAULT NULL");
+    }
+
+    const [panenFotoCol] = await db.query("SHOW COLUMNS FROM panen LIKE 'foto'");
+    if (panenFotoCol.length === 0) {
+      await db.query("ALTER TABLE panen ADD COLUMN foto VARCHAR(255) DEFAULT NULL");
+    }
+
+    const [tanggalSelesaiCol] = await db.query("SHOW COLUMNS FROM budidaya LIKE 'tanggal_selesai'");
+    if (tanggalSelesaiCol.length === 0) {
+      await db.query("ALTER TABLE budidaya ADD COLUMN tanggal_selesai DATE DEFAULT NULL AFTER tanggal_mulai");
+    }
+
+    const [downloadBulanCol] = await db.query("SHOW COLUMNS FROM download_logs LIKE 'bulan'");
+    if (downloadBulanCol.length === 0) {
+      await db.query("ALTER TABLE download_logs ADD COLUMN bulan VARCHAR(7) DEFAULT NULL");
+    }
+
+    const [downloadBudidayaCol] = await db.query("SHOW COLUMNS FROM download_logs LIKE 'id_budidaya'");
+    if (downloadBudidayaCol.length === 0) {
+      await db.query("ALTER TABLE download_logs ADD COLUMN id_budidaya INT(11) DEFAULT NULL");
+    }
+
+    await db.query("ALTER TABLE lingkungan_harian MODIFY intensitas_cahaya DECIMAL(10,2) DEFAULT NULL");
+    await db.query("ALTER TABLE panen MODIFY jumlah_panen DECIMAL(10,2) DEFAULT NULL");
 
   } catch (err) {
     console.warn('Legacy schema migration failed:', err.code || err.message);

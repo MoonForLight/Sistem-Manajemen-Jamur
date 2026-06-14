@@ -44,7 +44,7 @@
 
           <div class="form-group">
             <label>Jumlah Rak</label>
-            <input v-model.number="formData.jumlah_rak" type="number" min="0" placeholder="Jumlah rak" />
+            <input v-model.number="formData.jumlah_rak" type="number" min="0" max="10000" step="1" placeholder="Jumlah rak" />
           </div>
 
           <div class="form-group">

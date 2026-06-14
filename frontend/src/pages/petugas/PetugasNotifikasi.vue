@@ -100,12 +100,29 @@ async function loadNotifications() {
         const records = envRes.data.filter(e => Number(e.id_budidaya) === Number(b.id_budidaya))
         
         // 1. Check if logged today
-        const hasTodayRecord = records.some(e => getLocalDateString(e.tanggal_pengukuran) === todayStr)
-        if (!hasTodayRecord) {
+        const todayRecords = records.filter(e => getLocalDateString(e.tanggal_pengukuran) === todayStr)
+        const targetLingkungan = Number(b.target_lingkungan_harian || 2)
+        if (todayRecords.length < targetLingkungan) {
           list.push({
             type: 'info',
-            title: 'Jadwal Pengamatan',
-            text: `Rak BDY-${String(b.id_budidaya).padStart(3, '0')} (${b.nama_jamur}) belum dicatat hari ini.`,
+            title: 'Target Lingkungan Belum Terpenuhi',
+            text: `BDY-${String(b.id_budidaya).padStart(3, '0')} (${b.nama_jamur}) baru ${todayRecords.length}/${targetLingkungan} kali dicatat hari ini.`,
+            time: 'Hari ini',
+            date: new Date(),
+            weight: 2
+          })
+        }
+
+        const todayGrowthRecords = (growthRes?.success ? growthRes.data : []).filter(g =>
+          Number(g.id_budidaya) === Number(b.id_budidaya) &&
+          getLocalDateString(g.tanggal_pengamatan) === todayStr
+        )
+        const targetPertumbuhan = Number(b.target_pertumbuhan_harian || 2)
+        if (todayGrowthRecords.length < targetPertumbuhan) {
+          list.push({
+            type: 'info',
+            title: 'Target Pertumbuhan Belum Terpenuhi',
+            text: `BDY-${String(b.id_budidaya).padStart(3, '0')} (${b.nama_jamur}) baru ${todayGrowthRecords.length}/${targetPertumbuhan} kali dicatat hari ini.`,
             time: 'Hari ini',
             date: new Date(),
             weight: 2

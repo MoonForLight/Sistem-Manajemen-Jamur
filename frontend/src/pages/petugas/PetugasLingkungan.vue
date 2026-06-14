@@ -14,7 +14,7 @@
       <div class="header-content">
         <div>
           <h1 class="page-title">Kondisi Lingkungan Harian</h1>
-          <p class="page-subtitle">Pilih rumah jamur untuk mencatat suhu dan kelembapan minimal 3 kali sehari.</p>
+          <p class="page-subtitle">Pilih rumah jamur untuk mencatat suhu dan kelembapan sesuai target harian.</p>
         </div>
         
         <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
@@ -55,32 +55,44 @@
         </div>
 
         <div class="form-card fade-in">
-          <h2 class="form-title">Pencatatan Lingkungan Harian (3x Sehari)</h2>
+          <h2 class="form-title">Pencatatan Lingkungan Harian (Target {{ selectedBudidaya.target_lingkungan_harian || 2 }}×)</h2>
+          <p class="daily-progress" :class="{ complete: todayEnvironmentCount >= (selectedBudidaya.target_lingkungan_harian || 2) }">
+            Hari ini: {{ todayEnvironmentCount }}/{{ selectedBudidaya.target_lingkungan_harian || 2 }} pencatatan minimum
+          </p>
           <form @submit.prevent="submitLingkungan">
             <div class="form-grid">
               <div class="form-group">
                 <label>Tanggal Pengukuran <span class="text-danger">*</span></label>
-                <input type="date" v-model="formLingkungan.tanggal_pengukuran" required class="modern-input" />
+                <input type="date" v-model="formLingkungan.tanggal_pengukuran" :min="todayISO" :max="todayISO" disabled required class="modern-input" />
+                <small class="date-lock-note">Tanggal dikunci ke hari ini untuk pencatatan real-time.</small>
               </div>
               <div class="form-group">
                 <label>Waktu Pengukuran <span class="text-danger">*</span></label>
                 <select v-model="formLingkungan.waktu_pengukuran" class="modern-select" required>
                   <option value="Pagi">Pagi</option>
                   <option value="Siang">Siang</option>
-                  <option value="Sore">Sore/Malam</option>
+                  <option value="Sore/Malam">Sore/Malam</option>
                 </select>
               </div>
               <div class="form-group">
                 <label>Suhu Lingkungan (°C) <span class="text-danger">*</span></label>
-                <input type="number" step="0.1" min="0" max="100" v-model="formLingkungan.suhu" placeholder="Misal: 25.5" class="modern-input" required />
+                <input type="number" step="0.1" min="0.1" max="60" v-model.number="formLingkungan.suhu" placeholder="Misal: 25.5" class="modern-input" required />
               </div>
               <div class="form-group">
                 <label>Kelembapan Lingkungan (%) <span class="text-danger">*</span></label>
-                <input type="number" step="0.1" min="0" max="100" v-model="formLingkungan.kelembaban" placeholder="Misal: 85.0" class="modern-input" required />
+                <input type="number" step="0.1" min="0" max="100" v-model.number="formLingkungan.kelembaban" placeholder="Misal: 85.0" class="modern-input" required />
+              </div>
+<div class="form-group full-width">
+                <label>Intensitas Cahaya (Lux/Lumens) </label>
+                <input type="number" step="0.1" min="0" max="100000" v-model.number="formLingkungan.intensitas_cahaya" placeholder="Misal: 300" class="modern-input" />
               </div>
               <div class="form-group full-width">
-                <label>Intensitas Cahaya (Lux/Lumens) <span class="text-muted">- Opsional</span></label>
-                <input type="number" step="0.1" min="0" max="100000" v-model="formLingkungan.intensitas_cahaya" placeholder="Misal: 300" class="modern-input" />
+                <label>Upload Foto Lingkungan </label>
+                <input :key="fileInputKey" type="file" @change="handleFotoUpload" accept="image/jpeg,image/png,image/webp,image/gif" class="modern-input" />
+                <div v-if="fotoPreview" class="photo-preview-wrap">
+                  <img :src="fotoPreview" alt="Preview foto lingkungan" class="photo-preview" />
+                  <span>{{ selectedFoto?.name }}</span>
+                </div>
               </div>
             </div>
             <div class="form-actions">
@@ -106,7 +118,8 @@
                   <th>Suhu</th>
                   <th>Kelembapan</th>
                   <th>Cahaya</th>
-                  <th>Aksi</th>
+                  <th>Foto</th>
+                  <th>Status Edit</th>
                 </tr>
               </thead>
               <tbody>
@@ -115,12 +128,14 @@
                   <td><span class="waktu-badge" :class="item.waktu_pengukuran?.toLowerCase()">{{ item.waktu_pengukuran || 'Pagi' }}</span></td>
                   <td>{{ item.suhu }} °C</td>
                   <td>{{ item.kelembaban }} %</td>
-                  <td>{{ item.intensitas_cahaya ? item.intensitas_cahaya + ' Lux' : '-' }}</td>
+                  <td>{{ item.intensitas_cahaya !== null && item.intensitas_cahaya !== undefined ? item.intensitas_cahaya + ' Lux' : '-' }}</td>
                   <td>
-                    <button @click="hapusLingkungan(item.id_lingkungan)" class="btn-icon-danger" title="Hapus">
-                      <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                    </button>
+                    <a v-if="item.foto" :href="uploadUrl(item.foto)" target="_blank" rel="noopener" class="photo-link">
+                      <img :src="uploadUrl(item.foto)" alt="Foto lingkungan" class="table-photo" />
+                    </a>
+                    <span v-else>-</span>
                   </td>
+                  <td><span :class="['lock-badge', { today: isToday(item.tanggal_pengukuran) }]">{{ isToday(item.tanggal_pengukuran) ? 'Hari ini' : 'Terkunci' }}</span></td>
                 </tr>
               </tbody>
             </table>
@@ -133,126 +148,165 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { budidayaService, lingkunganService } from '../../services/dataService.js'
+
+const now = new Date()
+const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+const allowedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+const apiOrigin = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:3000/api').replace(/\/api\/?$/, '')
 
 const budidayaList = ref([])
 const selectedBudidaya = ref(null)
 const loading = ref(true)
-
 const riwayatLingkungan = ref([])
 const riwayatLoading = ref(false)
-
 const isSubmitting = ref(false)
-
+const selectedFoto = ref(null)
+const fotoPreview = ref('')
+const fileInputKey = ref(0)
 const toast = ref({ show: false, message: '', type: 'success' })
-function showToast(msg, type = 'success') {
-  toast.value = { show: true, message: msg, type }
-  setTimeout(() => { toast.value.show = false }, 3000)
-}
+const todayEnvironmentCount = computed(() => riwayatLingkungan.value.filter((item) => isToday(item.tanggal_pengukuran)).length)
+let toastTimer = null
 
 const formLingkungan = ref({
-  tanggal_pengukuran: new Date().toISOString().split('T')[0],
+  tanggal_pengukuran: todayISO,
   waktu_pengukuran: 'Pagi',
   suhu: '',
   kelembaban: '',
   intensitas_cahaya: ''
 })
 
-onMounted(async () => {
-  await fetchBudidaya()
-})
+function showToast(message, type = 'success') {
+  if (toastTimer) clearTimeout(toastTimer)
+  toast.value = { show: true, message, type }
+  toastTimer = setTimeout(() => { toast.value.show = false }, 3000)
+}
 
-const fetchBudidaya = async () => {
+function uploadUrl(filename) {
+  return `${apiOrigin}/uploads/${encodeURIComponent(filename)}`
+}
+
+function normalizeDate(value) {
+  return value ? String(value).split('T')[0] : ''
+}
+
+function isToday(value) {
+  return normalizeDate(value) === todayISO
+}
+
+function clearPhoto() {
+  if (fotoPreview.value?.startsWith('blob:')) URL.revokeObjectURL(fotoPreview.value)
+  fotoPreview.value = ''
+  selectedFoto.value = null
+  fileInputKey.value += 1
+}
+
+function handleFotoUpload(event) {
+  const file = event.target.files?.[0]
+  clearPhoto()
+  if (!file) return
+  if (!allowedImageTypes.has(file.type)) {
+    showToast('Format foto harus JPG, PNG, WEBP, atau GIF', 'error')
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('Ukuran foto maksimal 5 MB', 'error')
+    return
+  }
+  selectedFoto.value = file
+  fotoPreview.value = URL.createObjectURL(file)
+}
+
+async function fetchBudidaya() {
   loading.value = true
   try {
-    const userRole = localStorage.getItem('user_role')
-    const res = await (userRole === 'admin' ? budidayaService.getAll() : budidayaService.getByPetugas())
-    
-    let list = res?.data || []
-    list = list.filter(b => b.status === 'aktif' || b.status === 'inisiasi')
-    budidayaList.value = list
-    
-    if (list.length > 0) {
-      selectedBudidaya.value = list[0]
+    const role = localStorage.getItem('user_role')
+    const res = role === 'admin'
+      ? await budidayaService.getAll()
+      : await budidayaService.getByPetugas({ status: 'aktif,inisiasi' })
+    budidayaList.value = (res?.data || []).filter((item) => ['aktif', 'inisiasi'].includes(item.status))
+    if (budidayaList.value.length) {
+      selectedBudidaya.value = budidayaList.value[0]
       await loadRiwayat()
     }
   } catch (error) {
-    showToast('Gagal memuat rumah jamur', 'error')
+    showToast(error.message || 'Gagal memuat rumah jamur', 'error')
   } finally {
     loading.value = false
   }
 }
 
-const handleSelectChange = async () => {
+async function handleSelectChange() {
+  clearPhoto()
   await loadRiwayat()
 }
 
-const loadRiwayat = async () => {
+async function loadRiwayat() {
   if (!selectedBudidaya.value) return
   riwayatLoading.value = true
   try {
     const res = await lingkunganService.getByBudidaya(selectedBudidaya.value.id_budidaya)
     riwayatLingkungan.value = res?.data || []
   } catch (error) {
-    console.error("Gagal load riwayat:", error)
+    showToast(error.message || 'Gagal memuat riwayat lingkungan', 'error')
   } finally {
     riwayatLoading.value = false
   }
 }
 
-const submitLingkungan = async () => {
+async function submitLingkungan() {
   if (!selectedBudidaya.value) {
     showToast('Pilih rumah jamur terlebih dahulu', 'error')
     return
   }
   isSubmitting.value = true
   try {
-    const payload = {
-      ...formLingkungan.value,
-      id_budidaya: selectedBudidaya.value.id_budidaya
+    const formData = new FormData()
+    formData.append('id_budidaya', selectedBudidaya.value.id_budidaya)
+    formData.append('tanggal_pengukuran', todayISO)
+    formData.append('waktu_pengukuran', formLingkungan.value.waktu_pengukuran)
+    formData.append('suhu', formLingkungan.value.suhu)
+    formData.append('kelembaban', formLingkungan.value.kelembaban)
+    if (formLingkungan.value.intensitas_cahaya !== '') {
+      formData.append('intensitas_cahaya', formLingkungan.value.intensitas_cahaya)
     }
-    await lingkunganService.create(payload)
+    if (selectedFoto.value) formData.append('foto', selectedFoto.value)
+
+    await lingkunganService.create(formData)
     showToast('Data lingkungan berhasil disimpan')
-    
-    // Reset form value for numerical inputs but keep date & time
     formLingkungan.value.suhu = ''
     formLingkungan.value.kelembaban = ''
     formLingkungan.value.intensitas_cahaya = ''
-    
-    // Auto advance waktu
-    if (formLingkungan.value.waktu_pengukuran === 'Pagi') formLingkungan.value.waktu_pengukuran = 'Siang';
-    else if (formLingkungan.value.waktu_pengukuran === 'Siang') formLingkungan.value.waktu_pengukuran = 'Sore';
-    else formLingkungan.value.waktu_pengukuran = 'Pagi';
-
+    formLingkungan.value.waktu_pengukuran = formLingkungan.value.waktu_pengukuran === 'Pagi'
+      ? 'Siang'
+      : formLingkungan.value.waktu_pengukuran === 'Siang' ? 'Sore/Malam' : 'Pagi'
+    clearPhoto()
     await loadRiwayat()
   } catch (error) {
-    showToast(error.response?.data?.message || 'Gagal menyimpan data lingkungan', 'error')
+    showToast(error.message || 'Gagal menyimpan data lingkungan', 'error')
   } finally {
     isSubmitting.value = false
   }
 }
 
-const hapusLingkungan = async (id) => {
-  if (!confirm('Hapus data lingkungan ini?')) return
-  try {
-    await lingkunganService.remove(id)
-    showToast('Data berhasil dihapus')
-    await loadRiwayat()
-  } catch (error) {
-    showToast('Gagal menghapus data', 'error')
-  }
-}
-
-const formatDate = (dateString) => {
+function formatDate(dateString) {
   if (!dateString) return '-'
   return new Date(dateString).toLocaleDateString('id-ID', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   })
 }
+
+onMounted(fetchBudidaya)
+onBeforeUnmount(() => {
+  clearPhoto()
+  if (toastTimer) clearTimeout(toastTimer)
+})
 </script>
 
 <style scoped>
+.daily-progress { margin: -6px 0 18px; font-size: 13px; color: #b45309; font-weight: 700; }
+.daily-progress.complete { color: #15803d; }
 .petugas-operasional {
   background: #f3f4f6;
   min-height: 100vh;
@@ -536,4 +590,13 @@ const formatDate = (dateString) => {
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(-20px) scale(0.9); }
 .fade-in { animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.date-lock-note { color: #6b7280; font-size: 12px; line-height: 1.4; }
+.modern-input:disabled { background: #f3f4f6; color: #4b5563; cursor: not-allowed; }
+.photo-preview-wrap { display:flex; align-items:center; gap:12px; padding:10px; border:1px solid #d1fae5; background:#f0fdf4; border-radius:10px; font-size:13px; color:#166534; }
+.photo-preview { width:96px; height:72px; object-fit:cover; border-radius:8px; }
+.table-photo { width:56px; height:42px; object-fit:cover; border-radius:6px; border:1px solid #e5e7eb; }
+.photo-link { display:inline-flex; }
+.lock-badge { display:inline-flex; padding:4px 8px; border-radius:999px; background:#f3f4f6; color:#6b7280; font-size:11px; font-weight:700; white-space:nowrap; }
+.lock-badge.today { background:#dcfce7; color:#166534; }
 </style>

@@ -1,76 +1,98 @@
-const budidayaModel = require("../models/budidayaModel");
-const lokasiModel = require("../models/lokasiModel");
-const jenisJamurModel = require("../models/jenisJamurModel");
-const mediaTanamModel = require("../models/mediaTanamModel");
-const usersModel = require("../models/usersModel");
+const budidayaModel = require('../models/budidayaModel');
+const lokasiModel = require('../models/lokasiModel');
+const jenisJamurModel = require('../models/jenisJamurModel');
+const mediaTanamModel = require('../models/mediaTanamModel');
+const usersModel = require('../models/usersModel');
+const { db } = require('../config/db');
+const { normalizeISODate } = require('../utils/date');
 
-// helper cek petugas
-const { db } = require("../config/db");
+const ALLOWED_STATUSES = new Set(['aktif', 'inisiasi', 'selesai']);
+
 async function existsPetugas(id_petugas) {
-  const [rows] = await db.query("SELECT id_user FROM petugas WHERE id_user = ? LIMIT 1", [id_petugas]);
+  const [rows] = await db.query('SELECT id_user FROM petugas WHERE id_user = ? LIMIT 1', [id_petugas]);
   return rows.length > 0;
 }
 
-exports.getAll = async (req, res) => {
+function validateJumlahRak(value) {
+  const number = Number(value);
+  return Number.isInteger(number) && number > 0 && number <= 10000 ? number : null;
+}
+
+function validateDailyTarget(value, max, label) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 2 || number > max) {
+    return { error: `${label} harus bilangan bulat antara 2 dan ${max}` };
+  }
+  return { value: number };
+}
+
+function validateAlasan(value) {
+  const alasan = String(value || '').trim();
+  if (alasan.length < 3 || alasan.length > 100) {
+    return { error: 'Alasan selesai wajib diisi 3-100 karakter' };
+  }
+  if (alasan.toLowerCase() === 'lainnya') {
+    return { error: 'Jelaskan alasan selesai, jangan hanya memilih "Lainnya"' };
+  }
+  return { alasan };
+}
+
+exports.getAll = async (_req, res) => {
   const data = await budidayaModel.getAll();
   res.json({ success: true, data });
 };
 
 exports.getById = async (req, res) => {
-  const id = Number(req.params.id);
-  const item = await budidayaModel.getById(id);
-  if (!item) {
-    return res.status(404).json({ success: false, message: "Budidaya tidak ditemukan" });
-  }
+  const item = await budidayaModel.getById(Number(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: 'Budidaya tidak ditemukan' });
   res.json({ success: true, data: item });
 };
 
 exports.create = async (req, res) => {
-  let { id_lokasi, id_jenis, id_media, tanggal_mulai, status, catatan, id_petugas, jumlah_rak } = req.body;
+  let { id_lokasi, id_jenis, id_media, status, id_petugas } = req.body;
+  const tanggal_mulai = normalizeISODate(req.body.tanggal_mulai);
+  const jumlah_rak = validateJumlahRak(req.body.jumlah_rak ?? 1);
+  const targetLingkungan = validateDailyTarget(req.body.target_lingkungan_harian ?? 2, 3, 'Target lingkungan harian');
+  const targetPertumbuhan = validateDailyTarget(req.body.target_pertumbuhan_harian ?? 2, 10, 'Target pertumbuhan harian');
   const role = await usersModel.getRole(req.user.id_user);
 
-  if (role === "petugas") {
-    id_petugas = req.user.id_user;
+  if (role === 'petugas') {
+    id_petugas = Number(req.user.id_user);
     const lokasiInfo = await usersModel.getPetugasLokasiInfo(id_petugas);
-    if (!lokasiInfo || !lokasiInfo.id_lokasi) {
-      return res.status(400).json({ success: false, message: "Anda belum ditugaskan ke lokasi manapun" });
+    if (!lokasiInfo?.id_lokasi) {
+      return res.status(400).json({ success: false, message: 'Anda belum ditugaskan ke lokasi manapun' });
     }
     id_lokasi = lokasiInfo.id_lokasi;
   }
 
-  // validasi minimal
+  id_lokasi = Number(id_lokasi);
+  id_jenis = Number(id_jenis);
+  id_media = Number(id_media);
+  id_petugas = Number(id_petugas);
+  status = status || 'inisiasi';
+
   if (!id_lokasi || !id_jenis || !id_media || !tanggal_mulai || !id_petugas) {
-    return res.status(400).json({
-      success: false,
-      message: "id_lokasi, id_jenis, id_media, tanggal_mulai, id_petugas wajib diisi",
-    });
+    return res.status(400).json({ success: false, message: 'Lokasi, jenis jamur, media, tanggal mulai, dan petugas wajib diisi' });
+  }
+  if (!jumlah_rak) {
+    return res.status(400).json({ success: false, message: 'Jumlah rak harus berupa bilangan bulat lebih dari 0' });
+  }
+  if (targetLingkungan.error) return res.status(400).json({ success: false, message: targetLingkungan.error });
+  if (targetPertumbuhan.error) return res.status(400).json({ success: false, message: targetPertumbuhan.error });
+  if (!ALLOWED_STATUSES.has(status) || status === 'selesai') {
+    return res.status(400).json({ success: false, message: 'Status awal harus aktif atau inisiasi' });
   }
 
-  // validasi referensi
   const targetLokasi = await lokasiModel.getLokasiById(id_lokasi);
-  if (!targetLokasi) {
-    return res.status(400).json({ success: false, message: "Lokasi tidak valid" });
-  }
-  if (!(await jenisJamurModel.exists(id_jenis))) {
-    return res.status(400).json({ success: false, message: "Jenis jamur tidak valid" });
-  }
-  if (!(await mediaTanamModel.exists(id_media))) {
-    return res.status(400).json({ success: false, message: "Media tanam tidak valid" });
-  }
-  if (!(await existsPetugas(id_petugas))) {
-    return res.status(400).json({ success: false, message: "Petugas tidak valid" });
-  }
+  if (!targetLokasi) return res.status(400).json({ success: false, message: 'Lokasi tidak valid' });
+  if (!(await jenisJamurModel.exists(id_jenis))) return res.status(400).json({ success: false, message: 'Jenis jamur tidak valid' });
+  if (!(await mediaTanamModel.exists(id_media))) return res.status(400).json({ success: false, message: 'Media tanam tidak valid' });
+  if (!(await existsPetugas(id_petugas))) return res.status(400).json({ success: false, message: 'Petugas tidak valid' });
 
-  // Validasi Kapasitas Rak
   const activeRacks = await budidayaModel.getActiveRacksByLokasi(id_lokasi);
-  const requestedRacks = Number(jumlah_rak) || 1;
-  const availableRacks = targetLokasi.jumlah_rak - activeRacks;
-
-  if (requestedRacks > availableRacks) {
-    return res.status(400).json({ 
-      success: false, 
-      message: `Kapasitas rak tidak mencukupi. Sisa rak tersedia: ${Math.max(0, availableRacks)}` 
-    });
+  const availableRacks = Number(targetLokasi.jumlah_rak) - activeRacks;
+  if (jumlah_rak > availableRacks) {
+    return res.status(400).json({ success: false, message: `Kapasitas rak tidak mencukupi. Sisa rak tersedia: ${Math.max(0, availableRacks)}` });
   }
 
   const newId = await budidayaModel.create({
@@ -79,93 +101,150 @@ exports.create = async (req, res) => {
     id_media,
     id_petugas,
     tanggal_mulai,
-    status: status || "inisiasi",
-    catatan: catatan || null,
-    jumlah_rak: requestedRacks
+    status,
+    jumlah_rak,
+    target_lingkungan_harian: targetLingkungan.value,
+    target_pertumbuhan_harian: targetPertumbuhan.value,
   });
 
-  res.status(201).json({
-    success: true,
-    message: "Budidaya berhasil dibuat",
-    data: { id_budidaya: newId },
-  });
+  res.status(201).json({ success: true, message: 'Budidaya berhasil dibuat', data: { id_budidaya: newId } });
 };
 
 exports.update = async (req, res) => {
   const id = Number(req.params.id);
-  const { id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai, status, jumlah_rak, alasan_selesai } = req.body;
+  const existing = await budidayaModel.getById(id);
+  if (!existing) return res.status(404).json({ success: false, message: 'Budidaya tidak ditemukan' });
+
+  const id_lokasi = Number(req.body.id_lokasi);
+  const id_jenis = Number(req.body.id_jenis);
+  const id_media = Number(req.body.id_media);
+  const id_petugas = Number(req.body.id_petugas);
+  const tanggal_mulai = normalizeISODate(req.body.tanggal_mulai);
+  const status = String(req.body.status || 'aktif');
+  const jumlah_rak = validateJumlahRak(req.body.jumlah_rak ?? 1);
+  const targetLingkungan = validateDailyTarget(req.body.target_lingkungan_harian ?? existing.target_lingkungan_harian ?? 2, 3, 'Target lingkungan harian');
+  const targetPertumbuhan = validateDailyTarget(req.body.target_pertumbuhan_harian ?? existing.target_pertumbuhan_harian ?? 2, 10, 'Target pertumbuhan harian');
 
   if (!id_lokasi || !id_jenis || !id_media || !id_petugas || !tanggal_mulai) {
-    return res.status(400).json({
-      success: false,
-      message: "id_lokasi, id_jenis, id_media, id_petugas, tanggal_mulai wajib diisi",
-    });
+    return res.status(400).json({ success: false, message: 'Lokasi, jenis jamur, media, petugas, dan tanggal mulai wajib diisi' });
+  }
+  if (!jumlah_rak) return res.status(400).json({ success: false, message: 'Jumlah rak harus berupa bilangan bulat lebih dari 0' });
+  if (targetLingkungan.error) return res.status(400).json({ success: false, message: targetLingkungan.error });
+  if (targetPertumbuhan.error) return res.status(400).json({ success: false, message: targetPertumbuhan.error });
+  if (!ALLOWED_STATUSES.has(status)) return res.status(400).json({ success: false, message: 'Status budidaya tidak valid' });
+  if (existing.status === 'selesai' && status !== 'selesai') {
+    return res.status(409).json({ success: false, message: 'Siklus yang sudah selesai tidak dapat diaktifkan kembali' });
+  }
+
+  let alasan_selesai = null;
+  if (status === 'selesai') {
+    const validation = validateAlasan(req.body.alasan_selesai);
+    if (validation.error) return res.status(400).json({ success: false, message: validation.error });
+    alasan_selesai = validation.alasan;
   }
 
   const targetLokasi = await lokasiModel.getLokasiById(id_lokasi);
-  if (!targetLokasi) {
-    return res.status(400).json({ success: false, message: "Lokasi tidak valid" });
-  }
-  if (!(await jenisJamurModel.exists(id_jenis))) {
-    return res.status(400).json({ success: false, message: "Jenis jamur tidak valid" });
-  }
-  if (!(await mediaTanamModel.exists(id_media))) {
-    return res.status(400).json({ success: false, message: "Media tanam tidak valid" });
-  }
-  if (!(await existsPetugas(id_petugas))) {
-    return res.status(400).json({ success: false, message: "Petugas tidak valid" });
-  }
+  if (!targetLokasi) return res.status(400).json({ success: false, message: 'Lokasi tidak valid' });
+  if (!(await jenisJamurModel.exists(id_jenis))) return res.status(400).json({ success: false, message: 'Jenis jamur tidak valid' });
+  if (!(await mediaTanamModel.exists(id_media))) return res.status(400).json({ success: false, message: 'Media tanam tidak valid' });
+  if (!(await existsPetugas(id_petugas))) return res.status(400).json({ success: false, message: 'Petugas tidak valid' });
 
-  // Validasi Kapasitas Rak (exclude this budidaya ID so it doesn't count its own old rak amount)
   if (status === 'aktif' || status === 'inisiasi') {
     const activeRacks = await budidayaModel.getActiveRacksByLokasi(id_lokasi, id);
-    const requestedRacks = Number(jumlah_rak) || 1;
-    const availableRacks = targetLokasi.jumlah_rak - activeRacks;
-
-    if (requestedRacks > availableRacks) {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Kapasitas rak tidak mencukupi. Sisa rak tersedia: ${Math.max(0, availableRacks)}` 
-      });
+    const availableRacks = Number(targetLokasi.jumlah_rak) - activeRacks;
+    if (jumlah_rak > availableRacks) {
+      return res.status(400).json({ success: false, message: `Kapasitas rak tidak mencukupi. Sisa rak tersedia: ${Math.max(0, availableRacks)}` });
     }
   }
 
-  const affected = await budidayaModel.update(id, {
+  await budidayaModel.update(id, {
     id_lokasi,
     id_jenis,
     id_media,
     id_petugas,
     tanggal_mulai,
-    status: status || "aktif",
-    jumlah_rak: Number(jumlah_rak) || 1,
-    alasan_selesai: alasan_selesai || null
+    status,
+    jumlah_rak,
+    target_lingkungan_harian: targetLingkungan.value,
+    target_pertumbuhan_harian: targetPertumbuhan.value,
+    alasan_selesai,
   });
 
-  if (affected === 0) {
-    return res.status(404).json({ success: false, message: "Budidaya tidak ditemukan" });
+  res.json({ success: true, message: 'Budidaya berhasil diupdate' });
+};
+
+exports.updateDailyTargets = async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ success: false, message: 'ID budidaya tidak valid' });
+  }
+  const existing = await budidayaModel.getById(id);
+  if (!existing) return res.status(404).json({ success: false, message: 'Budidaya tidak ditemukan' });
+
+  const targetLingkungan = validateDailyTarget(req.body.target_lingkungan_harian, 3, 'Target lingkungan harian');
+  const targetPertumbuhan = validateDailyTarget(req.body.target_pertumbuhan_harian, 10, 'Target pertumbuhan harian');
+  if (targetLingkungan.error) return res.status(400).json({ success: false, message: targetLingkungan.error });
+  if (targetPertumbuhan.error) return res.status(400).json({ success: false, message: targetPertumbuhan.error });
+
+  await budidayaModel.updateDailyTargets(id, targetLingkungan.value, targetPertumbuhan.value);
+  const data = await budidayaModel.getById(id);
+  return res.json({ success: true, message: 'Target input harian berhasil diperbarui', data });
+};
+
+exports.selesaikan = async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ success: false, message: 'ID budidaya tidak valid' });
+
+  const existing = await budidayaModel.getById(id);
+  if (!existing) return res.status(404).json({ success: false, message: 'Budidaya tidak ditemukan' });
+  if (existing.status === 'selesai') {
+    return res.status(409).json({ success: false, message: 'Siklus budidaya ini sudah selesai' });
+  }
+  if (req.user.role === 'petugas' && Number(existing.id_petugas) !== Number(req.user.id_user)) {
+    return res.status(403).json({ success: false, message: 'Anda hanya dapat menyelesaikan budidaya yang ditugaskan kepada Anda' });
   }
 
-  res.json({ success: true, message: "Budidaya berhasil diupdate" });
+  const validation = validateAlasan(req.body.alasan_selesai);
+  if (validation.error) return res.status(400).json({ success: false, message: validation.error });
+
+  const affected = await budidayaModel.selesaikan(id, validation.alasan);
+  if (!affected) {
+    return res.status(409).json({ success: false, message: 'Siklus gagal diselesaikan karena statusnya sudah berubah. Muat ulang data dan coba lagi' });
+  }
+  const data = await budidayaModel.getById(id);
+  res.json({ success: true, message: 'Siklus budidaya berhasil diselesaikan', data });
 };
 
 exports.remove = async (req, res) => {
-  const id = Number(req.params.id);
-  const affected = await budidayaModel.remove(id);
-
-  if (affected === 0) {
-    return res.status(404).json({ success: false, message: "Budidaya tidak ditemukan" });
-  }
-
-  res.json({ success: true, message: "Budidaya berhasil dihapus" });
+  const affected = await budidayaModel.remove(Number(req.params.id));
+  if (!affected) return res.status(404).json({ success: false, message: 'Budidaya tidak ditemukan' });
+  res.json({ success: true, message: 'Budidaya berhasil dihapus' });
 };
 
 exports.getByPetugas = async (req, res) => {
-  const id_petugas = req.user.id_user;
-  const data = await budidayaModel.getByPetugas(id_petugas);
+  const allowedStatuses = ['aktif', 'inisiasi', 'selesai'];
+  const requestedStatuses = String(req.query.status || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const invalidStatus = requestedStatuses.find((value) => !allowedStatuses.includes(value));
+  if (invalidStatus) return res.status(400).json({ success: false, message: `Status filter tidak valid: ${invalidStatus}` });
+
+  const id_jenis = req.query.id_jenis ? Number(req.query.id_jenis) : null;
+  const id_lokasi = req.query.id_lokasi ? Number(req.query.id_lokasi) : null;
+  if (req.query.id_jenis && !id_jenis) return res.status(400).json({ success: false, message: 'Filter jenis jamur tidak valid' });
+  if (req.query.id_lokasi && !id_lokasi) return res.status(400).json({ success: false, message: 'Filter lokasi tidak valid' });
+
+  const data = await budidayaModel.getByPetugas(Number(req.user.id_user), {
+    id_jenis,
+    id_lokasi,
+    statuses: requestedStatuses,
+    q: String(req.query.q || '').trim().slice(0, 100),
+  });
   res.json({ success: true, data });
 };
 
-exports.getSummary = async (req, res) => {
+exports.getSummary = async (_req, res) => {
   const data = await budidayaModel.getSummary();
   res.json({ success: true, data });
 };

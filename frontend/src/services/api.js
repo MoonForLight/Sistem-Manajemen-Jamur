@@ -73,6 +73,15 @@ class ApiClient {
     });
   }
 
+  patch(endpoint, data, options) {
+    const body = data instanceof FormData ? data : JSON.stringify(data);
+    return this.request(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body,
+    });
+  }
+
   delete(endpoint, options) {
     return this.request(endpoint, { ...options, method: 'DELETE' });
   }

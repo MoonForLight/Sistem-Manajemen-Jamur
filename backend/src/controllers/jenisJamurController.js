@@ -1,56 +1,41 @@
 const jenisJamurModel = require("../models/jenisJamurModel");
 
-exports.getAll = async (req, res) => {
-  const data = await jenisJamurModel.getAll();
-  res.json({ success: true, data });
-};
+function optionalNumber(value, min, max, label) {
+  if (value === undefined || value === null || value === '') return { value: null };
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < min || number > max) return { error: `${label} harus berupa angka ${min}-${max}` };
+  return { value: number };
+}
 
+exports.getAll = async (_req, res) => res.json({ success: true, data: await jenisJamurModel.getAll() });
 exports.getById = async (req, res) => {
-  const id = Number(req.params.id);
-  const item = await jenisJamurModel.getById(id);
-
-  if (!item) {
-    return res.status(404).json({ success: false, message: "Jenis jamur tidak ditemukan" });
-  }
-
+  const item = await jenisJamurModel.getById(Number(req.params.id));
+  if (!item) return res.status(404).json({ success: false, message: "Jenis jamur tidak ditemukan" });
   res.json({ success: true, data: item });
 };
 
-exports.create = async (req, res) => {
-  const { nama_jamur, genus, suhu_optimal, kelembapan_optimal } = req.body;
-
-  if (!nama_jamur) {
-    return res.status(400).json({ success: false, message: "nama_jamur wajib diisi" });
+async function save(req, res, id = null) {
+  const nama_jamur = String(req.body.nama_jamur || '').trim();
+  const genus = String(req.body.genus || '').trim() || null;
+  if (!nama_jamur) return res.status(400).json({ success: false, message: "nama_jamur wajib diisi" });
+  const suhu = optionalNumber(req.body.suhu_optimal, 0, 60, 'Suhu optimal');
+  const kelembapan = optionalNumber(req.body.kelembapan_optimal, 0, 100, 'Kelembapan optimal');
+  if (suhu.error) return res.status(400).json({ success: false, message: suhu.error });
+  if (kelembapan.error) return res.status(400).json({ success: false, message: kelembapan.error });
+  const payload = { nama_jamur, genus, suhu_optimal: suhu.value, kelembapan_optimal: kelembapan.value };
+  if (id === null) {
+    const idBaru = await jenisJamurModel.create(payload);
+    return res.status(201).json({ success: true, message: "Jenis jamur berhasil dibuat", data: { id_jenis: idBaru } });
   }
+  const affected = await jenisJamurModel.update(id, payload);
+  if (!affected) return res.status(404).json({ success: false, message: "Jenis jamur tidak ditemukan" });
+  return res.json({ success: true, message: "Jenis jamur berhasil diupdate" });
+}
 
-  const idBaru = await jenisJamurModel.create({ nama_jamur, genus, suhu_optimal, kelembapan_optimal });
-  res.status(201).json({ success: true, message: "Jenis jamur berhasil dibuat", data: { id_jenis: idBaru } });
-};
-
-exports.update = async (req, res) => {
-  const id = Number(req.params.id);
-  const { nama_jamur, genus, suhu_optimal, kelembapan_optimal } = req.body;
-
-  if (!nama_jamur) {
-    return res.status(400).json({ success: false, message: "nama_jamur wajib diisi" });
-  }
-
-  const affected = await jenisJamurModel.update(id, { nama_jamur, genus, suhu_optimal, kelembapan_optimal });
-
-  if (affected === 0) {
-    return res.status(404).json({ success: false, message: "Jenis jamur tidak ditemukan" });
-  }
-
-  res.json({ success: true, message: "Jenis jamur berhasil diupdate" });
-};
-
+exports.create = (req, res) => save(req, res);
+exports.update = (req, res) => save(req, res, Number(req.params.id));
 exports.remove = async (req, res) => {
-  const id = Number(req.params.id);
-  const affected = await jenisJamurModel.remove(id);
-
-  if (affected === 0) {
-    return res.status(404).json({ success: false, message: "Jenis jamur tidak ditemukan" });
-  }
-
+  const affected = await jenisJamurModel.remove(Number(req.params.id));
+  if (!affected) return res.status(404).json({ success: false, message: "Jenis jamur tidak ditemukan" });
   res.json({ success: true, message: "Jenis jamur berhasil dihapus" });
 };

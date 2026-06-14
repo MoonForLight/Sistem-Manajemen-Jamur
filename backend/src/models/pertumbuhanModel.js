@@ -149,4 +149,22 @@ async function remove(id) {
   return result.affectedRows;
 }
 
-module.exports = { getAll, getById, getByBudidaya, getByLokasi, create, update, remove };
+async function countByPetugasAndTanggal(id_petugas, tanggal_pengamatan, id_budidaya = null, excludeId = null) {
+  const conditions = ['id_petugas = ?', 'tanggal_pengamatan = ?'];
+  const params = [id_petugas, tanggal_pengamatan];
+  if (id_budidaya) {
+    conditions.push('id_budidaya = ?');
+    params.push(id_budidaya);
+  }
+  if (excludeId) {
+    conditions.push('id_pertumbuhan <> ?');
+    params.push(excludeId);
+  }
+  const [rows] = await db.query(
+    `SELECT COUNT(*) AS total FROM pertumbuhan WHERE ${conditions.join(' AND ')}`,
+    params
+  );
+  return Number(rows?.[0]?.total || 0);
+}
+
+module.exports = { getAll, getById, getByBudidaya, getByLokasi, create, update, remove, countByPetugasAndTanggal };

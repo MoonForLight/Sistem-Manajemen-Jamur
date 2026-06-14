@@ -378,7 +378,9 @@ async function submitDownloadForm() {
       email: downloadForm.value.email,
       instansi: downloadForm.value.instansi,
       tujuan: downloadForm.value.tujuan,
-      tipe_laporan: downloadForm.value.tipe_ekspor === '3_bulan' ? 'Laporan Umum (3 Bulan)' : 'Laporan Siklus Jamur (Selesai)'
+      tipe_laporan: downloadForm.value.tipe_ekspor === '3_bulan' ? 'Laporan Umum (3 Bulan Terakhir)' : 'Laporan Siklus Jamur (Selesai)',
+      bulan: selectedMonth.value,
+      id_budidaya: downloadForm.value.tipe_ekspor === 'per_jamur' ? downloadForm.value.id_budidaya : null
     })
     
     await generateExcel()
@@ -392,11 +394,29 @@ async function submitDownloadForm() {
 }
 
 async function generateExcel() {
-  const ym = selectedMonth.value;
-  const daysInMonth = new Date(ym.split('-')[0], ym.split('-')[1], 0).getDate();
+  const ym = selectedMonth.value
+  if (!ym) {
+    alert('Pilih bulan terlebih dahulu.')
+    return
+  }
+
+  // Guard: pastikan data siap, agar ExcelJS tidak crash saat tombol dipencet terlalu cepat
+  if (!Array.isArray(assignedBudidaya.value)) assignedBudidaya.value = []
+  if (!Array.isArray(allEnvRecords.value)) allEnvRecords.value = []
+  if (!Array.isArray(allHarvestRecords.value)) allHarvestRecords.value = []
+  if (!Array.isArray(allGrowthRecords.value)) allGrowthRecords.value = []
+
+  const ymParts = ym.split('-')
+  if (ymParts.length !== 2) {
+    alert('Format bulan laporan tidak valid.')
+    return
+  }
+
+  const daysInMonth = new Date(Number(ymParts[0]), Number(ymParts[1]), 0).getDate()
   
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Laporan Bulanan', { views: [{ showGridLines: false }] });
+  
   
   // Header
   worksheet.mergeCells('A1:K1');
