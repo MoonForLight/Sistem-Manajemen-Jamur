@@ -48,6 +48,27 @@ exports.getById = async (req, res) => {
   res.json({ success: true, data: item });
 };
 
+exports.getBackupData = async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    const item = await budidayaModel.getById(id);
+    if (!item) return res.status(404).json({ success: false, message: 'Budidaya tidak ditemukan' });
+
+    const [panen] = await db.query('SELECT * FROM panen WHERE id_budidaya = ?', [id]);
+    const [lingkungan] = await db.query('SELECT * FROM lingkungan_harian WHERE id_budidaya = ? ORDER BY tanggal_pengukuran ASC', [id]);
+    const [pertumbuhan] = await db.query('SELECT * FROM pertumbuhan WHERE id_budidaya = ? ORDER BY tanggal_pengamatan ASC', [id]);
+    
+    item.panen = panen;
+    item.lingkungan = lingkungan;
+    item.pertumbuhan = pertumbuhan;
+
+    res.json({ success: true, data: item });
+  } catch (error) {
+    console.error("Error getting budidaya backup data:", error);
+    res.status(500).json({ success: false, message: "Gagal mengambil data backup budidaya" });
+  }
+};
+
 exports.create = async (req, res) => {
   let { id_lokasi, id_jenis, id_media, status, id_petugas } = req.body;
   const tanggal_mulai = normalizeISODate(req.body.tanggal_mulai);

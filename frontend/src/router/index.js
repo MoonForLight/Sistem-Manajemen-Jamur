@@ -25,6 +25,7 @@ import AdminPetugas from '../pages/admin/AdminPetugas.vue'
 import AdminJamur from '../pages/admin/AdminJamur.vue'
 import AdminMedia from '../pages/admin/AdminMedia.vue'
 import AdminBudidaya from '../pages/admin/AdminBudidaya.vue'
+import AdminLogUnduhan from '../pages/admin/AdminLogUnduhan.vue'
 
 const NotFound = { template: '<div class="container" style="padding:40px; text-align:center"><h1>404 - Page Not Found</h1></div>' }
 const Unauthorized = { template: '<div class="container" style="padding:40px; text-align:center"><h1>403 - Unauthorized Access</h1></div>' }
@@ -115,6 +116,7 @@ const routes = [
       { path: 'jamur', name: 'admin-jamur', component: AdminJamur },
       { path: 'media', name: 'admin-media', component: AdminMedia },
       { path: 'petugas', name: 'admin-petugas', component: AdminPetugas },
+      { path: 'log-unduhan', name: 'admin-log-unduhan', component: AdminLogUnduhan },
     ]
   },
 

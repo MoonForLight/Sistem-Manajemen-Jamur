@@ -7,6 +7,7 @@ const roleMiddleware = require("../middleware/roleMiddleware");
 
 router.get("/", lokasiController.getAll);
 router.get("/:id", lokasiController.getById);
+router.get("/:id/backup", authMiddleware, roleMiddleware("admin"), lokasiController.getBackupData);
 
 router.post("/", authMiddleware, roleMiddleware("admin"), lokasiController.create);
 router.put("/:id", authMiddleware, roleMiddleware("admin"), lokasiController.update);

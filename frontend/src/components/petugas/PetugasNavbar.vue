@@ -25,8 +25,8 @@
 
     <div v-if="showLogoutModal" class="modal-overlay">
       <div class="logout-modal fade-in-up">
-        <div class="modal-icon">👋</div>
-        <h3 class="modal-title">Konfirmasi Logout</h3>
+        <!-- <div class="modal-icon">🚪</div> -->
+        <h3 class="modal-title">Logout</h3>
         <p class="modal-text">Apakah Anda yakin ingin keluar dari aplikasi?</p>
         <div class="modal-actions">
           <button class="btn-cancel" @click="showLogoutModal = false">Batal</button>

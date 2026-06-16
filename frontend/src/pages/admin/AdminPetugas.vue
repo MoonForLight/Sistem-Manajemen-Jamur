@@ -89,12 +89,46 @@
           <button type="button" class="icon-btn edit" @click.prevent="openForm('edit', user)">
             <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
           </button>
-          <button type="button" class="icon-btn delete" @click.prevent="deletePetugas(user.id_user)">
+          <button type="button" class="icon-btn delete" @click.prevent="openDeleteModal(user.id_user)">
             <svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
           </button>
         </span>
       </div>
     </div>
+
+    <!-- Modal Konfirmasi Hapus -->
+    <div v-if="isDeleteModalOpen" class="modal-overlay">
+      <div class="form-modal fade-in-up" style="max-width: 400px; text-align: center;">
+        <div class="modal-icon" style="color: #ef4444; margin-bottom: 16px;">
+          <svg viewBox="0 0 24 24" width="48" height="48" style="display: block; margin: 0 auto;"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        </div>
+        <h3 class="modal-title" style="color: #ef4444; margin: 0 0 8px 0; font-size: 20px; font-weight: 800;">Konfirmasi Hapus</h3>
+        <p class="modal-text" style="margin: 0 0 18px 0; color: #4b5563; font-size: 14px; line-height: 1.5;">
+          Apakah Anda yakin ingin menghapus petugas ini?
+        </p>
+        <div style="display: flex; justify-content: center; gap: 12px;">
+          <button class="btn outline modern-btn" @click="closeDeleteModal">Batal</button>
+          <button class="btn primary modern-btn" style="background: #ef4444;" @click="executeDelete">Ya, Hapus</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Popup -->
+    <Transition name="fade-slide">
+      <div v-if="notification.show" class="notification-popup" :class="notification.type" @click="closeNotification" style="cursor: pointer;" title="Klik untuk menutup">
+        <div class="notification-icon">
+          <svg v-if="notification.type === 'success'" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          <svg v-else viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        </div>
+        <div class="notification-content">
+          <h4 class="notification-title">{{ notification.type === 'success' ? 'Berhasil' : 'Gagal' }}</h4>
+          <p class="notification-message">{{ notification.message }}</p>
+        </div>
+        <button class="notification-close" @click.stop="closeNotification">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -111,6 +145,22 @@ const formMode = ref('create')
 const editId = ref(null)
 const formData = ref({ nama: '', username: '', password: '', id_lokasi: '', status: 'aktif' })
 const searchQuery = ref('')
+
+const isDeleteModalOpen = ref(false)
+const idToDelete = ref(null)
+
+const notification = ref({ show: false, message: '', type: 'success' })
+
+function showNotification(message, type = 'success') {
+  notification.value = { show: true, message, type }
+  setTimeout(() => {
+    notification.value.show = false
+  }, 4000)
+}
+
+function closeNotification() {
+  notification.value.show = false
+}
 
 const filteredPetugasList = computed(() => {
   if (!searchQuery.value) return petugasList.value
@@ -189,22 +239,36 @@ async function savePetugas() {
     }
     await loadPetugas()
     eventBus.emit('refreshBudidayaData')
+    showNotification('Data petugas berhasil disimpan!', 'success')
     closeForm()
   } catch (error) {
     console.error('Error simpan petugas:', error)
-    alert(error.message || 'Gagal menyimpan data petugas.')
+    showNotification(error.message || 'Gagal menyimpan data petugas.', 'error')
   }
 }
 
-async function deletePetugas(id) {
-  if (!confirm('Hapus petugas ini?')) return
+function openDeleteModal(id) {
+  idToDelete.value = id
+  isDeleteModalOpen.value = true
+}
+
+function closeDeleteModal() {
+  isDeleteModalOpen.value = false
+  idToDelete.value = null
+}
+
+async function executeDelete() {
+  if (!idToDelete.value) return
   try {
-    await usersService.deletePetugas(id)
+    await usersService.deletePetugas(idToDelete.value)
+    showNotification('Petugas berhasil dihapus.', 'success')
     await loadPetugas()
     eventBus.emit('refreshBudidayaData')
   } catch (error) {
     console.error('Error hapus petugas:', error)
-    alert(error.message || 'Gagal menghapus data petugas.')
+    showNotification(error.message || 'Gagal menghapus data petugas.', 'error')
+  } finally {
+    closeDeleteModal()
   }
 }
 
@@ -424,18 +488,77 @@ onMounted(async () => {
 }
 
 .icon-btn {
-  background: transparent;
-  border: none;
-  cursor: pointer;
+  background: white;
+  border: 1px solid #e5e7eb;
   padding: 6px;
   border-radius: 6px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+.icon-btn svg { width: 18px; height: 18px; }
+
+
+
+
+
+/* Notification Popup */
+.fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.fade-slide-enter-from { opacity: 0; transform: translate(-50%, 20px); }
+.fade-slide-leave-to { opacity: 0; transform: translate(-50%, -20px); }
+
+.notification-popup {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  min-width: 320px;
+  max-width: 90vw;
+}
+
+.notification-popup.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+.notification-popup.error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+
+.notification-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
-  transition: all 0.2s;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
 }
-.icon-btn svg { width: 20px; height: 20px; }
-.icon-btn.edit:hover { background: #eff6ff; color: #3b82f6; }
-.icon-btn.delete:hover { background: #fef2f2; color: #ef4444; }
+.notification-icon svg { width: 100%; height: 100%; }
+
+.notification-content { flex-grow: 1; display: flex; flex-direction: column; gap: 2px; }
+.notification-title { margin: 0; font-size: 14px; font-weight: 700; }
+.notification-message { margin: 0; font-size: 13px; opacity: 0.9; }
+
+.notification-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: inherit;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+.notification-close:hover { opacity: 1; background: rgba(0,0,0,0.05); }
+.notification-close svg { width: 18px; height: 18px; }
+
 </style>

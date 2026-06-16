@@ -5,22 +5,22 @@
         <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M11 3H3v8h8V3zm10 0h-8v8h8V3zm-10 10H3v8h8v-8zm10 0h-8v8h8v-8z"/></svg>
         Dashboard
       </RouterLink>
-      
-      <RouterLink to="/petugas/jamur" class="nav-item">
-        <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-        Kelola Jamur
-      </RouterLink>
-
-      <RouterLink to="/petugas/rak" class="nav-item">
-        <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M4 3h16a1 1 0 0 1 1 1v16h-2v-3H5v3H3V4a1 1 0 0 1 1-1zm1 2v4h14V5H5zm0 6v4h14v-4H5z"/></svg>
-        Rak & Jenis
-      </RouterLink>
 
       <RouterLink to="/petugas/lingkungan" class="nav-item">
         <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
         Kondisi Lingkungan
       </RouterLink>
+
+      <RouterLink to="/petugas/rak" class="nav-item">
+        <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M4 3h16a1 1 0 0 1 1 1v16h-2v-3H5v3H3V4a1 1 0 0 1 1-1zm1 2v4h14V5H5zm0 6v4h14v-4H5z"/></svg>
+        Jenis
+      </RouterLink>
       
+      <RouterLink to="/petugas/jamur" class="nav-item">
+        <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        Kelola Jamur
+      </RouterLink>
+   
       <RouterLink to="/petugas/laporan" class="nav-item">
         <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
         Laporan

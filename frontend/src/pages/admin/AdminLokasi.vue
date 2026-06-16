@@ -62,6 +62,30 @@
       </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteConfirm" class="modal-overlay">
+      <div class="form-modal delete-modal">
+        <div class="delete-icon-container">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        </div>
+        <h3 class="modal-title" style="color: #ef4444;">Peringatan Hapus Data</h3>
+        <p class="delete-message">
+          Apakah Anda yakin ingin menghapus lokasi <strong>{{ locationToDelete?.nama_lokasi }}</strong>? 
+          <br><br>
+          Jika lokasi ini memiliki data budidaya, menghapusnya akan <strong>menghapus seluruh riwayat panen dan pengamatan secara permanen</strong>.
+        </p>
+        <div class="form-actions center" style="flex-wrap: wrap; justify-content: center; gap: 10px;">
+          <button type="button" class="btn outline modern-btn" @click="closeDeleteConfirm">Batal</button>
+          <button type="button" class="btn outline modern-btn" style="border-color: #ef4444; color: #ef4444;" @click="executeDelete(false)">Hapus Tanpa Backup</button>
+          <button type="button" class="btn primary modern-btn" style="background: #10b981; border: none; padding: 10px 16px;" @click="executeDelete(true)">
+            <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; display: inline-block; vertical-align: text-bottom; margin-right: 6px;"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            Backup Excel & Hapus
+          </button>
+        </div>
+      </div>
+    </div>
+
+
     <div class="table-card-modern">
       <div class="table-header-modern">
         <span>Foto</span>
@@ -90,12 +114,28 @@
           <button type="button" class="icon-btn edit" @click.prevent="openForm('edit', item)">
             <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
           </button>
-          <button type="button" class="icon-btn delete" @click.prevent="deleteLocation(item.id_lokasi)">
+          <button type="button" class="icon-btn delete" @click.prevent="promptDelete(item)">
             <svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
           </button>
         </span>
       </div>
     </div>
+    <!-- Notification Popup -->
+    <Transition name="fade-slide">
+      <div v-if="notification.show" class="notification-popup" :class="notification.type" @click="closeNotification" style="cursor: pointer;" title="Klik untuk menutup">
+        <div class="notification-icon">
+          <svg v-if="notification.type === 'success'" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          <svg v-else viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        </div>
+        <div class="notification-content">
+          <h4 class="notification-title">{{ notification.type === 'success' ? 'Berhasil' : 'Gagal' }}</h4>
+          <p class="notification-message">{{ notification.message }}</p>
+        </div>
+        <button class="notification-close" @click="notification.show = false">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -103,6 +143,7 @@
 import { ref, onMounted, computed } from 'vue'
 import eventBus from '../../services/eventBus.js'
 import { lokasiService, uploadService } from '../../services/dataService.js'
+import { exportLokasiBackup } from '../../utils/backupExport.js'
 
 const lokasiList = ref([])
 const loading = ref(false)
@@ -115,6 +156,32 @@ const isUploading = ref(false)
 
 const fileToUpload = ref(null)
 const fotoPreview = ref(null)
+
+const notification = ref({ show: false, message: '', type: 'success' })
+const showDeleteConfirm = ref(false)
+const locationToDelete = ref(null)
+
+function showNotification(message, type = 'success') {
+  notification.value = { show: true, message, type }
+  setTimeout(() => {
+    notification.value.show = false
+  }, 4000)
+}
+
+function closeNotification() {
+  notification.value.show = false
+}
+
+function promptDelete(item) {
+  locationToDelete.value = item
+  showDeleteConfirm.value = true
+}
+
+function closeDeleteConfirm() {
+  showDeleteConfirm.value = false
+  locationToDelete.value = null
+}
+
 
 const filteredLokasiList = computed(() => {
   if (!searchQuery.value) return lokasiList.value
@@ -202,8 +269,10 @@ async function saveLocation() {
     
     if (formMode.value === 'create') {
       await lokasiService.create(payload)
+      showNotification('Lokasi berhasil ditambahkan', 'success')
     } else if (editId.value) {
       await lokasiService.update(editId.value, payload)
+      showNotification('Lokasi berhasil diupdate', 'success')
     }
     
     await loadLokasi()
@@ -211,20 +280,41 @@ async function saveLocation() {
     closeForm()
   } catch (error) {
     console.error('Gagal menyimpan lokasi:', error)
-    alert('Terjadi kesalahan saat menyimpan lokasi.')
+    const msg = error.response?.data?.message || 'Terjadi kesalahan saat menyimpan lokasi.'
+    showNotification(msg, 'error')
   } finally {
     isUploading.value = false
   }
 }
 
-async function deleteLocation(id) {
-  if (!confirm('Hapus lokasi ini?')) return
+async function executeDelete(withBackup) {
+  if (!locationToDelete.value) return
+  const id = locationToDelete.value.id_lokasi
+  const nama = locationToDelete.value.nama_lokasi
+  
   try {
-    await lokasiService.delete(id)
+    if (withBackup) {
+      showNotification('Sedang menyiapkan data backup...', 'success')
+      const backupRes = await lokasiService.getBackupData(id)
+      if (backupRes && backupRes.success) {
+        await exportLokasiBackup(backupRes.data)
+      } else {
+        throw new Error('Gagal menarik data backup dari server.')
+      }
+    }
+
+    // Gunakan force=true agar data operasional di dalamnya ikut terhapus di backend
+    await lokasiService.delete(id, true)
+    showNotification(`Lokasi ${nama} beserta isinya berhasil dihapus`, 'success')
+    
     await loadLokasi()
     eventBus.emit('refreshBudidayaData')
+    closeDeleteConfirm()
   } catch (error) {
     console.error('Gagal menghapus lokasi:', error)
+    const msg = error.response?.data?.message || error.message || 'Gagal menghapus lokasi.'
+    showNotification(msg, 'error')
+    closeDeleteConfirm()
   }
 }
 
@@ -531,34 +621,162 @@ onMounted(loadLokasi)
 }
 
 .icon-btn {
-  background: transparent;
-  border: none;
-  cursor: pointer;
+  background: white;
+  border: 1px solid #e5e7eb;
   padding: 6px;
   border-radius: 6px;
-  display: flex;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
-  transition: all 0.2s;
+  width: 32px;
+  height: 32px;
 }
 .icon-btn svg {
   width: 20px;
   height: 20px;
 }
-.icon-btn.edit:hover {
-  background: #eff6ff;
-  color: #3b82f6;
-}
-.icon-btn.delete:hover {
-  background: #fef2f2;
-  color: #ef4444;
-}
+
+
 
 @media(max-width: 768px) {
   .form-group {
     grid-template-columns: 1fr;
     gap: 8px;
   }
+}
+
+/* Modal Delete Styles */
+.delete-modal {
+  max-width: 400px;
+  text-align: center;
+}
+
+.delete-icon-container {
+  width: 64px;
+  height: 64px;
+  background: #fef2f2;
+  color: #ef4444;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.delete-icon-container svg {
+  width: 32px;
+  height: 32px;
+}
+
+.delete-message {
+  color: #4b5563;
+  font-size: 15px;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.form-actions.center {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  border-top: none;
+  padding-top: 0;
+}
+
+.btn.danger.modern-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+}
+.btn.danger.modern-btn:hover {
+  background: #dc2626;
+}
+
+/* Notification Styles */
+.notification-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 32px;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  min-width: 380px;
+  max-width: 500px;
+  z-index: 10000;
+}
+
+
+.notification-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.notification-popup.success .notification-icon {
+  color: #10b981;
+}
+
+.notification-popup.error .notification-icon {
+  color: #ef4444;
+}
+
+.notification-content {
+  flex-grow: 1;
+}
+
+.notification-title {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.notification-message {
+  margin: 0;
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.notification-close:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.notification-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translate(-50%, calc(-50% + 20px)) scale(0.95);
 }
 </style>

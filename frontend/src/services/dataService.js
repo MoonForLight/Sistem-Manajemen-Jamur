@@ -18,8 +18,12 @@ export const lokasiService = {
     return await api.put(`/lokasi/${id}`, data);
   },
 
-  async delete(id) {
-    return await api.delete(`/lokasi/${id}`);
+  async delete(id, force = false) {
+    return await api.delete(`/lokasi/${id}${force ? '?force=true' : ''}`);
+  },
+
+  async getBackupData(id) {
+    return await api.get(`/lokasi/${id}/backup`);
   },
 
   async getByUser(userId) {
@@ -67,6 +71,10 @@ export const budidayaService = {
 
   async delete(id) {
     return await api.delete(`/budidaya/${id}`);
+  },
+
+  async getBackupData(id) {
+    return await api.get(`/budidaya/${id}/backup`);
   },
 };
 

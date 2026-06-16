@@ -13,12 +13,12 @@
       <div class="header-content">
         <div>
           <h1 class="page-title">Operasional Rumah Jamur</h1>
-          <p class="page-subtitle">Pilih rumah jamur aktif untuk mencatat pertumbuhan atau panen harian.</p>
+          <p class="page-subtitle">Pilih jenis jamur aktif untuk mencatat pertumbuhan atau panen harian.</p>
         </div>
         
         <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
           <div v-if="budidayaList.length > 0" class="budidaya-selector">
-            <label>Rumah Jamur Aktif:</label>
+            <label>Jenis Jamur:</label>
             <select v-model="selectedBudidaya" @change="handleSelectChange" class="modern-select">
               <option v-for="b in budidayaList" :key="b.id_budidaya" :value="b">
                 BDY-{{ String(b.id_budidaya).padStart(3, '0') }} - {{ b.nama_jamur }}
@@ -128,7 +128,7 @@
             <span class="value text-green fw-bold">{{ todayFormatted }}</span>
           </div>
           <div class="info-actions" style="margin-left: auto; display: flex; align-items: center;">
-            <button @click="openSelesaiModal" class="btn-warning" style="background-color: #f59e0b; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.2s;">
+            <button @click="openSelesaiModal" class="btn-warning" style="background-color: #f59e0b; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.2s;">
               Selesaikan Siklus
             </button>
           </div>
@@ -345,10 +345,13 @@ const latestFase = computed(() => {
 
 const todayGrowthCount = computed(() => {
   if (!selectedBudidaya.value) return 0
-  return growthRecords.value.filter((item) =>
-    String(item.id_budidaya) === String(selectedBudidaya.value.id_budidaya) &&
-    String(item.tanggal_pengamatan || '').split('T')[0] === todayISO
-  ).length
+  return growthRecords.value.filter((item) => {
+    if (String(item.id_budidaya) !== String(selectedBudidaya.value.id_budidaya)) return false
+    if (!item.tanggal_pengamatan) return false
+    const d = new Date(item.tanggal_pengamatan)
+    const localDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    return localDateStr === todayISO
+  }).length
 })
 
 const isPanenAllowed = computed(() => latestFase.value === 'Panen')
@@ -790,7 +793,8 @@ onBeforeUnmount(() => {
 .info-banner {
   display: flex;
   flex-wrap: wrap;
-  gap: 40px;
+  align-items: center;
+  gap: 20px 40px;
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 12px;

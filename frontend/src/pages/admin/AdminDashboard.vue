@@ -23,10 +23,10 @@
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon bg-purple-light"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,2C6.5,2,2,6.5,2,12 c0,3.3,1.6,6.3,4,8.1V22h12v-1.9c2.4-1.8,4-4.8,4-8.1C22,6.5,17.5,2,12,2z M12,4c4.4,0,8,3.6,8,8h-3c0-2.8-2.2-5-5-5S7,9.2,7,12H4 C4,7.6,7.6,4,12,4z M10,14h4v6h-4V14z"/></svg></div>
+        <div class="stat-icon bg-purple-light"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></div>
         <div class="stat-info">
-          <span class="stat-label">Siklus Aktif</span>
-          <span class="stat-value">{{ stats.budidayaAktif }} <span class="stat-sub">Rak</span></span>
+          <span class="stat-label">Pengunduh Data</span>
+          <span class="stat-value">{{ downloadRecap.ringkasan?.pengunduh_unik || 0 }} <span class="stat-sub">Orang</span></span>
         </div>
       </div>
     </div>

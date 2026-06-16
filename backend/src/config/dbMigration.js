@@ -97,7 +97,7 @@ async function ensureSchema() {
         CONSTRAINT fk_budidaya_lokasi FOREIGN KEY (id_lokasi) REFERENCES lokasi(id_lokasi) ON DELETE RESTRICT ON UPDATE CASCADE,
         CONSTRAINT fk_budidaya_jenis FOREIGN KEY (id_jenis) REFERENCES jenis_jamur(id_jenis) ON DELETE RESTRICT ON UPDATE CASCADE,
         CONSTRAINT fk_budidaya_media FOREIGN KEY (id_media) REFERENCES media_tanam(id_media) ON DELETE RESTRICT ON UPDATE CASCADE,
-        CONSTRAINT fk_budidaya_petugas FOREIGN KEY (id_petugas) REFERENCES users(id_user) ON DELETE RESTRICT ON UPDATE CASCADE
+        CONSTRAINT fk_budidaya_petugas FOREIGN KEY (id_petugas) REFERENCES petugas(id_user) ON DELETE RESTRICT ON UPDATE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
     },
     {
@@ -115,7 +115,7 @@ async function ensureSchema() {
         KEY fk_pertumbuhan_budidaya_idx (id_budidaya),
         KEY fk_pertumbuhan_petugas_idx (id_petugas),
         CONSTRAINT fk_pertumbuhan_budidaya FOREIGN KEY (id_budidaya) REFERENCES budidaya(id_budidaya) ON DELETE CASCADE ON UPDATE CASCADE,
-        CONSTRAINT fk_pertumbuhan_petugas FOREIGN KEY (id_petugas) REFERENCES users(id_user) ON DELETE RESTRICT ON UPDATE CASCADE
+        CONSTRAINT fk_pertumbuhan_petugas FOREIGN KEY (id_petugas) REFERENCES petugas(id_user) ON DELETE RESTRICT ON UPDATE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
     },
     {
@@ -134,7 +134,7 @@ async function ensureSchema() {
         KEY fk_lingkungan_budidaya_idx (id_budidaya),
         KEY fk_lingkungan_petugas_idx (id_petugas),
         CONSTRAINT fk_lingkungan_budidaya FOREIGN KEY (id_budidaya) REFERENCES budidaya(id_budidaya) ON DELETE CASCADE ON UPDATE CASCADE,
-        CONSTRAINT fk_lingkungan_petugas FOREIGN KEY (id_petugas) REFERENCES users(id_user) ON DELETE RESTRICT ON UPDATE CASCADE
+        CONSTRAINT fk_lingkungan_petugas FOREIGN KEY (id_petugas) REFERENCES petugas(id_user) ON DELETE RESTRICT ON UPDATE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
     },
     {
@@ -151,7 +151,7 @@ async function ensureSchema() {
         KEY fk_panen_budidaya_idx (id_budidaya),
         KEY fk_panen_petugas_idx (id_petugas),
         CONSTRAINT fk_panen_budidaya FOREIGN KEY (id_budidaya) REFERENCES budidaya(id_budidaya) ON DELETE CASCADE ON UPDATE CASCADE,
-        CONSTRAINT fk_panen_petugas FOREIGN KEY (id_petugas) REFERENCES users(id_user) ON DELETE RESTRICT ON UPDATE CASCADE
+        CONSTRAINT fk_panen_petugas FOREIGN KEY (id_petugas) REFERENCES petugas(id_user) ON DELETE RESTRICT ON UPDATE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
     },
     {
@@ -166,7 +166,9 @@ async function ensureSchema() {
         tipe_laporan VARCHAR(100) NOT NULL,
         bulan VARCHAR(7) DEFAULT NULL,
         id_budidaya INT(11) DEFAULT NULL,
-        PRIMARY KEY (id_log)
+        PRIMARY KEY (id_log),
+        KEY fk_download_logs_budidaya_idx (id_budidaya),
+        CONSTRAINT fk_download_logs_budidaya FOREIGN KEY (id_budidaya) REFERENCES budidaya(id_budidaya) ON DELETE SET NULL ON UPDATE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci`,
     },
   ];
@@ -305,6 +307,30 @@ async function migrateLegacySchema() {
 
     await db.query("ALTER TABLE lingkungan_harian MODIFY intensitas_cahaya DECIMAL(10,2) DEFAULT NULL");
     await db.query("ALTER TABLE panen MODIFY jumlah_panen DECIMAL(10,2) DEFAULT NULL");
+
+    const [fkRows] = await db.query(`
+      SELECT TABLE_NAME, CONSTRAINT_NAME, REFERENCED_TABLE_NAME
+      FROM information_schema.KEY_COLUMN_USAGE
+      WHERE REFERENCED_TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME IN ('budidaya', 'pertumbuhan', 'lingkungan_harian', 'panen', 'download_logs')
+        AND REFERENCED_TABLE_NAME IS NOT NULL
+    `);
+
+    const checkAndFixFK = async (tableName, constraintName, correctReferencedTable, addSql) => {
+      const fk = fkRows.find(r => r.TABLE_NAME === tableName && r.CONSTRAINT_NAME === constraintName);
+      if (!fk) {
+        await db.query(`ALTER TABLE \`${tableName}\` ADD ${addSql}`);
+      } else if (fk.REFERENCED_TABLE_NAME !== correctReferencedTable) {
+        await db.query(`ALTER TABLE \`${tableName}\` DROP FOREIGN KEY \`${constraintName}\``);
+        await db.query(`ALTER TABLE \`${tableName}\` ADD ${addSql}`);
+      }
+    };
+
+    await checkAndFixFK('budidaya', 'fk_budidaya_petugas', 'petugas', 'CONSTRAINT fk_budidaya_petugas FOREIGN KEY (id_petugas) REFERENCES petugas(id_user) ON DELETE RESTRICT ON UPDATE CASCADE');
+    await checkAndFixFK('pertumbuhan', 'fk_pertumbuhan_petugas', 'petugas', 'CONSTRAINT fk_pertumbuhan_petugas FOREIGN KEY (id_petugas) REFERENCES petugas(id_user) ON DELETE RESTRICT ON UPDATE CASCADE');
+    await checkAndFixFK('lingkungan_harian', 'fk_lingkungan_petugas', 'petugas', 'CONSTRAINT fk_lingkungan_petugas FOREIGN KEY (id_petugas) REFERENCES petugas(id_user) ON DELETE RESTRICT ON UPDATE CASCADE');
+    await checkAndFixFK('panen', 'fk_panen_petugas', 'petugas', 'CONSTRAINT fk_panen_petugas FOREIGN KEY (id_petugas) REFERENCES petugas(id_user) ON DELETE RESTRICT ON UPDATE CASCADE');
+    await checkAndFixFK('download_logs', 'fk_download_logs_budidaya', 'budidaya', 'CONSTRAINT fk_download_logs_budidaya FOREIGN KEY (id_budidaya) REFERENCES budidaya(id_budidaya) ON DELETE SET NULL ON UPDATE CASCADE');
 
   } catch (err) {
     console.warn('Legacy schema migration failed:', err.code || err.message);

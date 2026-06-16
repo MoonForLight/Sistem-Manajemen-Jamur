@@ -21,6 +21,11 @@
         Data Petugas
       </RouterLink>
 
+      <RouterLink to="/admin/log-unduhan" class="nav-item">
+        <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        Unduhan
+      </RouterLink>
+
       <!-- Dropdown Data Master -->
       <div class="nav-group" :class="{ 'is-open': isMasterOpen }">
         <div class="nav-item nav-group-header" @click="isMasterOpen = !isMasterOpen">

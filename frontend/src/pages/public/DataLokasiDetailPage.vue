@@ -413,68 +413,11 @@ async function submitDownloadForm() {
 async function exportBulananExcel() {
   if (!lokasi.value || !selectedMonth.value) return;
   const ym = selectedMonth.value;
-  const daysInMonth = new Date(ym.split('-')[0], ym.split('-')[1], 0).getDate();
-  
   const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('Laporan Bulanan', { views: [{ showGridLines: false }] });
-  
-  // Header
-  worksheet.mergeCells('A1:K1');
-  worksheet.getCell('A1').value = 'LAPORAN KOMPREHENSIF BUDIDAYA JAMUR - SISTEM MANAJEMEN JAMUR';
-  worksheet.getCell('A1').font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
-  worksheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16A34A' } };
-  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
-  worksheet.getRow(1).height = 30;
-  
-  worksheet.addRow([]);
-  
-  // Informasi Umum
-  worksheet.mergeCells('A3:K3');
-  worksheet.getCell('A3').value = 'INFORMASI UMUM';
-  worksheet.getCell('A3').font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
-  worksheet.getCell('A3').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
-  worksheet.getCell('A3').alignment = { horizontal: 'left', vertical: 'middle' };
-  worksheet.getCell('A3').border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-  worksheet.getRow(3).height = 25;
 
-  const infoData = [
-    ['Lokasi', lokasi.value.nama_lokasi],
-    ['Bulan Laporan', formattedMonth.value],
-    ['Tanggal Diekspor', new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })],
-    ['Tipe Ekspor', downloadForm.value.tipe_ekspor === '3_bulan' ? 'Laporan Umum (3 Bulan Terakhir)' : 'Laporan Spesifik Siklus Jamur'],
-    ['Pihak Pengunduh', `${downloadForm.value.nama} (${downloadForm.value.instansi})`]
-  ];
+  const type = downloadForm.value.tipe_ekspor;
 
-  if (downloadForm.value.tipe_ekspor === '3_bulan') {
-    infoData.push(['Total Panen Bulan Ini', `${totalPanen.value} gram`]);
-    infoData.push(['Catatan Analisis (AI)', aiInsight.value]);
-  } else {
-    const bud = budidayaList.value.find(b => Number(b.id_budidaya) === Number(downloadForm.value.id_budidaya));
-    if (bud) {
-      infoData.push(['Fokus Budidaya', `BDY-${String(bud.id_budidaya).padStart(3, '0')} - ${bud.nama_jamur}`]);
-      infoData.push(['Alasan Selesai', bud.alasan_selesai || '-']);
-    }
-  }
-
-  infoData.forEach(info => {
-    const row = worksheet.addRow([info[0], info[1]]);
-    worksheet.mergeCells(`B${row.number}:K${row.number}`);
-    row.getCell(1).font = { bold: true };
-    row.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    row.getCell(2).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    row.getCell(2).alignment = { wrapText: true, vertical: 'middle' };
-    if(info[0] === 'Catatan Analisis (AI)') {
-      row.height = 45;
-    }
-  });
-
-  worksheet.addRow([]);
-  
-  // Mempersiapkan data mentah yang akan diekspor sesuai tipe
-  let envRecordsToExport = [];
-  let harvestRecordsToExport = [];
-  
-  if (downloadForm.value.tipe_ekspor === '3_bulan') {
+  if (type === '3_bulan') {
     const d = new Date(ym.split('-')[0], ym.split('-')[1] - 1);
     const months = [];
     for(let i = 0; i < 3; i++) {
@@ -482,119 +425,123 @@ async function exportBulananExcel() {
       months.push(`${iterD.getFullYear()}-${String(iterD.getMonth() + 1).padStart(2, '0')}`);
     }
     
-    envRecordsToExport = allEnvRecords.value.filter(r => {
-      const dStr = getLocalDateString(r.tanggal_pengukuran);
-      return months.some(m => dStr.startsWith(m));
-    }).sort((a,b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran));
-    
-    harvestRecordsToExport = allHarvestRecords.value.filter(r => {
-      const dStr = getLocalDateString(r.tanggal_panen);
-      return months.some(m => dStr.startsWith(m));
-    }).sort((a,b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen));
-
-  } else {
-    // Per Jamur
-    envRecordsToExport = allEnvRecords.value.filter(r => Number(r.id_budidaya) === Number(downloadForm.value.id_budidaya))
+    const envRecords = allEnvRecords.value.filter(r => r.tanggal_pengukuran && months.some(m => r.tanggal_pengukuran.startsWith(m)))
       .sort((a,b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran));
-      
-    harvestRecordsToExport = allHarvestRecords.value.filter(r => Number(r.id_budidaya) === Number(downloadForm.value.id_budidaya))
+    const harvestRecords = allHarvestRecords.value.filter(r => r.tanggal_panen && months.some(m => r.tanggal_panen.startsWith(m)))
       .sort((a,b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen));
-  }
 
-  // Section 2: Log Data Mentah Lingkungan
-  const s2Title = worksheet.addRow(['1. LOG DATA MENTAH LINGKUNGAN (SENSOR & MANUAL)']);
-  worksheet.mergeCells(`A${s2Title.number}:K${s2Title.number}`);
-  s2Title.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
-  s2Title.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
-  s2Title.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-  s2Title.height = 25;
-  s2Title.getCell(1).alignment = { vertical: 'middle' };
+    const ws1 = workbook.addWorksheet('1. Executive Summary', { views: [{ showGridLines: false }] });
+    ws1.addRow(['LAPORAN PRODUKSI GLOBAL']).font = { bold: true, size: 16 };
+    ws1.addRow([]);
+    ws1.addRow(['Lokasi', lokasi.value.nama_lokasi]).font = { bold: true };
+    ws1.addRow(['Bulan Acuan', formattedMonth.value]).font = { bold: true };
+    ws1.addRow(['Tipe Laporan', 'Laporan Umum (3 Bulan Terakhir)']).font = { bold: true };
+    ws1.addRow(['Pihak Pengunduh', `${downloadForm.value.nama} (${downloadForm.value.instansi})`]).font = { bold: true };
+    ws1.addRow(['Total Panen Agregat', harvestRecords.reduce((a, b) => a + (Number(b.jumlah_panen) || 0), 0) + ' gram']).font = { bold: true };
+    ws1.columns = [{width: 30}, {width: 40}];
 
-  const header2 = ['Kode Rak (Budidaya)', 'Waktu Pencatatan', 'Suhu (°C)', 'Kelembapan (%)', 'Intensitas Cahaya (lux)', 'Petugas Pencatat', '', '', '', '', ''];
-  const rowH2 = worksheet.addRow(header2.slice(0, 6)); // We will merge across but let's just make columns look fine
-  rowH2.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-  rowH2.height = 30;
-  rowH2.eachCell((cell) => {
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF374151' } };
-    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-  });
-  
-  if (envRecordsToExport.length === 0) {
-    const emptyRow = worksheet.addRow(['(Tidak ada data lingkungan tercatat pada periode ini)']);
-    worksheet.mergeCells(`A${emptyRow.number}:F${emptyRow.number}`);
-    emptyRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-  } else {
-    envRecordsToExport.forEach(r => {
-      const row = worksheet.addRow([
-        `BDY-${String(r.id_budidaya).padStart(3, '0')}`,
-        `${formatDate(r.tanggal_pengukuran)} ${new Date(r.tanggal_pengukuran).toLocaleTimeString('id-ID')}`,
-        r.suhu ? Number(r.suhu) : '-',
-        r.kelembaban ? Number(r.kelembaban) : '-',
-        r.intensitas_cahaya ? Number(r.intensitas_cahaya) : '-',
-        r.nama_petugas || '-'
-      ]);
-      row.eachCell((cell, colNumber) => {
-        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-        cell.alignment = { horizontal: colNumber <= 2 || colNumber === 6 ? 'left' : 'right', vertical: 'middle' };
-      });
+    const ws2 = workbook.addWorksheet('2. Produksi Harian');
+    ws2.addRow(['Tanggal', 'Total Panen (gram)']).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    ws2.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16A34A' } };
+    
+    const dailyHarvest = {};
+    harvestRecords.forEach(r => {
+      const date = r.tanggal_panen.split('T')[0];
+      dailyHarvest[date] = (dailyHarvest[date] || 0) + (Number(r.jumlah_panen) || 0);
     });
-  }
-
-  worksheet.addRow([]);
-  
-  // Section 3
-  const s3Title = worksheet.addRow(['2. LOG DATA MENTAH PANEN (HASIL PRODUKSI)']);
-  worksheet.mergeCells(`A${s3Title.number}:K${s3Title.number}`);
-  s3Title.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
-  s3Title.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
-  s3Title.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-  s3Title.height = 25;
-  s3Title.getCell(1).alignment = { vertical: 'middle' };
-
-  const header3 = ['Kode Rak (Budidaya)', 'Tanggal Panen', 'Jumlah Bersih (gram)', 'Petugas Pencatat'];
-  const rowH3 = worksheet.addRow(header3);
-  rowH3.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-  rowH3.height = 30;
-  rowH3.eachCell((cell) => {
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF374151' } };
-    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-  });
-  
-  if (harvestRecordsToExport.length === 0) {
-    const emptyRow = worksheet.addRow(['(Tidak ada data panen tercatat pada periode ini)']);
-    worksheet.mergeCells(`A${emptyRow.number}:D${emptyRow.number}`);
-    emptyRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-  } else {
-    harvestRecordsToExport.forEach(r => {
-      const row = worksheet.addRow([
-        `BDY-${String(r.id_budidaya).padStart(3, '0')}`,
-        formatDate(r.tanggal_panen),
-        r.jumlah_panen ? Number(r.jumlah_panen) : '-',
-        r.nama_petugas || '-'
-      ]);
-      row.eachCell((cell, colNumber) => {
-        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-        cell.alignment = { horizontal: colNumber >= 7 ? 'right' : 'left', vertical: 'middle' };
-      });
+    const sortedDates = Object.keys(dailyHarvest).sort();
+    sortedDates.forEach(date => {
+      ws2.addRow([date, dailyHarvest[date]]);
     });
-  }
+    
+    if (sortedDates.length > 0) {
+      ws2.addConditionalFormatting({
+        ref: `B2:B${sortedDates.length + 1}`,
+        rules: [{ type: 'dataBar', color: { argb: 'FF16A34A' } }]
+      });
+    }
+    ws2.columns = [{width: 20}, {width: 30}];
 
-  // Adjust columns widths
-  worksheet.columns = [
-    { width: 15 }, // Tanggal / Kode Rak
-    { width: 18 }, // Suhu Rata-rata / Waktu / Tanggal
-    { width: 18 }, // Suhu Terendah / Suhu
-    { width: 18 }, // Suhu Tertinggi / Kelembapan
-    { width: 18 }, // Kelembapan Rata / Intensitas
-    { width: 18 }, // Kelembapan Min / Petugas
-    { width: 18 }, // Kelembapan Max
-    { width: 15 }, // Cahaya
-    { width: 15 }, // Frekuensi
-    { width: 18 }, // Total Panen
-    { width: 18 }  // Status
-  ];
+    const ws3 = workbook.addWorksheet('3. Kondisi Lingkungan');
+    ws3.addRow(['Tanggal', 'Avg Suhu (°C)', 'Avg Kelembapan (%)']).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    ws3.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+    const dailyEnv = {};
+    envRecords.forEach(r => {
+      const date = r.tanggal_pengukuran.split('T')[0];
+      if (!dailyEnv[date]) dailyEnv[date] = { s: [], k: [] };
+      if (r.suhu) dailyEnv[date].s.push(Number(r.suhu));
+      if (r.kelembaban) dailyEnv[date].k.push(Number(r.kelembaban));
+    });
+    
+    const envDates = Object.keys(dailyEnv).sort();
+    envDates.forEach(date => {
+      const sAvg = dailyEnv[date].s.length ? (dailyEnv[date].s.reduce((a,b)=>a+b,0)/dailyEnv[date].s.length).toFixed(1) : '-';
+      const kAvg = dailyEnv[date].k.length ? (dailyEnv[date].k.reduce((a,b)=>a+b,0)/dailyEnv[date].k.length).toFixed(1) : '-';
+      ws3.addRow([date, Number(sAvg)||sAvg, Number(kAvg)||kAvg]);
+    });
+
+    if (envDates.length > 0) {
+      ws3.addConditionalFormatting({
+        ref: `B2:B${envDates.length + 1}`,
+        rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'percentile', value: 50}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFFDE047'}, {argb: 'FFEF4444'}] }]
+      });
+    }
+    ws3.columns = [{width: 20}, {width: 25}, {width: 25}];
+
+  } else {
+    // per_jamur
+    const idBudidaya = downloadForm.value.id_budidaya;
+    const b = budidayaList.value.find(bd => String(bd.id_budidaya) === String(idBudidaya));
+    const envs = allEnvRecords.value.filter(r => r.tanggal_pengukuran && String(r.id_budidaya) === String(idBudidaya)).sort((a,b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran));
+    const harvests = allHarvestRecords.value.filter(r => r.tanggal_panen && String(r.id_budidaya) === String(idBudidaya)).sort((a,b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen));
+
+    const ws1 = workbook.addWorksheet('1. Rapor Siklus', { views: [{ showGridLines: false }] });
+    ws1.addRow(['EVALUASI SIKLUS BUDIDAYA']).font = { bold: true, size: 16 };
+    ws1.addRow([]);
+    ws1.addRow(['Lokasi', lokasi.value.nama_lokasi]).font = { bold: true };
+    ws1.addRow(['Pihak Pengunduh', `${downloadForm.value.nama} (${downloadForm.value.instansi})`]).font = { bold: true };
+    ws1.addRow(['Kode Budidaya', `BDY-${String(idBudidaya).padStart(3, '0')}`]).font = { bold: true };
+    ws1.addRow(['Jenis Jamur', b ? b.nama_jamur : '-']).font = { bold: true };
+    ws1.addRow(['Tanggal Mulai', b ? formatDate(b.tanggal_mulai) : '-']).font = { bold: true };
+    ws1.addRow(['Tanggal Selesai', b ? formatDate(b.tanggal_selesai) : '-']).font = { bold: true };
+    ws1.addRow(['Total Panen Bersih', harvests.reduce((a, v) => a + (Number(v.jumlah_panen) || 0), 0) + ' gram']).font = { bold: true };
+    ws1.addRow(['Alasan Selesai', b ? b.alasan_selesai : '-']).font = { bold: true };
+    ws1.columns = [{width: 30}, {width: 40}];
+
+    const ws2 = workbook.addWorksheet('2. Histori Panen');
+    ws2.addRow(['Panen Ke-', 'Tanggal Panen', 'Jumlah (gram)', 'Petugas']).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    ws2.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB45309' } };
+    
+    harvests.forEach((h, idx) => {
+      ws2.addRow([idx + 1, formatDate(h.tanggal_panen), Number(h.jumlah_panen) || 0, h.nama_petugas || '-']);
+    });
+
+    if (harvests.length > 0) {
+      ws2.addConditionalFormatting({
+        ref: `C2:C${harvests.length + 1}`,
+        rules: [{ type: 'dataBar', color: { argb: 'FF16A34A' } }]
+      });
+    }
+    ws2.columns = [{width: 15}, {width: 20}, {width: 25}, {width: 30}];
+    
+    const ws3 = workbook.addWorksheet('3. Histori Lingkungan');
+    ws3.addRow(['Waktu', 'Suhu (°C)', 'Kelembapan (%)']).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    ws3.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+    envs.forEach(e => {
+      ws3.addRow([
+        `${formatDate(e.tanggal_pengukuran)} ${new Date(e.tanggal_pengukuran).toLocaleTimeString('id-ID')}`, 
+        Number(e.suhu) || '-', 
+        Number(e.kelembaban) || '-'
+      ]);
+    });
+    if (envs.length > 0) {
+      ws3.addConditionalFormatting({
+        ref: `B2:B${envs.length + 1}`,
+        rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFEF4444'}] }]
+      });
+    }
+    ws3.columns = [{width: 30}, {width: 20}, {width: 20}];
+  }
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });

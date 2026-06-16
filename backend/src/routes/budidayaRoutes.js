@@ -10,6 +10,7 @@ router.get('/petugas/me', authMiddleware, roleMiddleware('admin', 'petugas'), bu
 
 router.get('/', authMiddleware, budidayaController.getAll);
 router.get('/:id', authMiddleware, budidayaController.getById);
+router.get('/:id/backup', authMiddleware, roleMiddleware('admin'), budidayaController.getBackupData);
 
 router.post('/', authMiddleware, roleMiddleware('admin', 'petugas'), budidayaController.create);
 router.patch('/:id/target-harian', authMiddleware, roleMiddleware('admin'), budidayaController.updateDailyTargets);

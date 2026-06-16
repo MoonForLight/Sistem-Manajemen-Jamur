@@ -5,7 +5,7 @@
       <div class="stat-card">
         <div class="stat-icon bg-blue-light"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2L2 12h3v8h14v-8h3L12 2zm0 2.83l5.17 5.17H17V18H7v-8H6.83L12 4.83z"/></svg></div>
         <div class="stat-info">
-          <span class="stat-label">Rumah Jamur Aktif</span>
+          <span class="stat-label">Budidaya Aktif</span>
           <span class="stat-value">{{ activeBudidaya }}</span>
         </div>
       </div>

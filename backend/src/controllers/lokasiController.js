@@ -1,4 +1,5 @@
 const lokasiModel = require("../models/lokasiModel");
+const { db } = require("../config/db");
 
 function validateJumlahRak(value) {
   const number = Number(value);
@@ -37,8 +38,76 @@ exports.update = async (req, res) => {
   res.json({ success: true, message: "Lokasi berhasil diupdate" });
 };
 
+exports.getBackupData = async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    const lokasi = await lokasiModel.getLokasiById(id);
+    if (!lokasi) return res.status(404).json({ success: false, message: "Lokasi tidak ditemukan" });
+
+    const [budidayaList] = await db.query('SELECT * FROM budidaya WHERE id_lokasi = ?', [id]);
+    
+    // For each budidaya, fetch panen, lingkungan, pertumbuhan
+    for (let b of budidayaList) {
+      const [panen] = await db.query('SELECT * FROM panen WHERE id_budidaya = ?', [b.id_budidaya]);
+      const [lingkungan] = await db.query('SELECT * FROM lingkungan_harian WHERE id_budidaya = ? ORDER BY tanggal_pengukuran ASC', [b.id_budidaya]);
+      const [pertumbuhan] = await db.query('SELECT * FROM pertumbuhan WHERE id_budidaya = ? ORDER BY tanggal_pengamatan ASC', [b.id_budidaya]);
+      b.panen = panen;
+      b.lingkungan = lingkungan;
+      b.pertumbuhan = pertumbuhan;
+    }
+
+    res.json({ success: true, data: { lokasi, budidaya: budidayaList } });
+  } catch (error) {
+    console.error("Error getting backup data:", error);
+    res.status(500).json({ success: false, message: "Gagal mengambil data backup" });
+  }
+};
+
 exports.remove = async (req, res) => {
-  const affected = await lokasiModel.deleteLokasi(Number(req.params.id));
-  if (affected === 0) return res.status(404).json({ success: false, message: "Lokasi tidak ditemukan" });
-  res.json({ success: true, message: "Lokasi berhasil dihapus" });
+  const id = Number(req.params.id);
+  const force = req.query.force === 'true';
+
+  if (force) {
+    let connection;
+    try {
+      connection = await db.getConnection();
+      await connection.beginTransaction();
+
+      // Get budidaya IDs
+      const [budidayaRows] = await connection.query('SELECT id_budidaya FROM budidaya WHERE id_lokasi = ?', [id]);
+      const budidayaIds = budidayaRows.map(row => row.id_budidaya);
+
+      if (budidayaIds.length > 0) {
+        await connection.query('DELETE FROM panen WHERE id_budidaya IN (?)', [budidayaIds]);
+        await connection.query('DELETE FROM lingkungan_harian WHERE id_budidaya IN (?)', [budidayaIds]);
+        await connection.query('DELETE FROM pertumbuhan WHERE id_budidaya IN (?)', [budidayaIds]);
+        await connection.query('DELETE FROM budidaya WHERE id_lokasi = ?', [id]);
+      }
+      
+      const [result] = await connection.query('DELETE FROM lokasi WHERE id_lokasi = ?', [id]);
+      
+      await connection.commit();
+      
+      if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Lokasi tidak ditemukan" });
+      return res.json({ success: true, message: "Lokasi dan seluruh datanya berhasil dihapus secara permanen" });
+    } catch (error) {
+      if (connection) await connection.rollback();
+      console.error("Error force deleting lokasi:", error);
+      return res.status(500).json({ success: false, message: "Terjadi kesalahan pada server saat menghapus lokasi" });
+    } finally {
+      if (connection) connection.release();
+    }
+  }
+
+  try {
+    const affected = await lokasiModel.deleteLokasi(id);
+    if (affected === 0) return res.status(404).json({ success: false, message: "Lokasi tidak ditemukan" });
+    res.json({ success: true, message: "Lokasi berhasil dihapus" });
+  } catch (error) {
+    if (error.code === 'ER_ROW_IS_REFERENCED_2' || error.code === 'ER_ROW_IS_REFERENCED') {
+      return res.status(409).json({ success: false, message: "Gagal menghapus: Lokasi ini sedang digunakan pada data budidaya aktif atau riwayat budidaya." });
+    }
+    console.error("Error deleting lokasi:", error);
+    res.status(500).json({ success: false, message: "Terjadi kesalahan pada server saat menghapus lokasi" });
+  }
 };

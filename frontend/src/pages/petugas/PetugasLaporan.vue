@@ -51,32 +51,28 @@
     <div v-if="showDownloadModal" class="modal-overlay" @click.self="closeDownloadModal">
       <div class="form-modal slide-up">
         <div class="modal-header">
-          <h3 class="modal-title">Lengkapi Identitas & Pilih Tipe Ekspor</h3>
+          <h3 class="modal-title">Pilih Tipe Laporan Excel</h3>
           <button class="close-btn" @click="closeDownloadModal">&times;</button>
         </div>
-        <form @submit.prevent="submitDownloadForm" class="modern-form" style="max-height: 80vh; overflow-y: auto;">
+        <form @submit.prevent="submitDownloadForm" class="modern-form">
           <div class="form-grid">
-            <div class="form-group full-width">
-              <label>Nama Lengkap <span class="text-danger">*</span></label>
-              <input type="text" v-model="downloadForm.nama" required class="modern-input" placeholder="Masukkan nama Anda">
-            </div>
-            <div class="form-group full-width">
-              <label>Email <span class="text-danger">*</span></label>
-              <input type="email" v-model="downloadForm.email" required class="modern-input" placeholder="Masukkan email aktif">
-            </div>
-            <div class="form-group full-width">
-              <label>Instansi/Pekerjaan <span class="text-danger">*</span></label>
-              <input type="text" v-model="downloadForm.instansi" required class="modern-input" placeholder="Misal: Mahasiswa / Petani">
-            </div>
-            <div class="form-group full-width">
-              <label>Tujuan Unduh <span class="text-danger">*</span></label>
-              <textarea v-model="downloadForm.tujuan" required class="modern-input" rows="2" placeholder="Jelaskan tujuan penggunaan data..."></textarea>
-            </div>
             <div class="form-group full-width">
               <label>Tipe Ekspor Data <span class="text-danger">*</span></label>
               <select v-model="downloadForm.tipe_ekspor" required class="modern-select">
-                <option value="3_bulan">Laporan Umum (3 Bulan Terakhir)</option>
-                <option value="per_jamur">Laporan Siklus Jamur (Hanya yang Selesai)</option>
+                <option value="bulanan">Laporan Bulanan (1 Bulan)</option>
+                <option value="3_bulan">Laporan Kuartal (3 Bulan Terakhir)</option>
+                <option value="rumah_jamur">Laporan Rumah Jamur (Per Lokasi)</option>
+                <option value="per_jamur">Laporan Siklus Budidaya (Hanya yang Selesai)</option>
+              </select>
+            </div>
+            
+            <div v-if="downloadForm.tipe_ekspor === 'rumah_jamur'" class="form-group full-width">
+              <label>Pilih Rumah Jamur <span class="text-danger">*</span></label>
+              <select v-model="downloadForm.id_lokasi" required class="modern-select">
+                <option value="" disabled>Pilih Lokasi...</option>
+                <option v-for="lok in lokasiOptions" :key="lok.id_lokasi" :value="lok.id_lokasi">
+                  {{ lok.nama_lokasi }}
+                </option>
               </select>
             </div>
             <div v-if="downloadForm.tipe_ekspor === 'per_jamur'" class="form-group full-width">
@@ -92,7 +88,7 @@
           <div class="modal-footer">
             <button type="button" class="btn-cancel" @click="closeDownloadModal">Batal</button>
             <button type="submit" class="btn-primary" :disabled="isDownloading">
-              {{ isDownloading ? 'Memproses...' : 'Mulai Unduh' }}
+              {{ isDownloading ? 'Mengekspor...' : 'Mulai Unduh' }}
             </button>
           </div>
         </form>
@@ -195,12 +191,19 @@ const loading = ref(true)
 const isDownloading = ref(false)
 const showDownloadModal = ref(false)
 const downloadForm = ref({
-  nama: '',
-  email: '',
-  instansi: '',
-  tujuan: '',
-  tipe_ekspor: '3_bulan',
-  id_budidaya: ''
+  tipe_ekspor: 'bulanan',
+  id_budidaya: '',
+  id_lokasi: ''
+})
+
+const lokasiOptions = computed(() => {
+  const map = new Map()
+  assignedBudidaya.value.forEach(b => {
+    if (b.id_lokasi && b.nama_lokasi) {
+      map.set(String(b.id_lokasi), { id_lokasi: b.id_lokasi, nama_lokasi: b.nama_lokasi })
+    }
+  })
+  return Array.from(map.values()).sort((a,b) => a.nama_lokasi.localeCompare(b.nama_lokasi))
 })
 
 const budidayaSelesaiList = computed(() => {
@@ -370,27 +373,214 @@ async function submitDownloadForm() {
     alert('Pilih jamur terlebih dahulu.')
     return
   }
+  if (downloadForm.value.tipe_ekspor === 'rumah_jamur' && !downloadForm.value.id_lokasi) {
+    alert('Pilih rumah jamur terlebih dahulu.')
+    return
+  }
   isDownloading.value = true
   try {
-    const { api } = await import('../../services/api')
-    await api.post('/public/download-log', {
-      nama: downloadForm.value.nama,
-      email: downloadForm.value.email,
-      instansi: downloadForm.value.instansi,
-      tujuan: downloadForm.value.tujuan,
-      tipe_laporan: downloadForm.value.tipe_ekspor === '3_bulan' ? 'Laporan Umum (3 Bulan Terakhir)' : 'Laporan Siklus Jamur (Selesai)',
-      bulan: selectedMonth.value,
-      id_budidaya: downloadForm.value.tipe_ekspor === 'per_jamur' ? downloadForm.value.id_budidaya : null
-    })
-    
     await generateExcel()
     closeDownloadModal()
   } catch (err) {
-    console.error('Gagal mencatat log download:', err)
-    alert('Terjadi kesalahan saat memulai unduhan. Pastikan koneksi internet stabil.')
+    console.error('Gagal mengekspor data:', err)
+    alert('Terjadi kesalahan saat mengekspor data.')
   } finally {
     isDownloading.value = false
   }
+}
+
+async function buildExcelGlobal(workbook, type, ym) {
+  let envRecordsToExport = []
+  let harvestRecordsToExport = []
+  
+  if (type === 'bulanan') {
+    const ymPrefix = ym
+    envRecordsToExport = allEnvRecords.value.filter(r => r.tanggal_pengukuran && r.tanggal_pengukuran.startsWith(ymPrefix))
+    harvestRecordsToExport = allHarvestRecords.value.filter(r => r.tanggal_panen && r.tanggal_panen.startsWith(ymPrefix))
+  } else {
+    const d = new Date(ym.split('-')[0], ym.split('-')[1] - 1)
+    const months = []
+    for(let i = 0; i < 3; i++) {
+      const iterD = new Date(d.getFullYear(), d.getMonth() - i, 1)
+      months.push(`${iterD.getFullYear()}-${String(iterD.getMonth() + 1).padStart(2, '0')}`)
+    }
+    envRecordsToExport = allEnvRecords.value.filter(r => r.tanggal_pengukuran && months.some(m => r.tanggal_pengukuran.startsWith(m)))
+    harvestRecordsToExport = allHarvestRecords.value.filter(r => r.tanggal_panen && months.some(m => r.tanggal_panen.startsWith(m)))
+  }
+
+  const ws1 = workbook.addWorksheet('1. Executive Summary', { views: [{ showGridLines: false }] })
+  ws1.addRow(['LAPORAN PRODUKSI GLOBAL']).font = { bold: true, size: 16 }
+  ws1.addRow([])
+  ws1.addRow(['Bulan Acuan', formattedMonth.value]).font = { bold: true }
+  ws1.addRow(['Tipe Laporan', type === 'bulanan' ? '1 Bulan' : 'Kuartal (3 Bulan)']).font = { bold: true }
+  ws1.addRow(['Total Panen Agregat', harvestRecordsToExport.reduce((a, b) => a + (Number(b.jumlah_panen) || 0), 0) + ' gram']).font = { bold: true }
+  ws1.columns = [{width: 30}, {width: 40}]
+
+  const ws2 = workbook.addWorksheet('2. Produksi Harian')
+  ws2.addRow(['Tanggal', 'Total Panen (gram)']).font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  ws2.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16A34A' } }
+  
+  const dailyHarvest = {}
+  harvestRecordsToExport.forEach(r => {
+    const date = r.tanggal_panen.split('T')[0]
+    dailyHarvest[date] = (dailyHarvest[date] || 0) + (Number(r.jumlah_panen) || 0)
+  })
+  const sortedDates = Object.keys(dailyHarvest).sort()
+  sortedDates.forEach(date => {
+    ws2.addRow([date, dailyHarvest[date]])
+  })
+  
+  if (sortedDates.length > 0) {
+    ws2.addConditionalFormatting({
+      ref: `B2:B${sortedDates.length + 1}`,
+      rules: [{ type: 'dataBar', color: { argb: 'FF16A34A' } }]
+    })
+  }
+  ws2.columns = [{width: 20}, {width: 30}]
+
+  const ws3 = workbook.addWorksheet('3. Kondisi Lingkungan')
+  ws3.addRow(['Tanggal', 'Avg Suhu (°C)', 'Avg Kelembapan (%)']).font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  ws3.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } }
+  const dailyEnv = {}
+  envRecordsToExport.forEach(r => {
+    const date = r.tanggal_pengukuran.split('T')[0]
+    if (!dailyEnv[date]) dailyEnv[date] = { s: [], k: [] }
+    if (r.suhu) dailyEnv[date].s.push(Number(r.suhu))
+    if (r.kelembaban) dailyEnv[date].k.push(Number(r.kelembaban))
+  })
+  
+  const envDates = Object.keys(dailyEnv).sort()
+  envDates.forEach(date => {
+    const sAvg = dailyEnv[date].s.length ? (dailyEnv[date].s.reduce((a,b)=>a+b,0)/dailyEnv[date].s.length).toFixed(1) : '-'
+    const kAvg = dailyEnv[date].k.length ? (dailyEnv[date].k.reduce((a,b)=>a+b,0)/dailyEnv[date].k.length).toFixed(1) : '-'
+    ws3.addRow([date, Number(sAvg)||sAvg, Number(kAvg)||kAvg])
+  })
+
+  if (envDates.length > 0) {
+    ws3.addConditionalFormatting({
+      ref: `B2:B${envDates.length + 1}`,
+      rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'percentile', value: 50}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFFDE047'}, {argb: 'FFEF4444'}] }]
+    })
+  }
+  ws3.columns = [{width: 20}, {width: 25}, {width: 25}]
+}
+
+async function buildExcelLokasi(workbook, idLokasi) {
+  const lokasi = lokasiOptions.value.find(l => String(l.id_lokasi) === String(idLokasi))
+  const namaLokasi = lokasi ? lokasi.nama_lokasi : 'Lokasi Tidak Diketahui'
+  
+  const budidayaInLokasi = assignedBudidaya.value.filter(b => String(b.id_lokasi) === String(idLokasi))
+  const ids = new Set(budidayaInLokasi.map(b => Number(b.id_budidaya)))
+  
+  const envRecords = allEnvRecords.value.filter(r => r.tanggal_pengukuran && ids.has(Number(r.id_budidaya))).sort((a,b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran))
+  const harvestRecords = allHarvestRecords.value.filter(r => r.tanggal_panen && ids.has(Number(r.id_budidaya))).sort((a,b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen))
+
+  const ws1 = workbook.addWorksheet('1. Profil Lokasi', { views: [{ showGridLines: false }] })
+  ws1.addRow(['AUDIT STABILITAS RUMAH JAMUR']).font = { bold: true, size: 16 }
+  ws1.addRow([])
+  ws1.addRow(['Lokasi', namaLokasi]).font = { bold: true }
+  ws1.addRow(['Total Siklus Budidaya', budidayaInLokasi.length]).font = { bold: true }
+  ws1.addRow(['Total Panen Dihasilkan', harvestRecords.reduce((a, b) => a + (Number(b.jumlah_panen) || 0), 0) + ' gram']).font = { bold: true }
+  ws1.columns = [{width: 30}, {width: 40}]
+
+  const ws2 = workbook.addWorksheet('2. Audit Iklim Pagi-Sore')
+  ws2.addRow(['Tanggal', 'Suhu Pagi (°C)', 'Kelembapan Pagi (%)', 'Suhu Sore (°C)', 'Kelembapan Sore (%)']).font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  ws2.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } }
+  
+  const dailyAudit = {}
+  envRecords.forEach(r => {
+    if (!r.tanggal_pengukuran) return
+    const dObj = new Date(r.tanggal_pengukuran)
+    if (isNaN(dObj.getTime())) return
+    const date = dObj.toISOString().split('T')[0]
+    const hour = dObj.getHours()
+    
+    if (!dailyAudit[date]) dailyAudit[date] = { sPagi:[], kPagi:[], sSore:[], kSore:[] }
+    
+    if (hour < 12) {
+      if (r.suhu) dailyAudit[date].sPagi.push(Number(r.suhu))
+      if (r.kelembaban) dailyAudit[date].kPagi.push(Number(r.kelembaban))
+    } else {
+      if (r.suhu) dailyAudit[date].sSore.push(Number(r.suhu))
+      if (r.kelembaban) dailyAudit[date].kSore.push(Number(r.kelembaban))
+    }
+  })
+
+  const dates = Object.keys(dailyAudit).sort()
+  dates.forEach(date => {
+    const d = dailyAudit[date]
+    const getAvg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '-'
+    ws2.addRow([
+      date, 
+      Number(getAvg(d.sPagi)) || getAvg(d.sPagi), 
+      Number(getAvg(d.kPagi)) || getAvg(d.kPagi), 
+      Number(getAvg(d.sSore)) || getAvg(d.sSore), 
+      Number(getAvg(d.kSore)) || getAvg(d.kSore)
+    ])
+  })
+
+  if (dates.length > 0) {
+    ws2.addConditionalFormatting({
+      ref: `B2:B${dates.length + 1}`,
+      rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFEF4444'}] }]
+    })
+    ws2.addConditionalFormatting({
+      ref: `D2:D${dates.length + 1}`,
+      rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFEF4444'}] }]
+    })
+  }
+  ws2.columns = [{width: 15}, {width: 20}, {width: 20}, {width: 20}, {width: 20}]
+}
+
+async function buildExcelSiklus(workbook, idBudidaya) {
+  const b = assignedBudidaya.value.find(bd => String(bd.id_budidaya) === String(idBudidaya))
+  const envs = allEnvRecords.value.filter(r => r.tanggal_pengukuran && String(r.id_budidaya) === String(idBudidaya)).sort((a,b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran))
+  const harvests = allHarvestRecords.value.filter(r => r.tanggal_panen && String(r.id_budidaya) === String(idBudidaya)).sort((a,b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen))
+
+  const ws1 = workbook.addWorksheet('1. Rapor Siklus', { views: [{ showGridLines: false }] })
+  ws1.addRow(['EVALUASI SIKLUS BUDIDAYA']).font = { bold: true, size: 16 }
+  ws1.addRow([])
+  ws1.addRow(['Kode Budidaya', `BDY-${String(idBudidaya).padStart(3, '0')}`]).font = { bold: true }
+  ws1.addRow(['Jenis Jamur', b ? b.nama_jamur : '-']).font = { bold: true }
+  ws1.addRow(['Tanggal Mulai', b ? formatDate(b.tanggal_mulai) : '-']).font = { bold: true }
+  ws1.addRow(['Tanggal Selesai', b ? formatDate(b.tanggal_selesai) : '-']).font = { bold: true }
+  ws1.addRow(['Total Panen Bersih', harvests.reduce((a, v) => a + (Number(v.jumlah_panen) || 0), 0) + ' gram']).font = { bold: true }
+  ws1.addRow(['Alasan Selesai', b ? b.alasan_selesai : '-']).font = { bold: true }
+  ws1.columns = [{width: 30}, {width: 40}]
+
+  const ws2 = workbook.addWorksheet('2. Histori Panen')
+  ws2.addRow(['Panen Ke-', 'Tanggal Panen', 'Jumlah (gram)', 'Petugas']).font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  ws2.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB45309' } }
+  
+  harvests.forEach((h, idx) => {
+    ws2.addRow([idx + 1, formatDate(h.tanggal_panen), Number(h.jumlah_panen) || 0, h.nama_petugas || '-'])
+  })
+
+  if (harvests.length > 0) {
+    ws2.addConditionalFormatting({
+      ref: `C2:C${harvests.length + 1}`,
+      rules: [{ type: 'dataBar', color: { argb: 'FF16A34A' } }]
+    })
+  }
+  ws2.columns = [{width: 15}, {width: 20}, {width: 25}, {width: 30}]
+  
+  const ws3 = workbook.addWorksheet('3. Histori Lingkungan')
+  ws3.addRow(['Waktu', 'Suhu (°C)', 'Kelembapan (%)']).font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  ws3.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } }
+  envs.forEach(e => {
+    ws3.addRow([
+      `${formatDate(e.tanggal_pengukuran)} ${new Date(e.tanggal_pengukuran).toLocaleTimeString('id-ID')}`, 
+      Number(e.suhu) || '-', 
+      Number(e.kelembaban) || '-'
+    ])
+  })
+  if (envs.length > 0) {
+    ws3.addConditionalFormatting({
+      ref: `B2:B${envs.length + 1}`,
+      rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFEF4444'}] }]
+    })
+  }
+  ws3.columns = [{width: 30}, {width: 20}, {width: 20}]
 }
 
 async function generateExcel() {
@@ -400,306 +590,40 @@ async function generateExcel() {
     return
   }
 
-  // Guard: pastikan data siap, agar ExcelJS tidak crash saat tombol dipencet terlalu cepat
-  if (!Array.isArray(assignedBudidaya.value)) assignedBudidaya.value = []
-  if (!Array.isArray(allEnvRecords.value)) allEnvRecords.value = []
-  if (!Array.isArray(allHarvestRecords.value)) allHarvestRecords.value = []
-  if (!Array.isArray(allGrowthRecords.value)) allGrowthRecords.value = []
-
-  const ymParts = ym.split('-')
-  if (ymParts.length !== 2) {
-    alert('Format bulan laporan tidak valid.')
+  const type = downloadForm.value.tipe_ekspor
+  if (type === 'rumah_jamur' && !downloadForm.value.id_lokasi) {
+    alert('Pilih rumah jamur terlebih dahulu.')
+    return
+  }
+  if (type === 'per_jamur' && !downloadForm.value.id_budidaya) {
+    alert('Pilih jamur terlebih dahulu.')
     return
   }
 
-  const daysInMonth = new Date(Number(ymParts[0]), Number(ymParts[1]), 0).getDate()
-  
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('Laporan Bulanan', { views: [{ showGridLines: false }] });
-  
-  
-  // Header
-  worksheet.mergeCells('A1:K1');
-  worksheet.getCell('A1').value = 'LAPORAN KOMPREHENSIF BUDIDAYA JAMUR - SISTEM MANAJEMEN JAMUR';
-  worksheet.getCell('A1').font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
-  worksheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16A34A' } };
-  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
-  worksheet.getRow(1).height = 30;
-  
-  worksheet.addRow([]);
-  
-  // Informasi Umum
-  worksheet.mergeCells('A3:K3');
-  worksheet.getCell('A3').value = 'INFORMASI UMUM';
-  worksheet.getCell('A3').font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
-  worksheet.getCell('A3').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
-  worksheet.getCell('A3').alignment = { horizontal: 'left', vertical: 'middle' };
-  worksheet.getCell('A3').border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-  worksheet.getRow(3).height = 25;
+  if (!Array.isArray(assignedBudidaya.value)) assignedBudidaya.value = []
+  if (!Array.isArray(allEnvRecords.value)) allEnvRecords.value = []
+  if (!Array.isArray(allHarvestRecords.value)) allHarvestRecords.value = []
 
-  const infoData = [
-    ['Bulan Laporan', formattedMonth.value],
-    ['Petugas Pelapor', userName.value || '-'],
-    ['Tanggal Diekspor', new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })],
-    ['Tipe Ekspor', downloadForm.value.tipe_ekspor === '3_bulan' ? 'Laporan Umum (3 Bulan Terakhir)' : 'Laporan Spesifik Siklus Jamur'],
-    ['Pihak Pengunduh', `${downloadForm.value.nama} (${downloadForm.value.instansi})`]
-  ];
-
-  if (downloadForm.value.tipe_ekspor === '3_bulan') {
-    infoData.push(['Total Panen Bulan Ini', `${totalPanen.value} gram`]);
-    infoData.push(['Catatan Analisis (AI)', aiInsight.value]);
-  } else {
-    const bud = assignedBudidaya.value.find(b => b.id_budidaya === downloadForm.value.id_budidaya);
-    if (bud) {
-      infoData.push(['Fokus Budidaya', `BDY-${String(bud.id_budidaya).padStart(3, '0')} - ${bud.nama_jamur}`]);
-      infoData.push(['Alasan Selesai', bud.alasan_selesai || '-']);
-    }
+  const workbook = new ExcelJS.Workbook()
+  
+  if (type === 'bulanan' || type === '3_bulan') {
+    await buildExcelGlobal(workbook, type, ym)
+  } else if (type === 'rumah_jamur') {
+    await buildExcelLokasi(workbook, downloadForm.value.id_lokasi)
+  } else if (type === 'per_jamur') {
+    await buildExcelSiklus(workbook, downloadForm.value.id_budidaya)
   }
 
-  infoData.forEach(info => {
-    const row = worksheet.addRow([info[0], info[1]]);
-    worksheet.mergeCells(`B${row.number}:K${row.number}`);
-    row.getCell(1).font = { bold: true };
-    row.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    row.getCell(2).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    row.getCell(2).alignment = { wrapText: true, vertical: 'middle' };
-    if(info[0] === 'Catatan Analisis (AI)') {
-      row.height = 45;
-    }
-  });
-
-  worksheet.addRow([]);
-  
-  // Mempersiapkan data mentah yang akan diekspor sesuai tipe
-  let envRecordsToExport = [];
-  let harvestRecordsToExport = [];
-  
-  if (downloadForm.value.tipe_ekspor === '3_bulan') {
-    const d = new Date(ym.split('-')[0], ym.split('-')[1] - 1);
-    const months = [];
-    for(let i = 0; i < 3; i++) {
-      const iterD = new Date(d.getFullYear(), d.getMonth() - i, 1);
-      months.push(`${iterD.getFullYear()}-${String(iterD.getMonth() + 1).padStart(2, '0')}`);
-    }
-    
-    envRecordsToExport = allEnvRecords.value.filter(r => {
-      const dStr = getLocalDateString(r.tanggal_pengukuran);
-      return months.some(m => dStr.startsWith(m));
-    }).sort((a,b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran));
-    
-    harvestRecordsToExport = allHarvestRecords.value.filter(r => {
-      const dStr = getLocalDateString(r.tanggal_panen);
-      return months.some(m => dStr.startsWith(m));
-    }).sort((a,b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen));
-
-  } else {
-    // Per Jamur
-    envRecordsToExport = allEnvRecords.value.filter(r => r.id_budidaya === downloadForm.value.id_budidaya)
-      .sort((a,b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran));
-      
-    harvestRecordsToExport = allHarvestRecords.value.filter(r => r.id_budidaya === downloadForm.value.id_budidaya)
-      .sort((a,b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen));
-  }
-
-  // Section 2: Log Data Mentah Lingkungan
-  const s2Title = worksheet.addRow(['1. LOG DATA MENTAH LINGKUNGAN (SENSOR & MANUAL)']);
-  worksheet.mergeCells(`A${s2Title.number}:K${s2Title.number}`);
-  s2Title.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
-  s2Title.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
-  s2Title.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-  s2Title.height = 25;
-  s2Title.getCell(1).alignment = { vertical: 'middle' };
-
-  const header2 = ['Kode Rak (Budidaya)', 'Waktu Pencatatan', 'Suhu (°C)', 'Kelembapan (%)', 'Intensitas Cahaya (lux)', 'Petugas Pencatat', '', '', '', '', ''];
-  const rowH2 = worksheet.addRow(header2.slice(0, 6)); // We will merge across but let's just make columns look fine
-  rowH2.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-  rowH2.height = 30;
-  rowH2.eachCell((cell) => {
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF374151' } };
-    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-  });
-  
-  if (envRecordsToExport.length === 0) {
-    const emptyRow = worksheet.addRow(['(Tidak ada data lingkungan tercatat pada periode ini)']);
-    worksheet.mergeCells(`A${emptyRow.number}:F${emptyRow.number}`);
-    emptyRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-  } else {
-    envRecordsToExport.forEach(r => {
-      const row = worksheet.addRow([
-        `BDY-${String(r.id_budidaya).padStart(3, '0')}`,
-        `${formatDate(r.tanggal_pengukuran)} ${new Date(r.tanggal_pengukuran).toLocaleTimeString('id-ID')}`,
-        r.suhu ? Number(r.suhu) : '-',
-        r.kelembaban ? Number(r.kelembaban) : '-',
-        r.intensitas_cahaya ? Number(r.intensitas_cahaya) : '-',
-        r.nama_petugas || '-'
-      ]);
-      row.eachCell((cell, colNumber) => {
-        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-        cell.alignment = { horizontal: colNumber <= 2 || colNumber === 6 ? 'left' : 'right', vertical: 'middle' };
-      });
-    });
-  }
-
-  worksheet.addRow([]);
-  
-  // Section 3
-  const s3Title = worksheet.addRow(['2. LOG DATA MENTAH PANEN (HASIL PRODUKSI)']);
-  worksheet.mergeCells(`A${s3Title.number}:K${s3Title.number}`);
-  s3Title.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
-  s3Title.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
-  s3Title.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-  s3Title.height = 25;
-  s3Title.getCell(1).alignment = { vertical: 'middle' };
-
-  const header3 = ['Kode Rak (Budidaya)', 'Tanggal Panen', 'Jumlah Bersih (gram)', 'Petugas Pencatat'];
-  const rowH3 = worksheet.addRow(header3);
-  rowH3.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-  rowH3.height = 30;
-  rowH3.eachCell((cell) => {
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF374151' } };
-    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-  });
-  
-  if (harvestRecordsToExport.length === 0) {
-    const emptyRow = worksheet.addRow(['(Tidak ada data panen tercatat pada periode ini)']);
-    worksheet.mergeCells(`A${emptyRow.number}:D${emptyRow.number}`);
-    emptyRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-  } else {
-    harvestRecordsToExport.forEach(r => {
-      const row = worksheet.addRow([
-        `BDY-${String(r.id_budidaya).padStart(3, '0')}`,
-        formatDate(r.tanggal_panen),
-        r.jumlah_panen ? Number(r.jumlah_panen) : '-',
-        r.nama_petugas || '-'
-      ]);
-      row.eachCell((cell, colNumber) => {
-        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-        cell.alignment = { horizontal: colNumber === 3 ? 'right' : 'left', vertical: 'middle' };
-      });
-    });
-  }
-
-  worksheet.addRow([]);
-  
-  // Section 4
-  const s4Title = worksheet.addRow(['3. DATA DAFTAR RAK (BUDIDAYA)']);
-  worksheet.mergeCells(`A${s4Title.number}:K${s4Title.number}`);
-  s4Title.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1F2937' } };
-  s4Title.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1D5DB' } };
-  s4Title.getCell(1).border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-  s4Title.height = 25;
-  s4Title.getCell(1).alignment = { vertical: 'middle' };
-
-  const header4 = [
-    'Kode Rak', 'Jenis Jamur', 'Media Tanam', 'Status Operasional', 
-    'Tanggal Mulai (Inkubasi)', 'Tanggal Selesai (Afkir)',
-    'Suhu Rata-rata Sepanjang Hidup (°C)',
-    'Kelembapan Rata-rata Sepanjang Hidup (%)', 'Total Akumulasi Panen (gram)'
-  ];
-  const rowH4 = worksheet.addRow(header4);
-  rowH4.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-  rowH4.height = 40;
-  rowH4.eachCell((cell) => {
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF374151' } };
-    cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-  });
-
-  if (assignedBudidaya.value.length === 0) {
-    const emptyRow = worksheet.addRow(['(Tidak ada data rak yang ditugaskan)']);
-    worksheet.mergeCells(`A${emptyRow.number}:I${emptyRow.number}`);
-    emptyRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-  } else {
-    if (downloadForm.value.tipe_ekspor === 'per_jamur') {
-      const b = assignedBudidaya.value.find(bd => bd.id_budidaya === downloadForm.value.id_budidaya);
-      if (b) {
-        const envs = allEnvRecords.value.filter(e => Number(e.id_budidaya) === Number(b.id_budidaya));
-        const harvs = allHarvestRecords.value.filter(h => Number(h.id_budidaya) === Number(b.id_budidaya));
-        
-        let avgS = '-', avgK = '-';
-        if (envs.length > 0) {
-          avgS = Number((envs.reduce((sum, e) => sum + (Number(e.suhu) || 0), 0) / envs.length).toFixed(1));
-          avgK = Number((envs.reduce((sum, e) => sum + (Number(e.kelembaban) || 0), 0) / envs.length).toFixed(1));
-        }
-        
-        const totHarv = harvs.reduce((sum, h) => sum + (Number(h.jumlah_panen) || 0), 0);
-    
-        const row = worksheet.addRow([
-          `BDY-${String(b.id_budidaya).padStart(3, '0')}`,
-          b.nama_jamur || '-',
-          b.nama_media || '-',
-          b.status === 'aktif' ? 'Aktif' : 'Selesai',
-          formatDate(b.tanggal_mulai),
-          formatDate(b.tanggal_selesai),
-          avgS,
-          avgK,
-          totHarv > 0 ? Number(totHarv.toFixed(1)) : 0
-        ]);
-        row.eachCell((cell) => {
-          cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-          cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        });
-      }
-    } else {
-      assignedBudidaya.value.forEach(b => {
-      const envs = allEnvRecords.value.filter(e => Number(e.id_budidaya) === Number(b.id_budidaya));
-      const harvs = allHarvestRecords.value.filter(h => Number(h.id_budidaya) === Number(b.id_budidaya));
-      
-      let avgS = '-', avgK = '-';
-      if (envs.length > 0) {
-        avgS = Number((envs.reduce((sum, e) => sum + (Number(e.suhu) || 0), 0) / envs.length).toFixed(1));
-        avgK = Number((envs.reduce((sum, e) => sum + (Number(e.kelembaban) || 0), 0) / envs.length).toFixed(1));
-      }
-      
-      const totHarv = harvs.reduce((sum, h) => sum + (Number(h.jumlah_panen) || 0), 0);
-  
-      const row = worksheet.addRow([
-        `BDY-${String(b.id_budidaya).padStart(3, '0')}`,
-        b.nama_jamur || '-',
-        b.nama_media || '-',
-        b.status === 'aktif' ? 'Aktif' : 'Selesai',
-        formatDate(b.tanggal_mulai),
-        formatDate(b.tanggal_selesai),
-        avgS,
-        avgK,
-        totHarv > 0 ? Number(totHarv.toFixed(1)) : 0
-      ]);
-      
-      row.eachCell((cell, colNumber) => {
-        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-        cell.alignment = { horizontal: colNumber >= 7 ? 'right' : 'left', vertical: 'middle' };
-      });
-    });
-  }
-}
-
-  // Adjust columns widths
-  worksheet.columns = [
-    { width: 15 }, // Tanggal / Kode Rak
-    { width: 18 }, // Suhu Rata-rata / Waktu / Tanggal
-    { width: 18 }, // Suhu Terendah / Suhu
-    { width: 18 }, // Suhu Tertinggi / Kelembapan
-    { width: 18 }, // Kelembapan Rata / Intensitas
-    { width: 18 }, // Kelembapan Min / Petugas
-    { width: 18 }, // Kelembapan Max
-    { width: 15 }, // Cahaya
-    { width: 15 }, // Frekuensi
-    { width: 18 }, // Total Panen
-    { width: 18 }  // Status
-  ];
-
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `Laporan_Petugas_Lengkap_${ym}.xlsx`);
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.setAttribute('href', url)
+  link.setAttribute('download', `Laporan_Petugas_${type}_${Date.now()}.xlsx`)
+  link.style.visibility = 'hidden'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 }
 
 async function loadReports() {

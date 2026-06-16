@@ -15,7 +15,7 @@
 
     <div v-if="showLogoutModal" class="modal-overlay">
       <div class="logout-modal fade-in-up">
-        <div class="modal-icon">🚪</div>
+        <!-- <div class="modal-icon">🚪</div> -->
         <h3 class="modal-title">Konfirmasi Logout</h3>
         <p class="modal-text">Apakah Anda yakin ingin keluar dari halaman Admin?</p>
         <div class="modal-actions">
