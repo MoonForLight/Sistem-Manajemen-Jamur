@@ -59,22 +59,12 @@
             <div class="form-group full-width">
               <label>Tipe Ekspor Data <span class="text-danger">*</span></label>
               <select v-model="downloadForm.tipe_ekspor" required class="modern-select">
-                <option value="bulanan">Laporan Bulanan (1 Bulan)</option>
-                <option value="3_bulan">Laporan Kuartal (3 Bulan Terakhir)</option>
-                <option value="rumah_jamur">Laporan Rumah Jamur (Per Lokasi)</option>
+                <option value="bulanan">Laporan Bulanan (Bulan Terpilih)</option>
                 <option value="per_jamur">Laporan Siklus Budidaya (Hanya yang Selesai)</option>
               </select>
             </div>
             
-            <div v-if="downloadForm.tipe_ekspor === 'rumah_jamur'" class="form-group full-width">
-              <label>Pilih Rumah Jamur <span class="text-danger">*</span></label>
-              <select v-model="downloadForm.id_lokasi" required class="modern-select">
-                <option value="" disabled>Pilih Lokasi...</option>
-                <option v-for="lok in lokasiOptions" :key="lok.id_lokasi" :value="lok.id_lokasi">
-                  {{ lok.nama_lokasi }}
-                </option>
-              </select>
-            </div>
+
             <div v-if="downloadForm.tipe_ekspor === 'per_jamur'" class="form-group full-width">
               <label>Pilih Siklus Jamur (Selesai) <span class="text-danger">*</span></label>
               <select v-model="downloadForm.id_budidaya" required class="modern-select">
@@ -192,8 +182,7 @@ const isDownloading = ref(false)
 const showDownloadModal = ref(false)
 const downloadForm = ref({
   tipe_ekspor: 'bulanan',
-  id_budidaya: '',
-  id_lokasi: ''
+  id_budidaya: ''
 })
 
 const lokasiOptions = computed(() => {
@@ -365,7 +354,9 @@ function processMonthlyData() {
 
 function formatDate(value) {
   if (!value) return '-'
-  return new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return '-'
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 function getSuhuClass(val) {
@@ -398,46 +389,28 @@ async function submitDownloadForm() {
     alert('Pilih jamur terlebih dahulu.')
     return
   }
-  if (downloadForm.value.tipe_ekspor === 'rumah_jamur' && !downloadForm.value.id_lokasi) {
-    alert('Pilih rumah jamur terlebih dahulu.')
-    return
-  }
   isDownloading.value = true
   try {
     await generateExcel()
     closeDownloadModal()
   } catch (err) {
     console.error('Gagal mengekspor data:', err)
-    alert('Terjadi kesalahan saat mengekspor data.')
+    alert('Terjadi kesalahan saat mengekspor data: ' + err.message)
   } finally {
     isDownloading.value = false
   }
 }
 
-async function buildExcelGlobal(workbook, type, ym) {
-  let envRecordsToExport = []
-  let harvestRecordsToExport = []
-  
-  if (type === 'bulanan') {
-    const ymPrefix = ym
-    envRecordsToExport = allEnvRecords.value.filter(r => r.tanggal_pengukuran && r.tanggal_pengukuran.startsWith(ymPrefix))
-    harvestRecordsToExport = allHarvestRecords.value.filter(r => r.tanggal_panen && r.tanggal_panen.startsWith(ymPrefix))
-  } else {
-    const d = new Date(ym.split('-')[0], ym.split('-')[1] - 1)
-    const months = []
-    for(let i = 0; i < 3; i++) {
-      const iterD = new Date(d.getFullYear(), d.getMonth() - i, 1)
-      months.push(`${iterD.getFullYear()}-${String(iterD.getMonth() + 1).padStart(2, '0')}`)
-    }
-    envRecordsToExport = allEnvRecords.value.filter(r => r.tanggal_pengukuran && months.some(m => r.tanggal_pengukuran.startsWith(m)))
-    harvestRecordsToExport = allHarvestRecords.value.filter(r => r.tanggal_panen && months.some(m => r.tanggal_panen.startsWith(m)))
-  }
+async function buildExcelGlobal(workbook, ym) {
+  const ymPrefix = ym
+  const envRecordsToExport = allEnvRecords.value.filter(r => r.tanggal_pengukuran && r.tanggal_pengukuran.startsWith(ymPrefix))
+  const harvestRecordsToExport = allHarvestRecords.value.filter(r => r.tanggal_panen && r.tanggal_panen.startsWith(ymPrefix))
 
   const ws1 = workbook.addWorksheet('1. Executive Summary', { views: [{ showGridLines: false }] })
   ws1.addRow(['LAPORAN PRODUKSI GLOBAL']).font = { bold: true, size: 16 }
   ws1.addRow([])
   ws1.addRow(['Bulan Acuan', formattedMonth.value]).font = { bold: true }
-  ws1.addRow(['Tipe Laporan', type === 'bulanan' ? '1 Bulan' : 'Kuartal (3 Bulan)']).font = { bold: true }
+  ws1.addRow(['Tipe Laporan', 'Bulanan']).font = { bold: true }
   ws1.addRow(['Total Panen Agregat', harvestRecordsToExport.reduce((a, b) => a + (Number(b.jumlah_panen) || 0), 0) + ' gram']).font = { bold: true }
   ws1.columns = [{width: 30}, {width: 40}]
 
@@ -456,106 +429,50 @@ async function buildExcelGlobal(workbook, type, ym) {
   })
   
   if (sortedDates.length > 0) {
-    ws2.addConditionalFormatting({
-      ref: `B2:B${sortedDates.length + 1}`,
-      rules: [{ type: 'dataBar', color: { argb: 'FF16A34A' } }]
-    })
+    try {
+      ws2.addConditionalFormatting({
+        ref: `B2:B${sortedDates.length + 1}`,
+        rules: [{ type: 'dataBar', cfvo: [{type: 'min'}, {type: 'max'}], color: { argb: 'FF16A34A' } }]
+      })
+    } catch (e) { console.warn(e) }
   }
   ws2.columns = [{width: 20}, {width: 30}]
 
   const ws3 = workbook.addWorksheet('3. Kondisi Lingkungan')
-  ws3.addRow(['Tanggal', 'Avg Suhu (°C)', 'Avg Kelembapan (%)']).font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  ws3.addRow(['Tanggal', 'Avg Suhu (°C)', 'Avg Kelembapan (%)', 'Avg Cahaya (Lux)']).font = { bold: true, color: { argb: 'FFFFFFFF' } }
   ws3.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } }
   const dailyEnv = {}
   envRecordsToExport.forEach(r => {
     const date = r.tanggal_pengukuran.split('T')[0]
-    if (!dailyEnv[date]) dailyEnv[date] = { s: [], k: [] }
+    if (!dailyEnv[date]) dailyEnv[date] = { s: [], k: [], c: [] }
     if (r.suhu) dailyEnv[date].s.push(Number(r.suhu))
     if (r.kelembaban) dailyEnv[date].k.push(Number(r.kelembaban))
+    if (r.intensitas_cahaya) dailyEnv[date].c.push(Number(r.intensitas_cahaya))
   })
   
   const envDates = Object.keys(dailyEnv).sort()
   envDates.forEach(date => {
     const sAvg = dailyEnv[date].s.length ? (dailyEnv[date].s.reduce((a,b)=>a+b,0)/dailyEnv[date].s.length).toFixed(1) : '-'
     const kAvg = dailyEnv[date].k.length ? (dailyEnv[date].k.reduce((a,b)=>a+b,0)/dailyEnv[date].k.length).toFixed(1) : '-'
-    ws3.addRow([date, Number(sAvg)||sAvg, Number(kAvg)||kAvg])
+    const cAvg = dailyEnv[date].c.length ? (dailyEnv[date].c.reduce((a,b)=>a+b,0)/dailyEnv[date].c.length).toFixed(0) : '-'
+    ws3.addRow([date, Number(sAvg)||sAvg, Number(kAvg)||kAvg, Number(cAvg)||cAvg])
   })
 
   if (envDates.length > 0) {
-    ws3.addConditionalFormatting({
-      ref: `B2:B${envDates.length + 1}`,
-      rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'percentile', value: 50}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFFDE047'}, {argb: 'FFEF4444'}] }]
-    })
+    try {
+      ws3.addConditionalFormatting({
+        ref: `B2:B${envDates.length + 1}`,
+        rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'percentile', value: 50}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFFDE047'}, {argb: 'FFEF4444'}] }]
+      })
+      ws3.addConditionalFormatting({
+        ref: `D2:D${envDates.length + 1}`,
+        rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'percentile', value: 50}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFFDE047'}, {argb: 'FFEF4444'}] }]
+      })
+    } catch (e) { console.warn(e) }
   }
-  ws3.columns = [{width: 20}, {width: 25}, {width: 25}]
+  ws3.columns = [{width: 20}, {width: 25}, {width: 25}, {width: 25}]
 }
 
-async function buildExcelLokasi(workbook, idLokasi) {
-  const lokasi = lokasiOptions.value.find(l => String(l.id_lokasi) === String(idLokasi))
-  const namaLokasi = lokasi ? lokasi.nama_lokasi : 'Lokasi Tidak Diketahui'
-  
-  const budidayaInLokasi = assignedBudidaya.value.filter(b => String(b.id_lokasi) === String(idLokasi))
-  const ids = new Set(budidayaInLokasi.map(b => Number(b.id_budidaya)))
-  
-  const envRecords = allEnvRecords.value.filter(r => r.tanggal_pengukuran && ids.has(Number(r.id_budidaya))).sort((a,b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran))
-  const harvestRecords = allHarvestRecords.value.filter(r => r.tanggal_panen && ids.has(Number(r.id_budidaya))).sort((a,b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen))
-
-  const ws1 = workbook.addWorksheet('1. Profil Lokasi', { views: [{ showGridLines: false }] })
-  ws1.addRow(['AUDIT STABILITAS RUMAH JAMUR']).font = { bold: true, size: 16 }
-  ws1.addRow([])
-  ws1.addRow(['Lokasi', namaLokasi]).font = { bold: true }
-  ws1.addRow(['Total Siklus Budidaya', budidayaInLokasi.length]).font = { bold: true }
-  ws1.addRow(['Total Panen Dihasilkan', harvestRecords.reduce((a, b) => a + (Number(b.jumlah_panen) || 0), 0) + ' gram']).font = { bold: true }
-  ws1.columns = [{width: 30}, {width: 40}]
-
-  const ws2 = workbook.addWorksheet('2. Audit Iklim Pagi-Sore')
-  ws2.addRow(['Tanggal', 'Suhu Pagi (°C)', 'Kelembapan Pagi (%)', 'Suhu Sore (°C)', 'Kelembapan Sore (%)']).font = { bold: true, color: { argb: 'FFFFFFFF' } }
-  ws2.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } }
-  
-  const dailyAudit = {}
-  envRecords.forEach(r => {
-    if (!r.tanggal_pengukuran) return
-    const dObj = new Date(r.tanggal_pengukuran)
-    if (isNaN(dObj.getTime())) return
-    const date = dObj.toISOString().split('T')[0]
-    const hour = dObj.getHours()
-    
-    if (!dailyAudit[date]) dailyAudit[date] = { sPagi:[], kPagi:[], sSore:[], kSore:[] }
-    
-    if (hour < 12) {
-      if (r.suhu) dailyAudit[date].sPagi.push(Number(r.suhu))
-      if (r.kelembaban) dailyAudit[date].kPagi.push(Number(r.kelembaban))
-    } else {
-      if (r.suhu) dailyAudit[date].sSore.push(Number(r.suhu))
-      if (r.kelembaban) dailyAudit[date].kSore.push(Number(r.kelembaban))
-    }
-  })
-
-  const dates = Object.keys(dailyAudit).sort()
-  dates.forEach(date => {
-    const d = dailyAudit[date]
-    const getAvg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '-'
-    ws2.addRow([
-      date, 
-      Number(getAvg(d.sPagi)) || getAvg(d.sPagi), 
-      Number(getAvg(d.kPagi)) || getAvg(d.kPagi), 
-      Number(getAvg(d.sSore)) || getAvg(d.sSore), 
-      Number(getAvg(d.kSore)) || getAvg(d.kSore)
-    ])
-  })
-
-  if (dates.length > 0) {
-    ws2.addConditionalFormatting({
-      ref: `B2:B${dates.length + 1}`,
-      rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFEF4444'}] }]
-    })
-    ws2.addConditionalFormatting({
-      ref: `D2:D${dates.length + 1}`,
-      rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFEF4444'}] }]
-    })
-  }
-  ws2.columns = [{width: 15}, {width: 20}, {width: 20}, {width: 20}, {width: 20}]
-}
 
 async function buildExcelSiklus(workbook, idBudidaya) {
   const b = assignedBudidaya.value.find(bd => String(bd.id_budidaya) === String(idBudidaya))
@@ -582,30 +499,39 @@ async function buildExcelSiklus(workbook, idBudidaya) {
   })
 
   if (harvests.length > 0) {
-    ws2.addConditionalFormatting({
-      ref: `C2:C${harvests.length + 1}`,
-      rules: [{ type: 'dataBar', color: { argb: 'FF16A34A' } }]
-    })
+    try {
+      ws2.addConditionalFormatting({
+        ref: `C2:C${harvests.length + 1}`,
+        rules: [{ type: 'dataBar', cfvo: [{type: 'min'}, {type: 'max'}], color: { argb: 'FF16A34A' } }]
+      })
+    } catch (e) { console.warn(e) }
   }
   ws2.columns = [{width: 15}, {width: 20}, {width: 25}, {width: 30}]
   
   const ws3 = workbook.addWorksheet('3. Histori Lingkungan')
-  ws3.addRow(['Waktu', 'Suhu (°C)', 'Kelembapan (%)']).font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  ws3.addRow(['Waktu', 'Suhu (°C)', 'Kelembapan (%)', 'Cahaya (Lux)']).font = { bold: true, color: { argb: 'FFFFFFFF' } }
   ws3.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } }
   envs.forEach(e => {
     ws3.addRow([
-      `${formatDate(e.tanggal_pengukuran)} ${new Date(e.tanggal_pengukuran).toLocaleTimeString('id-ID')}`, 
+      `${formatDate(e.tanggal_pengukuran)} ${!isNaN(new Date(e.tanggal_pengukuran).getTime()) ? new Date(e.tanggal_pengukuran).toLocaleTimeString('id-ID') : '-'}`, 
       Number(e.suhu) || '-', 
-      Number(e.kelembaban) || '-'
+      Number(e.kelembaban) || '-',
+      Number(e.intensitas_cahaya) || '-'
     ])
   })
   if (envs.length > 0) {
-    ws3.addConditionalFormatting({
-      ref: `B2:B${envs.length + 1}`,
-      rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFEF4444'}] }]
-    })
+    try {
+      ws3.addConditionalFormatting({
+        ref: `B2:B${envs.length + 1}`,
+        rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFEF4444'}] }]
+      })
+      ws3.addConditionalFormatting({
+        ref: `D2:D${envs.length + 1}`,
+        rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFEF4444'}] }]
+      })
+    } catch (e) { console.warn(e) }
   }
-  ws3.columns = [{width: 30}, {width: 20}, {width: 20}]
+  ws3.columns = [{width: 30}, {width: 20}, {width: 20}, {width: 20}]
 }
 
 async function generateExcel() {
@@ -616,10 +542,6 @@ async function generateExcel() {
   }
 
   const type = downloadForm.value.tipe_ekspor
-  if (type === 'rumah_jamur' && !downloadForm.value.id_lokasi) {
-    alert('Pilih rumah jamur terlebih dahulu.')
-    return
-  }
   if (type === 'per_jamur' && !downloadForm.value.id_budidaya) {
     alert('Pilih jamur terlebih dahulu.')
     return
@@ -631,10 +553,8 @@ async function generateExcel() {
 
   const workbook = new ExcelJS.Workbook()
   
-  if (type === 'bulanan' || type === '3_bulan') {
-    await buildExcelGlobal(workbook, type, ym)
-  } else if (type === 'rumah_jamur') {
-    await buildExcelLokasi(workbook, downloadForm.value.id_lokasi)
+  if (type === 'bulanan') {
+    await buildExcelGlobal(workbook, ym)
   } else if (type === 'per_jamur') {
     await buildExcelSiklus(workbook, downloadForm.value.id_budidaya)
   }
@@ -657,7 +577,7 @@ async function loadReports() {
     const meRes = await usersService.getMe()
     let isAdmin = false
     if (meRes?.success) {
-      userName.value = meRes.data.nama_lengkap
+      userName.value = meRes.data.nama || meRes.data.nama_lengkap
       isAdmin = meRes.data.role === 'admin'
     }
 

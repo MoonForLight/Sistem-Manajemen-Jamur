@@ -13,7 +13,7 @@
 
       <RouterLink to="/petugas/rak" class="nav-item">
         <svg class="icon-svg" viewBox="0 0 24 24"><path fill="currentColor" d="M4 3h16a1 1 0 0 1 1 1v16h-2v-3H5v3H3V4a1 1 0 0 1 1-1zm1 2v4h14V5H5zm0 6v4h14v-4H5z"/></svg>
-        Jenis
+        Daftar Budidaya
       </RouterLink>
       
       <RouterLink to="/petugas/jamur" class="nav-item">

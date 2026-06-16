@@ -3,6 +3,7 @@
     <header class="page-header-modern">
       <div class="header-text">
         <h1>Daftar Lokasi Budidaya</h1>
+        <p class="subtitle">Kelola Setiap Lokasi Rumah Jamur.</p>
       </div>
       <div class="header-actions">
         <div class="search-box">

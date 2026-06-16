@@ -10,22 +10,15 @@
       </div>
     </Transition>
 
-    <header class="operasional-header">
-      <div class="header-content">
-        <div>
-          <h1 class="page-title">Kondisi Lingkungan Harian</h1>
-          <p class="page-subtitle">Catat suhu, kelembapan, dan cahaya sesuai target harian.</p>
-        </div>
-        
-        <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
-          <div v-if="lokasiOptions.length > 0" class="budidaya-selector">
-            <label>Rumah Jamur Aktif:</label>
-            <select v-model="selectedLokasi" @change="handleSelectChange" class="modern-select">
-              <option v-for="l in lokasiOptions" :key="l.id_lokasi" :value="l">
-                {{ l.nama_lokasi }}
-              </option>
-            </select>
-          </div>
+    <header class="page-header-modern">
+      <div class="header-text">
+        <h1>Kondisi Lingkungan Harian</h1>
+        <p class="page-description">Catat suhu, kelembapan, dan cahaya sesuai target harian.</p>
+      </div>
+      
+      <div class="header-actions">
+        <div v-if="lokasiOptions.length > 0" class="search-box" style="background: #f9fafb; padding: 10px 16px; border-radius: 8px; border: 1px solid #e5e7eb; font-weight: 600; font-size: 14px; color: #374151;">
+          Lokasi: {{ selectedLokasi.nama_lokasi || '-' }}
         </div>
       </div>
     </header>
@@ -46,17 +39,17 @@
           </div>
 
           <div class="info-item">
-            <span class="label">Kapasitas Total Rak</span>
+            <span class="label">Kapasitas Rak</span>
             <span class="value">{{ selectedLokasi.kapasitas_rak || 0 }} Rak</span>
           </div>
 
           <div class="info-item">
-            <span class="label">Siklus Budidaya Aktif</span>
+            <span class="label">Budidaya Aktif</span>
             <span class="value">{{ selectedLokasi.budidaya_ids.length }} Siklus</span>
           </div>
 
           <div class="info-item">
-            <span class="label">Total Rak Terpakai</span>
+            <span class="label">Rak Terpakai</span>
             <span class="value">{{ selectedLokasi.total_rak }} Rak</span>
           </div>
         </div>
@@ -226,7 +219,7 @@ async function fetchBudidaya() {
     const [res, lokasiRes] = await Promise.all([
       role === 'admin'
         ? budidayaService.getAll()
-        : budidayaService.getByPetugas({ status: 'aktif,inisiasi' }),
+        : budidayaService.getByPetugas({ status: 'aktif' }),
       lokasiService.getAll()
     ])
 
@@ -236,7 +229,7 @@ async function fetchBudidaya() {
     }
     kapasitasLokasiMap.value = map
 
-    budidayaList.value = (res?.data || []).filter((item) => ['aktif', 'inisiasi'].includes(item.status))
+    budidayaList.value = (res?.data || []).filter((item) => ['aktif'].includes(item.status))
     if (lokasiOptions.value.length > 0) {
       selectedLokasi.value = lokasiOptions.value[0]
       await loadRiwayat()
@@ -330,6 +323,12 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.page-header-modern { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; margin-bottom: 24px; }
+.header-text h1 { margin: 0; font-size: 24px; font-weight: 800; color: #111827; }
+.page-description { margin: 4px 0 0; color: #6b7280; font-size: 14px; }
+.header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.search-box { position: relative; display: flex; align-items: center; }
+
 .daily-progress { margin: -6px 0 18px; font-size: 13px; color: #b45309; font-weight: 700; }
 .daily-progress.complete { color: #15803d; }
 .petugas-operasional {

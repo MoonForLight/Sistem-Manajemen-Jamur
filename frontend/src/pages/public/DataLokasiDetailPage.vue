@@ -19,8 +19,13 @@
           <p class="page-description">{{ lokasi.alamat }} • {{ activeBudidaya.length }} Rak Aktif</p>
         </div>
         <div class="header-actions">
-          <input v-model="selectedMonth" type="month" class="modern-input" @change="processData" />
-          <button @click="openDownloadModal" class="btn-export-csv">
+          <select v-model="selectedCycleId" class="modern-select" @change="processData" style="min-width: 250px;">
+            <option value="" disabled>Pilih Siklus Budidaya (Selesai)...</option>
+            <option v-for="b in budidayaSelesaiList" :key="b.id_budidaya" :value="b.id_budidaya">
+              BDY-{{ String(b.id_budidaya).padStart(3, '0') }} - {{ b.nama_jamur }}
+            </option>
+          </select>
+          <button @click="openDownloadModal" class="btn-export-csv" :disabled="!selectedCycleId">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
             Ekspor Excel
           </button>
@@ -52,20 +57,8 @@
                 <textarea v-model="downloadForm.tujuan" required class="modern-input" rows="2" placeholder="Jelaskan tujuan penggunaan data..."></textarea>
               </div>
               <div class="form-group full-width">
-                <label>Tipe Ekspor Data <span class="text-danger">*</span></label>
-                <select v-model="downloadForm.tipe_ekspor" required class="modern-select">
-                  <option value="3_bulan">Laporan Umum (3 Bulan Terakhir)</option>
-                  <option value="per_jamur">Laporan Siklus Jamur (Hanya yang Selesai)</option>
-                </select>
-              </div>
-              <div v-if="downloadForm.tipe_ekspor === 'per_jamur'" class="form-group full-width">
-                <label>Pilih Siklus Jamur (Selesai) <span class="text-danger">*</span></label>
-                <select v-model="downloadForm.id_budidaya" required class="modern-select">
-                  <option value="" disabled>Pilih Jamur...</option>
-                  <option v-for="b in budidayaSelesaiList" :key="b.id_budidaya" :value="b.id_budidaya">
-                    BDY-{{ String(b.id_budidaya).padStart(3, '0') }} - {{ b.nama_jamur }} (Selesai: {{ formatDate(b.tanggal_selesai) }})
-                  </option>
-                </select>
+                <label>Siklus Jamur yang Diekspor</label>
+                <input type="text" :value="`BDY-${String(selectedCycleId).padStart(3, '0')} (Data Utuh)`" disabled class="modern-input" />
               </div>
             </div>
             <div class="modal-footer">
@@ -93,7 +86,7 @@
       </div>
 
       <div class="insight-box">
-        <h3 class="insight-title">💡 Analisis Otomatis: {{ formattedMonth }}</h3>
+        <h3 class="insight-title">💡 Analisis Otomatis: {{ formattedCycleName }}</h3>
         <p class="insight-text">{{ aiInsight }}</p>
       </div>
 
@@ -107,30 +100,31 @@
           <span class="stat-value text-blue">{{ avgKelembapan }}%</span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Total Panen</span>
-          <span class="stat-value text-green">{{ totalPanen }} gram</span>
-        </div>
-        <div class="stat-card">
           <span class="stat-label">Intensitas Cahaya</span>
           <span class="stat-value text-orange">{{ avgCahaya }} Lux</span>
         </div>
         <div class="stat-card">
+          <span class="stat-label">Total Panen</span>
+          <span class="stat-value text-green">{{ totalPanen }} gram</span>
+        </div>
+        
+        <!-- <div class="stat-card">
           <span class="stat-label">Status Lokasi</span>
           <span class="stat-value" :class="activeBudidaya.length > 0 ? 'text-green' : 'text-muted'">
             {{ activeBudidaya.length > 0 ? 'Aktif' : 'Non-Aktif' }}
           </span>
-        </div>
+        </div> -->
       </div>
 
       <div class="charts-container">
         <div class="chart-box">
-          <h4>Tren Suhu & Kelembapan Harian</h4>
+          <h4>Tren Suhu & Kelembapan Sepanjang Siklus</h4>
           <div class="chart-wrapper">
             <Line :data="envChartData" :options="chartOptions" ref="envChartRef" />
           </div>
         </div>
         <div class="chart-box">
-          <h4>Akumulasi Panen Harian</h4>
+          <h4>Akumulasi Panen Sepanjang Siklus</h4>
           <div class="chart-wrapper">
             <Bar :data="harvestChartData" :options="harvestChartOptions" ref="harvestChartRef" />
           </div>
@@ -193,12 +187,7 @@ const budidayaSelesaiList = computed(() => {
 const isDownloading = ref(false)
 const showDownloadModal = ref(false)
 const downloadForm = ref({
-  nama: '',
-  email: '',
-  instansi: '',
-  tujuan: '',
-  tipe_ekspor: '3_bulan',
-  id_budidaya: ''
+  tujuan: ''
 })
 
 const envChartRef = ref(null)
@@ -211,15 +200,13 @@ const monthlyRecords = ref([])
 const monthlyHarvestRecords = ref([])
 const monthlyEnvRecords = ref([])
 
-const today = new Date()
-const currentYm = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
-const selectedMonth = ref(currentYm)
+const selectedCycleId = ref('')
 
-const formattedMonth = computed(() => {
-  if (!selectedMonth.value) return '-'
-  const [year, month] = selectedMonth.value.split('-')
-  const date = new Date(year, month - 1)
-  return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+const formattedCycleName = computed(() => {
+  if (!selectedCycleId.value) return '-'
+  const cycle = budidayaSelesaiList.value.find(b => b.id_budidaya === selectedCycleId.value)
+  if (cycle) return `BDY-${String(cycle.id_budidaya).padStart(3, '0')} - ${cycle.nama_jamur}`
+  return '-'
 })
 
 const avgSuhu = ref(0)
@@ -259,17 +246,23 @@ function getLocalDateString(d) {
 }
 
 function processData() {
-  if (!selectedMonth.value || !lokasi.value) return
+  if (!selectedCycleId.value || !lokasi.value) {
+    avgSuhu.value = 0; avgKelembapan.value = 0; avgCahaya.value = 0; totalPanen.value = 0;
+    aiInsight.value = "Silakan pilih siklus budidaya yang sudah selesai untuk melihat analisis datanya."
+    envChartData.value = { labels: [], datasets: [] }
+    harvestChartData.value = { labels: [], datasets: [] }
+    return
+  }
 
-  const ym = selectedMonth.value
+  const id = selectedCycleId.value
 
-  monthlyRecords.value = allGrowthRecords.value.filter(item => getLocalDateString(item.tanggal_pengamatan).startsWith(ym))
+  monthlyRecords.value = allGrowthRecords.value.filter(item => item.id_budidaya === id)
     .sort((a, b) => new Date(a.tanggal_pengamatan) - new Date(b.tanggal_pengamatan))
     
-  monthlyHarvestRecords.value = allHarvestRecords.value.filter(item => getLocalDateString(item.tanggal_panen).startsWith(ym))
+  monthlyHarvestRecords.value = allHarvestRecords.value.filter(item => item.id_budidaya === id)
     .sort((a, b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen))
 
-  monthlyEnvRecords.value = allEnvRecords.value.filter(item => getLocalDateString(item.tanggal_pengukuran).startsWith(ym))
+  monthlyEnvRecords.value = allEnvRecords.value.filter(item => item.id_budidaya === id)
     .sort((a, b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran))
 
   if (monthlyEnvRecords.value.length > 0) {
@@ -288,41 +281,51 @@ function processData() {
   totalPanen.value = monthlyHarvestRecords.value.reduce((acc, curr) => acc + (Number(curr.jumlah_panen) || 0), 0).toFixed(1)
 
   if (monthlyEnvRecords.value.length === 0) {
-    aiInsight.value = "Belum ada data monitoring yang direkam untuk lokasi ini pada bulan terpilih."
+    aiInsight.value = "Belum ada data monitoring yang direkam untuk siklus ini."
   } else {
-    let insight = `Lokasi ini memiliki ${monthlyEnvRecords.value.length} pencatatan lingkungan bulan ini. `
-    if (avgSuhu.value > 28) insight += "Suhu rata-rata cukup tinggi (>28°C), sirkulasi udara perlu diperhatikan. "
-    else if (avgSuhu.value < 20) insight += "Suhu rata-rata cenderung dingin (<20°C). "
-    else insight += "Suhu lingkungan berada dalam batas optimal. "
+    let insight = `Siklus ini memiliki ${monthlyEnvRecords.value.length} pencatatan lingkungan. `
+    if (avgSuhu.value > 28) insight += "Suhu rata-rata selama siklus tergolong tinggi (>28°C). "
+    else if (avgSuhu.value < 20) insight += "Suhu rata-rata selama siklus cenderung dingin (<20°C). "
+    else insight += "Suhu lingkungan berada dalam batas optimal sepanjang siklus. "
 
-    if (avgKelembapan.value < 70) insight += "Kelembapan relatif rendah. "
+    if (avgKelembapan.value < 70) insight += "Kelembapan keseluruhan kurang dari ideal. "
     else insight += "Kelembapan terjaga dengan baik. "
 
-    if (totalPanen.value > 0) insight += `Total hasil panen yang dilaporkan mencapai ${totalPanen.value} gram.`
-    else insight += "Belum ada aktivitas panen yang tercatat bulan ini."
+    if (totalPanen.value > 0) insight += `Total akhir hasil panen mencapai ${totalPanen.value} gram.`
+    else insight += "Siklus ini ditutup tanpa ada hasil panen yang dilaporkan."
     
     aiInsight.value = insight
   }
 
-  const daysInMonth = new Date(ym.split('-')[0], ym.split('-')[1], 0).getDate()
-  const labels = Array.from({ length: daysInMonth }, (_, i) => String(i + 1))
+  // Generate charts per day of the cycle
+  const cycle = budidayaSelesaiList.value.find(b => b.id_budidaya === id)
+  if (!cycle) return
 
-  const dailySuhu = Array(daysInMonth).fill(null)
-  const dailyKelembapan = Array(daysInMonth).fill(null)
-  const dailyCahaya = Array(daysInMonth).fill(null)
+  const startDate = new Date(cycle.tanggal_mulai)
+  const endDate = cycle.tanggal_selesai ? new Date(cycle.tanggal_selesai) : new Date()
   
-  for (let i = 1; i <= daysInMonth; i++) {
-    const dayStr = String(i).padStart(2, '0')
-    const dateStr = `${ym}-${dayStr}`
+  const diffTime = Math.abs(endDate - startDate)
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // Include start day
+
+  const labels = Array.from({ length: diffDays }, (_, i) => `Hari ${i + 1}`)
+
+  const dailySuhu = Array(diffDays).fill(null)
+  const dailyKelembapan = Array(diffDays).fill(null)
+  const dailyCahaya = Array(diffDays).fill(null)
+  
+  for (let i = 0; i < diffDays; i++) {
+    const currentDate = new Date(startDate)
+    currentDate.setDate(currentDate.getDate() + i)
+    const dateStr = getLocalDateString(currentDate)
     
     const dayRecs = monthlyEnvRecords.value.filter(r => getLocalDateString(r.tanggal_pengukuran) === dateStr)
     if (dayRecs.length > 0) {
-      dailySuhu[i-1] = dayRecs.reduce((s, r) => s + Number(r.suhu || 0), 0) / dayRecs.length
-      dailyKelembapan[i-1] = dayRecs.reduce((s, r) => s + Number(r.kelembaban || 0), 0) / dayRecs.length
+      dailySuhu[i] = dayRecs.reduce((s, r) => s + Number(r.suhu || 0), 0) / dayRecs.length
+      dailyKelembapan[i] = dayRecs.reduce((s, r) => s + Number(r.kelembaban || 0), 0) / dayRecs.length
       
       const lightRecs = dayRecs.filter(r => r.intensitas_cahaya !== null && r.intensitas_cahaya !== undefined && r.intensitas_cahaya !== '')
       if (lightRecs.length > 0) {
-        dailyCahaya[i-1] = lightRecs.reduce((s, r) => s + Number(r.intensitas_cahaya || 0), 0) / lightRecs.length
+        dailyCahaya[i] = lightRecs.reduce((s, r) => s + Number(r.intensitas_cahaya || 0), 0) / lightRecs.length
       }
     }
   }
@@ -336,12 +339,15 @@ function processData() {
     ]
   }
 
-  const dailyHarvest = Array(daysInMonth).fill(0)
+  const dailyHarvest = Array(diffDays).fill(0)
   monthlyHarvestRecords.value.forEach(r => {
     const dStr = getLocalDateString(r.tanggal_panen)
     if (dStr) {
-      const dayIndex = parseInt(dStr.split('-')[2], 10) - 1
-      dailyHarvest[dayIndex] += Number(r.jumlah_panen) || 0
+      const hDate = new Date(dStr)
+      const diffHarvest = Math.ceil(Math.abs(hDate - startDate) / (1000 * 60 * 60 * 24))
+      if (diffHarvest >= 0 && diffHarvest < diffDays) {
+        dailyHarvest[diffHarvest] += Number(r.jumlah_panen) || 0
+      }
     }
   })
 
@@ -371,6 +377,10 @@ async function loadData() {
       allGrowthRecords.value = payload.data.pertumbuhan || []
       allHarvestRecords.value = payload.data.panen || []
       allEnvRecords.value = payload.data.lingkungan || []
+
+      if (budidayaSelesaiList.value.length > 0) {
+        selectedCycleId.value = budidayaSelesaiList.value[0].id_budidaya
+      }
 
       processData()
     } else {
@@ -425,11 +435,11 @@ async function submitDownloadForm() {
       email: form.email.trim(),
       instansi: form.instansi.trim(),
       tujuan: form.tujuan.trim(),
-      tipe_laporan: form.tipe_ekspor === '3_bulan' ? 'Laporan Umum (3 Bulan Terakhir)' : 'Laporan Siklus Jamur (Selesai)',
-      bulan: selectedMonth.value,
-      id_budidaya: form.tipe_ekspor === 'per_jamur' ? Number(form.id_budidaya) : null
+      tipe_laporan: 'Laporan Siklus Jamur (Selesai)',
+      bulan: null,
+      id_budidaya: Number(selectedCycleId.value)
     })
-    await exportBulananExcel()
+    await exportCycleExcel()
     showDownloadModal.value = false
   } catch (error) {
     console.error('Gagal memulai unduhan:', error)
@@ -439,145 +449,72 @@ async function submitDownloadForm() {
   }
 }
 
-async function exportBulananExcel() {
-  if (!lokasi.value || !selectedMonth.value) return;
-  const ym = selectedMonth.value;
+async function exportCycleExcel() {
+  if (!lokasi.value || !selectedCycleId.value) return;
+  const idBudidaya = selectedCycleId.value;
   const workbook = new ExcelJS.Workbook();
+  const b = budidayaList.value.find(bd => String(bd.id_budidaya) === String(idBudidaya));
+  if (!b) return;
 
-  const type = downloadForm.value.tipe_ekspor;
+  const startDate = new Date(b.tanggal_mulai);
+  const endDate = b.tanggal_selesai ? new Date(b.tanggal_selesai) : new Date();
+  
+  const diffTime = Math.abs(endDate - startDate);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
-  if (type === '3_bulan') {
-    const d = new Date(ym.split('-')[0], ym.split('-')[1] - 1);
-    const months = [];
-    for(let i = 0; i < 3; i++) {
-      const iterD = new Date(d.getFullYear(), d.getMonth() - i, 1);
-      months.push(`${iterD.getFullYear()}-${String(iterD.getMonth() + 1).padStart(2, '0')}`);
+  const envs = allEnvRecords.value.filter(r => r.tanggal_pengukuran && String(r.id_budidaya) === String(idBudidaya));
+  const harvests = allHarvestRecords.value.filter(r => r.tanggal_panen && String(r.id_budidaya) === String(idBudidaya));
+
+  const ws = workbook.addWorksheet('Raw Data Siklus', { views: [{ showGridLines: true }] });
+  
+  // Clean headers for researchers
+  ws.addRow([
+    'Tanggal', 
+    'Umur_Jamur_Hari_Ke', 
+    'Suhu_Rata2_C', 
+    'Kelembapan_Rata2_Pct', 
+    'Cahaya_Rata2_Lux', 
+    'Total_Panen_Gram'
+  ]);
+
+  for (let i = 0; i < diffDays; i++) {
+    const currentDate = new Date(startDate);
+    currentDate.setDate(currentDate.getDate() + i);
+    const dateStr = getLocalDateString(currentDate);
+
+    const dayEnvs = envs.filter(r => getLocalDateString(r.tanggal_pengukuran) === dateStr);
+    let sAvg = '';
+    let kAvg = '';
+    let cAvg = '';
+    
+    if (dayEnvs.length > 0) {
+      sAvg = (dayEnvs.reduce((a, r) => a + Number(r.suhu || 0), 0) / dayEnvs.length).toFixed(1);
+      kAvg = (dayEnvs.reduce((a, r) => a + Number(r.kelembaban || 0), 0) / dayEnvs.length).toFixed(1);
+      const dayLights = dayEnvs.filter(r => r.intensitas_cahaya !== null && r.intensitas_cahaya !== undefined && r.intensitas_cahaya !== '');
+      if (dayLights.length > 0) {
+        cAvg = (dayLights.reduce((a, r) => a + Number(r.intensitas_cahaya || 0), 0) / dayLights.length).toFixed(0);
+      }
     }
-    
-    const envRecords = allEnvRecords.value.filter(r => r.tanggal_pengukuran && months.some(m => r.tanggal_pengukuran.startsWith(m)))
-      .sort((a,b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran));
-    const harvestRecords = allHarvestRecords.value.filter(r => r.tanggal_panen && months.some(m => r.tanggal_panen.startsWith(m)))
-      .sort((a,b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen));
 
-    const ws1 = workbook.addWorksheet('1. Executive Summary', { views: [{ showGridLines: false }] });
-    ws1.addRow(['LAPORAN PRODUKSI GLOBAL']).font = { bold: true, size: 16 };
-    ws1.addRow([]);
-    ws1.addRow(['Lokasi', lokasi.value.nama_lokasi]).font = { bold: true };
-    ws1.addRow(['Bulan Acuan', formattedMonth.value]).font = { bold: true };
-    ws1.addRow(['Tipe Laporan', 'Laporan Umum (3 Bulan Terakhir)']).font = { bold: true };
-    ws1.addRow(['Pihak Pengunduh', `${downloadForm.value.nama} (${downloadForm.value.instansi})`]).font = { bold: true };
-    ws1.addRow(['Total Panen Agregat', harvestRecords.reduce((a, b) => a + (Number(b.jumlah_panen) || 0), 0) + ' gram']).font = { bold: true };
-    ws1.columns = [{width: 30}, {width: 40}];
+    const dayHarvests = harvests.filter(r => getLocalDateString(r.tanggal_panen) === dateStr);
+    const totalHarvest = dayHarvests.reduce((a, r) => a + Number(r.jumlah_panen || 0), 0);
 
-    const ws2 = workbook.addWorksheet('2. Produksi Harian');
-    ws2.addRow(['Tanggal', 'Total Panen (gram)']).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    ws2.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16A34A' } };
-    
-    const dailyHarvest = {};
-    harvestRecords.forEach(r => {
-      const date = r.tanggal_panen.split('T')[0];
-      dailyHarvest[date] = (dailyHarvest[date] || 0) + (Number(r.jumlah_panen) || 0);
-    });
-    const sortedDates = Object.keys(dailyHarvest).sort();
-    sortedDates.forEach(date => {
-      ws2.addRow([date, dailyHarvest[date]]);
-    });
-    
-    if (sortedDates.length > 0) {
-      ws2.addConditionalFormatting({
-        ref: `B2:B${sortedDates.length + 1}`,
-        rules: [{ type: 'dataBar', color: { argb: 'FF16A34A' } }]
-      });
-    }
-    ws2.columns = [{width: 20}, {width: 30}];
-
-    const ws3 = workbook.addWorksheet('3. Kondisi Lingkungan');
-    ws3.addRow(['Tanggal', 'Avg Suhu (°C)', 'Avg Kelembapan (%)']).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    ws3.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
-    const dailyEnv = {};
-    envRecords.forEach(r => {
-      const date = r.tanggal_pengukuran.split('T')[0];
-      if (!dailyEnv[date]) dailyEnv[date] = { s: [], k: [] };
-      if (r.suhu) dailyEnv[date].s.push(Number(r.suhu));
-      if (r.kelembaban) dailyEnv[date].k.push(Number(r.kelembaban));
-    });
-    
-    const envDates = Object.keys(dailyEnv).sort();
-    envDates.forEach(date => {
-      const sAvg = dailyEnv[date].s.length ? (dailyEnv[date].s.reduce((a,b)=>a+b,0)/dailyEnv[date].s.length).toFixed(1) : '-';
-      const kAvg = dailyEnv[date].k.length ? (dailyEnv[date].k.reduce((a,b)=>a+b,0)/dailyEnv[date].k.length).toFixed(1) : '-';
-      ws3.addRow([date, Number(sAvg)||sAvg, Number(kAvg)||kAvg]);
-    });
-
-    if (envDates.length > 0) {
-      ws3.addConditionalFormatting({
-        ref: `B2:B${envDates.length + 1}`,
-        rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'percentile', value: 50}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFFDE047'}, {argb: 'FFEF4444'}] }]
-      });
-    }
-    ws3.columns = [{width: 20}, {width: 25}, {width: 25}];
-
-  } else {
-    // per_jamur
-    const idBudidaya = downloadForm.value.id_budidaya;
-    const b = budidayaList.value.find(bd => String(bd.id_budidaya) === String(idBudidaya));
-    const envs = allEnvRecords.value.filter(r => r.tanggal_pengukuran && String(r.id_budidaya) === String(idBudidaya)).sort((a,b) => new Date(a.tanggal_pengukuran) - new Date(b.tanggal_pengukuran));
-    const harvests = allHarvestRecords.value.filter(r => r.tanggal_panen && String(r.id_budidaya) === String(idBudidaya)).sort((a,b) => new Date(a.tanggal_panen) - new Date(b.tanggal_panen));
-
-    const ws1 = workbook.addWorksheet('1. Rapor Siklus', { views: [{ showGridLines: false }] });
-    ws1.addRow(['EVALUASI SIKLUS BUDIDAYA']).font = { bold: true, size: 16 };
-    ws1.addRow([]);
-    ws1.addRow(['Lokasi', lokasi.value.nama_lokasi]).font = { bold: true };
-    ws1.addRow(['Pihak Pengunduh', `${downloadForm.value.nama} (${downloadForm.value.instansi})`]).font = { bold: true };
-    ws1.addRow(['Kode Budidaya', `BDY-${String(idBudidaya).padStart(3, '0')}`]).font = { bold: true };
-    ws1.addRow(['Jenis Jamur', b ? b.nama_jamur : '-']).font = { bold: true };
-    ws1.addRow(['Tanggal Mulai', b ? formatDate(b.tanggal_mulai) : '-']).font = { bold: true };
-    ws1.addRow(['Tanggal Selesai', b ? formatDate(b.tanggal_selesai) : '-']).font = { bold: true };
-    ws1.addRow(['Total Panen Bersih', harvests.reduce((a, v) => a + (Number(v.jumlah_panen) || 0), 0) + ' gram']).font = { bold: true };
-    ws1.addRow(['Alasan Selesai', b ? b.alasan_selesai : '-']).font = { bold: true };
-    ws1.columns = [{width: 30}, {width: 40}];
-
-    const ws2 = workbook.addWorksheet('2. Histori Panen');
-    ws2.addRow(['Panen Ke-', 'Tanggal Panen', 'Jumlah (gram)', 'Petugas']).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    ws2.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB45309' } };
-    
-    harvests.forEach((h, idx) => {
-      ws2.addRow([idx + 1, formatDate(h.tanggal_panen), Number(h.jumlah_panen) || 0, h.nama_petugas || '-']);
-    });
-
-    if (harvests.length > 0) {
-      ws2.addConditionalFormatting({
-        ref: `C2:C${harvests.length + 1}`,
-        rules: [{ type: 'dataBar', color: { argb: 'FF16A34A' } }]
-      });
-    }
-    ws2.columns = [{width: 15}, {width: 20}, {width: 25}, {width: 30}];
-    
-    const ws3 = workbook.addWorksheet('3. Histori Lingkungan');
-    ws3.addRow(['Waktu', 'Suhu (°C)', 'Kelembapan (%)']).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    ws3.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
-    envs.forEach(e => {
-      ws3.addRow([
-        `${formatDate(e.tanggal_pengukuran)} ${new Date(e.tanggal_pengukuran).toLocaleTimeString('id-ID')}`, 
-        Number(e.suhu) || '-', 
-        Number(e.kelembaban) || '-'
-      ]);
-    });
-    if (envs.length > 0) {
-      ws3.addConditionalFormatting({
-        ref: `B2:B${envs.length + 1}`,
-        rules: [{ type: 'colorScale', cfvo: [{type: 'min'}, {type: 'max'}], color: [{argb: 'FF3B82F6'}, {argb: 'FFEF4444'}] }]
-      });
-    }
-    ws3.columns = [{width: 30}, {width: 20}, {width: 20}];
+    ws.addRow([
+      dateStr,
+      i + 1,
+      sAvg,
+      kAvg,
+      cAvg,
+      totalHarvest
+    ]);
   }
-
+  
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `Laporan_Lengkap_${lokasi.value.nama_lokasi.replace(/\s+/g, '_')}_${ym}.xlsx`);
+  link.setAttribute('download', `Dataset_BDY${String(idBudidaya).padStart(3, '0')}_${Date.now()}.xlsx`);
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();

@@ -177,7 +177,7 @@ async function getSummary() {
 }
 
 async function getActiveRacksByLokasi(id_lokasi, exclude_budidaya_id = null) {
-  let query = "SELECT COALESCE(SUM(jumlah_rak), 0) AS used_racks FROM budidaya WHERE id_lokasi = ? AND status IN ('aktif', 'inisiasi')";
+  let query = "SELECT COALESCE(SUM(jumlah_rak), 0) AS used_racks FROM budidaya WHERE id_lokasi = ? AND status = 'aktif'";
   const params = [id_lokasi];
   if (exclude_budidaya_id) {
     query += ' AND id_budidaya <> ?';

@@ -57,7 +57,7 @@
               </div>
               <div class="metric">
                 <span class="m-label">Target</span>
-                <span class="m-value text-success">{{ b.optimalSuhu }}</span>
+                <span class="m-value text-success">25.5</span>
               </div>
             </div>
 
@@ -84,8 +84,8 @@
                 <span class="m-value text-purple">{{ b.latestCahaya || '--' }}</span>
               </div>
               <div class="metric">
-                <span class="m-label">Target Max</span>
-                <span class="m-value text-success">50k</span>
+                <span class="m-label">Target</span>
+                <span class="m-value text-success">300</span>
               </div>
             </div>
 

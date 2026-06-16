@@ -2,7 +2,7 @@
   <div class="admin-page fade-in">
     <header class="page-header-modern">
       <div class="header-text">
-        <h1>Kelola Budidaya (Rumah Jamur)</h1>
+        <h1>Kelola Budidaya Jamur</h1>
         <p class="subtitle">Buat dan delegasikan tugas budidaya ke petugas di setiap lokasi.</p>
       </div>
       <div class="header-actions">
@@ -630,7 +630,6 @@ onUnmounted(() => {
   text-transform: capitalize;
 }
 .status-pill.aktif { background: #dcfce7; color: #166534; }
-.status-pill.inisiasi { background: #fef3c7; color: #b45309; }
 .status-pill.selesai { background: #f3f4f6; color: #4b5563; }
 
 .modal-overlay {

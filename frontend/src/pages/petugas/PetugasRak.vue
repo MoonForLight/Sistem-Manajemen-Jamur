@@ -1,25 +1,23 @@
 <template>
   <div class="rack-page">
-    <header class="page-header">
-      <div>
-        <h1>Daftar Jenis Budidaya</h1>
-        <p>Daftar jenis Jamur yang sedang aktif dalam siklus budidaya.</p>
+    <header class="page-header-modern">
+      <div class="header-text">
+        <h1>Daftar Siklus Budidaya</h1>
+        <p class="page-description">Daftar siklus Jamur yang ada di rumah jamur.</p>
       </div>
-      <div class="filters">
-        <select v-model="statusFilter" class="control" @change="loadFiltered">
-          <option value="aktif,inisiasi">Aktif & Inisiasi</option>
-          <option value="aktif">Aktif</option>
-          <option value="inisiasi">Inisiasi</option>
-          <option value="selesai">Selesai</option>
-        </select>
-        <select v-model="lokasiFilter" class="control" @change="loadFiltered">
-          <option value="">Semua Lokasi</option>
-          <option v-for="lokasi in lokasiOptions" :key="lokasi.id_lokasi" :value="lokasi.id_lokasi">
-            {{ lokasi.nama_lokasi }}
-          </option>
-        </select>
-        <input v-model.trim="search" class="control" placeholder="Cari ID, jenis..." @keyup.enter="loadFiltered" />
-        <button class="btn" @click="loadFiltered">Terapkan</button>
+      <div class="header-actions">
+        <div class="search-box">
+          <select v-model="statusFilter" class="modern-select" @change="loadFiltered">
+            <option value="">Semua Status</option>
+            <option value="aktif">Aktif</option>
+            <option value="selesai">Selesai</option>
+          </select>
+        </div>
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" style="position:absolute; left:14px; width:16px; height:16px; color:#9ca3af;"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <input v-model.trim="search" class="modern-input" style="padding-left: 38px; width: 220px;" placeholder="Cari ID, jenis..." @keyup.enter="loadFiltered" />
+        </div>
+        <button class="btn-primary" @click="loadFiltered">Terapkan</button>
       </div>
     </header>
 
@@ -108,8 +106,7 @@ const loading = ref(false)
 const records = ref([])
 const growthRecords = ref([])
 const lokasiOptions = ref([])
-const statusFilter = ref('aktif,inisiasi')
-const lokasiFilter = ref('')
+const statusFilter = ref('aktif')
 const search = ref('')
 
 const enrichedRecords = computed(() => {
@@ -187,9 +184,6 @@ async function loadFiltered() {
     ])
     
     let data = res?.data || []
-    if (lokasiFilter.value) {
-      data = data.filter(d => String(d.id_lokasi) === String(lokasiFilter.value))
-    }
     
     records.value = data
     growthRecords.value = growthRes?.data || []
@@ -225,6 +219,29 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.page-header-modern { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; margin-bottom: 24px; }
+.header-text h1 { margin: 0; font-size: 24px; font-weight: 800; color: #111827; }
+.page-description { margin: 4px 0 0; color: #6b7280; font-size: 14px; }
+.header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.search-box { position: relative; display: flex; align-items: center; }
+
+.modern-input, .modern-select {
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #f9fafb;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+.modern-input:focus, .modern-select:focus { outline: none; border-color: #16a34a; background: white; box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1); }
+
+.btn-primary {
+  background: #16a34a; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+}
+.btn-primary:hover { background: #15803d; }
+
 .rack-page { display: flex; flex-direction: column; gap: 32px; padding-bottom: 40px; }
 
 .page-header { 
@@ -279,7 +296,6 @@ onMounted(async () => {
 .badge-id { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
 .status-badge { text-transform: uppercase; letter-spacing: 0.5px; }
 .status-badge.aktif { background: #dcfce7; color: #166534; }
-.status-badge.inisiasi { background: #fef3c7; color: #92400e; }
 .status-badge.selesai { background: #e5e7eb; color: #4b5563; }
 .age-badge { font-size: 12px; font-weight: 600; color: #d97706; background: #fef3c7; padding: 4px 10px; border-radius: 20px; }
 

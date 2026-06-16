@@ -24,7 +24,7 @@
         <h3>📍 {{ l.nama_lokasi }}</h3>
         <div class="meta">Rak: <b>{{ l.jumlah_rak }}</b></div>
         <div class="meta">Jenis: <b>{{ l.jenis_jamur }}</b></div>
-        <RouterLink class="btn primary" style="margin-top:12px; width:100%" :to="`/data/${l.id_lokasi}`">Lihat Detail</RouterLink>
+        <RouterLink class="btn primary" style="margin-top:12px; width: calc(100% - 32px); align-self: center; display: flex; justify-content: center; align-items: center;" :to="`/data/${l.id_lokasi}`">Lihat Detail</RouterLink>
       </div>
     </div>
   </div>

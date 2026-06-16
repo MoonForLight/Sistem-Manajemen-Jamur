@@ -6,7 +6,7 @@ const usersModel = require('../models/usersModel');
 const { db } = require('../config/db');
 const { normalizeISODate } = require('../utils/date');
 
-const ALLOWED_STATUSES = new Set(['aktif', 'inisiasi', 'selesai']);
+const ALLOWED_STATUSES = new Set(['aktif', 'selesai']);
 
 async function existsPetugas(id_petugas) {
   const [rows] = await db.query('SELECT id_user FROM petugas WHERE id_user = ? LIMIT 1', [id_petugas]);
@@ -90,7 +90,7 @@ exports.create = async (req, res) => {
   id_jenis = Number(id_jenis);
   id_media = Number(id_media);
   id_petugas = Number(id_petugas);
-  status = status || 'inisiasi';
+  status = status || 'aktif';
 
   if (!id_lokasi || !id_jenis || !id_media || !tanggal_mulai || !id_petugas) {
     return res.status(400).json({ success: false, message: 'Lokasi, jenis jamur, media, tanggal mulai, dan petugas wajib diisi' });
@@ -101,7 +101,7 @@ exports.create = async (req, res) => {
   if (targetLingkungan.error) return res.status(400).json({ success: false, message: targetLingkungan.error });
   if (targetPertumbuhan.error) return res.status(400).json({ success: false, message: targetPertumbuhan.error });
   if (!ALLOWED_STATUSES.has(status) || status === 'selesai') {
-    return res.status(400).json({ success: false, message: 'Status awal harus aktif atau inisiasi' });
+    return res.status(400).json({ success: false, message: 'Status awal harus aktif' });
   }
 
   const targetLokasi = await lokasiModel.getLokasiById(id_lokasi);
@@ -170,7 +170,7 @@ exports.update = async (req, res) => {
   if (!(await mediaTanamModel.exists(id_media))) return res.status(400).json({ success: false, message: 'Media tanam tidak valid' });
   if (!(await existsPetugas(id_petugas))) return res.status(400).json({ success: false, message: 'Petugas tidak valid' });
 
-  if (status === 'aktif' || status === 'inisiasi') {
+  if (status === 'aktif') {
     const activeRacks = await budidayaModel.getActiveRacksByLokasi(id_lokasi, id);
     const availableRacks = Number(targetLokasi.jumlah_rak) - activeRacks;
     if (jumlah_rak > availableRacks) {
@@ -243,7 +243,7 @@ exports.remove = async (req, res) => {
 };
 
 exports.getByPetugas = async (req, res) => {
-  const allowedStatuses = ['aktif', 'inisiasi', 'selesai'];
+  const allowedStatuses = ['aktif', 'selesai'];
   const requestedStatuses = String(req.query.status || '')
     .split(',')
     .map((value) => value.trim())

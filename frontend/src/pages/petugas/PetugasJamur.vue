@@ -9,24 +9,21 @@
         <span class="toast-message">{{ toast.message }}</span>
       </div>
     </Transition>
-    <header class="operasional-header">
-      <div class="header-content">
-        <div>
-          <h1 class="page-title">Operasional Rumah Jamur</h1>
-          <p class="page-subtitle">Pilih jenis jamur aktif untuk mencatat pertumbuhan atau panen harian.</p>
+    <header class="page-header-modern">
+      <div class="header-text">
+        <h1>Operasional Rumah Jamur</h1>
+        <p class="page-description">Pilih jenis jamur aktif untuk mencatat pertumbuhan atau panen harian.</p>
+      </div>
+      
+      <div class="header-actions">
+        <div v-if="budidayaList.length > 0" class="search-box">
+          <select v-model="selectedBudidaya" @change="handleSelectChange" class="modern-select" style="min-width: 250px;">
+            <option v-for="b in budidayaList" :key="b.id_budidaya" :value="b">
+              BDY-{{ String(b.id_budidaya).padStart(3, '0') }} - {{ b.nama_jamur }}
+            </option>
+          </select>
         </div>
-        
-        <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
-          <div v-if="budidayaList.length > 0" class="budidaya-selector">
-            <label>Jenis Jamur:</label>
-            <select v-model="selectedBudidaya" @change="handleSelectChange" class="modern-select">
-              <option v-for="b in budidayaList" :key="b.id_budidaya" :value="b">
-                BDY-{{ String(b.id_budidaya).padStart(3, '0') }} - {{ b.nama_jamur }}
-              </option>
-            </select>
-          </div>
-          <button @click.prevent="openNewBudidayaForm" class="btn-primary" style="padding: 10px 16px; font-weight: 600;">+ Mulai Budidaya Baru</button>
-        </div>
+        <button @click.prevent="openNewBudidayaForm" class="btn-primary">+ Mulai Budidaya Baru</button>
       </div>
     </header>
 
@@ -75,7 +72,6 @@
                 <label>Status Awal</label>
                 <select v-model="formNewBudidaya.status" class="modern-select">
                   <option value="aktif">Aktif</option>
-                  <option value="inisiasi">Inisiasi</option>
                 </select>
               </div>
             </div>
@@ -123,10 +119,10 @@
             <span class="label">Mulai Budidaya</span>
             <span class="value">{{ formatDate(selectedBudidaya.tanggal_mulai) }}</span>
           </div>
-          <div class="info-item">
+          <!-- <div class="info-item">
             <span class="label">Update Hari Ini</span>
             <span class="value text-green fw-bold">{{ todayFormatted }}</span>
-          </div>
+          </div> -->
           <div class="info-actions" style="margin-left: auto; display: flex; align-items: center;">
             <button @click="openSelesaiModal" class="btn-warning" style="background-color: #f59e0b; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: background 0.2s;">
               Selesaikan Siklus
@@ -202,7 +198,16 @@
                   <option value="Panen">Siap Panen</option>
                 </select>
               </div>
-              
+                            
+              <div class="form-group full-width">
+                <label>Upload Foto Pertumbuhan </label>
+                <input :key="growthFileInputKey" type="file" @change="handlePertumbuhanFotoUpload" accept="image/jpeg,image/png,image/webp,image/gif" class="modern-input" />
+                <div v-if="growthPhotoPreview" class="photo-preview-wrap">
+                  <img :src="growthPhotoPreview" alt="Preview foto pertumbuhan" class="photo-preview" />
+                  <span>{{ growthPhoto?.name }}</span>
+                </div>
+              </div>
+
               <div class="form-group full-width">
                 <label>Detail Tambahan</label>
                 <div v-for="(item, index) in dynamicDetails" :key="index" style="display: flex; gap: 8px; margin-bottom: 8px;">
@@ -211,15 +216,6 @@
                   <button type="button" @click="removeDetail(index)" class="btn-remove">Hapus</button>
                 </div>
                 <button type="button" @click="addDetail" class="btn-add-detail">+ Tambah Parameter</button>
-              </div>
-
-              <div class="form-group full-width">
-                <label>Upload Foto Pertumbuhan </label>
-                <input :key="growthFileInputKey" type="file" @change="handlePertumbuhanFotoUpload" accept="image/jpeg,image/png,image/webp,image/gif" class="modern-input" />
-                <div v-if="growthPhotoPreview" class="photo-preview-wrap">
-                  <img :src="growthPhotoPreview" alt="Preview foto pertumbuhan" class="photo-preview" />
-                  <span>{{ growthPhoto?.name }}</span>
-                </div>
               </div>
 
               <div class="form-group full-width">
@@ -506,7 +502,7 @@ async function fetchBudidaya() {
   loading.value = true
   try {
     const [res, growthRes] = await Promise.all([
-      budidayaService.getByPetugas({ status: 'aktif,inisiasi' }),
+      budidayaService.getByPetugas({ status: 'aktif' }),
       pertumbuhanService.getAll()
     ])
 
@@ -636,6 +632,12 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.page-header-modern { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; margin-bottom: 24px; }
+.header-text h1 { margin: 0; font-size: 24px; font-weight: 800; color: #111827; }
+.page-description { margin: 4px 0 0; color: #6b7280; font-size: 14px; }
+.header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.search-box { position: relative; display: flex; align-items: center; }
+
 .toast-notification {
   position: fixed;
   top: 50%;
