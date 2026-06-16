@@ -113,12 +113,12 @@
           <span class="stat-value text-blue">{{ avgKelembapan }}%</span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Total Panen</span>
-          <span class="stat-value text-green">{{ totalPanen }} gram</span>
+          <span class="stat-label">Intensitas Cahaya</span>
+          <span class="stat-value text-orange">{{ avgCahaya }} Lux</span>
         </div>
         <div class="stat-card">
-          <span class="stat-label">Total Pencatatan Lingkungan</span>
-          <span class="stat-value">{{ monthlyEnvRecords.length }}</span>
+          <span class="stat-label">Total Panen</span>
+          <span class="stat-value text-green">{{ totalPanen }} gram</span>
         </div>
       </div>
 
@@ -132,7 +132,7 @@
         <div class="chart-box">
           <h4>Akumulasi Panen Harian</h4>
           <div class="chart-wrapper">
-            <Bar :data="harvestChartData" :options="chartOptions" ref="harvestChartRef" />
+            <Bar :data="harvestChartData" :options="harvestChartOptions" ref="harvestChartRef" />
           </div>
         </div>
       </div>
@@ -223,6 +223,7 @@ const formattedMonth = computed(() => {
 
 const avgSuhu = ref(0)
 const avgKelembapan = ref(0)
+const avgCahaya = ref(0)
 const totalPanen = ref(0)
 const aiInsight = ref('')
 
@@ -232,7 +233,21 @@ const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: { legend: { position: 'top', labels: { font: { family: 'Inter' } } } },
-  scales: { y: { beginAtZero: true }, x: { ticks: { font: { family: 'Inter' } } } }
+  scales: { 
+    y: { type: 'linear', display: true, position: 'left', beginAtZero: true },
+    y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, grid: { drawOnChartArea: false } },
+    x: { ticks: { font: { family: 'Inter' } } } 
+  }
+}
+
+const harvestChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { position: 'top', labels: { font: { family: 'Inter' } } } },
+  scales: { 
+    y: { type: 'linear', display: true, position: 'left', beginAtZero: true },
+    x: { ticks: { font: { family: 'Inter' } } } 
+  }
 }
 
 
@@ -267,11 +282,14 @@ function processMonthlyData() {
   if (monthlyEnvRecords.value.length > 0) {
     const sumSuhu = monthlyEnvRecords.value.reduce((acc, curr) => acc + (Number(curr.suhu) || 0), 0)
     const sumKelembapan = monthlyEnvRecords.value.reduce((acc, curr) => acc + (Number(curr.kelembaban) || 0), 0)
+    const sumCahaya = monthlyEnvRecords.value.reduce((acc, curr) => acc + (Number(curr.intensitas_cahaya) || 0), 0)
     avgSuhu.value = (sumSuhu / monthlyEnvRecords.value.length).toFixed(1)
     avgKelembapan.value = (sumKelembapan / monthlyEnvRecords.value.length).toFixed(1)
+    avgCahaya.value = (sumCahaya / monthlyEnvRecords.value.length).toFixed(0)
   } else {
     avgSuhu.value = 0
     avgKelembapan.value = 0
+    avgCahaya.value = 0
   }
 
   totalPanen.value = monthlyHarvestRecords.value.reduce((acc, curr) => acc + (Number(curr.jumlah_panen) || 0), 0).toFixed(1)
@@ -298,6 +316,7 @@ function processMonthlyData() {
 
   const dailySuhu = Array(daysInMonth).fill(null)
   const dailyKelembapan = Array(daysInMonth).fill(null)
+  const dailyCahaya = Array(daysInMonth).fill(null)
   
   for (let i = 1; i <= daysInMonth; i++) {
     const dayStr = String(i).padStart(2, '0')
@@ -307,14 +326,20 @@ function processMonthlyData() {
     if (dayRecs.length > 0) {
       dailySuhu[i-1] = dayRecs.reduce((s, r) => s + Number(r.suhu || 0), 0) / dayRecs.length
       dailyKelembapan[i-1] = dayRecs.reduce((s, r) => s + Number(r.kelembaban || 0), 0) / dayRecs.length
+      
+      const lightRecs = dayRecs.filter(r => r.intensitas_cahaya !== null && r.intensitas_cahaya !== undefined && r.intensitas_cahaya !== '')
+      if (lightRecs.length > 0) {
+        dailyCahaya[i-1] = lightRecs.reduce((s, r) => s + Number(r.intensitas_cahaya || 0), 0) / lightRecs.length
+      }
     }
   }
 
   envChartData.value = {
     labels,
     datasets: [
-      { label: 'Suhu (°C)', borderColor: '#eab308', backgroundColor: 'rgba(234, 179, 8, 0.1)', data: dailySuhu, tension: 0.3, spanGaps: true },
-      { label: 'Kelembapan (%)', borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', data: dailyKelembapan, tension: 0.3, spanGaps: true }
+      { label: 'Suhu (°C)', yAxisID: 'y', borderColor: '#eab308', backgroundColor: 'rgba(234, 179, 8, 0.1)', data: dailySuhu, tension: 0.3, spanGaps: true },
+      { label: 'Kelembapan (%)', yAxisID: 'y', borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', data: dailyKelembapan, tension: 0.3, spanGaps: true },
+      { label: 'Cahaya (Lux)', yAxisID: 'y1', borderColor: '#f97316', backgroundColor: 'rgba(249, 115, 22, 0.1)', data: dailyCahaya, tension: 0.3, spanGaps: true }
     ]
   }
 

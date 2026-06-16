@@ -97,6 +97,10 @@
                 <span class="m-val text-blue">{{ loc.avgKelembaban || '--' }}%</span>
                 <span class="m-lbl">Kelembapan</span>
               </div>
+              <div class="metric-mini">
+                <span class="m-val text-purple">{{ loc.avgCahaya || '--' }}</span>
+                <span class="m-lbl">Lux</span>
+              </div>
             </div>
             <div class="loc-metrics" v-else>
               <span class="badge-inactive">Tidak Aktif</span>
@@ -206,13 +210,14 @@ const locationStats = computed(() => {
   return locations.value.slice(0, 5).map(loc => {
     const actives = budidayaList.value.filter(b => b.id_lokasi === loc.id_lokasi && b.status === 'aktif')
     
-    let sumSuhu = 0, sumKelembaban = 0, countEnv = 0
+    let sumSuhu = 0, sumKelembaban = 0, sumCahaya = 0, countEnv = 0
     actives.forEach(b => {
       const records = envRecords.value.filter(e => Number(e.id_budidaya) === Number(b.id_budidaya) && e.suhu !== null && e.suhu !== undefined)
       records.sort((x, y) => new Date(y.tanggal_pengukuran) - new Date(x.tanggal_pengukuran))
       if (records.length > 0) {
         sumSuhu += Number(records[0].suhu)
         sumKelembaban += Number(records[0].kelembaban)
+        if (records[0].intensitas_cahaya) sumCahaya += Number(records[0].intensitas_cahaya)
         countEnv++
       }
     })
@@ -221,7 +226,8 @@ const locationStats = computed(() => {
       ...loc,
       aktifCount: actives.length,
       avgSuhu: countEnv > 0 ? (sumSuhu / countEnv).toFixed(1) : null,
-      avgKelembaban: countEnv > 0 ? (sumKelembaban / countEnv).toFixed(1) : null
+      avgKelembaban: countEnv > 0 ? (sumKelembaban / countEnv).toFixed(1) : null,
+      avgCahaya: countEnv > 0 ? Math.round(sumCahaya / countEnv) : null
     }
   })
 })
@@ -261,7 +267,7 @@ const jenisChartData = computed(() => {
 })
 
 const suhuChartData = computed(() => {
-  const labels = [], suhuDataList = [], kelembapanDataList = []
+  const labels = [], suhuDataList = [], kelembapanDataList = [], cahayaDataList = []
   for(let i=6; i>=0; i--) {
      const d = new Date(); d.setDate(d.getDate() - i)
      labels.push(d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }))
@@ -270,6 +276,7 @@ const suhuChartData = computed(() => {
      
      const suhuRecs = recs.filter(item => item.suhu !== null && item.suhu !== undefined && item.suhu !== '')
      const humidRecs = recs.filter(item => item.kelembaban !== null && item.kelembaban !== undefined && item.kelembaban !== '')
+     const lightRecs = recs.filter(item => item.intensitas_cahaya !== null && item.intensitas_cahaya !== undefined && item.intensitas_cahaya !== '')
 
      if (suhuRecs.length > 0) {
        suhuDataList.push(Math.round(suhuRecs.reduce((s, item) => s + Number(item.suhu), 0) / suhuRecs.length))
@@ -282,12 +289,19 @@ const suhuChartData = computed(() => {
      } else {
        kelembapanDataList.push(null)
      }
+
+     if (lightRecs.length > 0) {
+       cahayaDataList.push(Math.round(lightRecs.reduce((s, item) => s + Number(item.intensitas_cahaya), 0) / lightRecs.length))
+     } else {
+       cahayaDataList.push(null)
+     }
   }
   return {
     labels,
     datasets: [
-      { label: 'Avg Suhu Global (°C)', borderColor: '#eab308', backgroundColor: 'rgba(234, 179, 8, 0.1)', data: suhuDataList, fill: true, tension: 0.4, spanGaps: true },
-      { label: 'Avg Kelembapan Global (%)', borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', data: kelembapanDataList, fill: true, tension: 0.4, spanGaps: true }
+      { label: 'Avg Suhu Global (°C)', yAxisID: 'y', borderColor: '#eab308', backgroundColor: 'rgba(234, 179, 8, 0.1)', data: suhuDataList, fill: true, tension: 0.4, spanGaps: true },
+      { label: 'Avg Kelembapan Global (%)', yAxisID: 'y', borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', data: kelembapanDataList, fill: true, tension: 0.4, spanGaps: true },
+      { label: 'Avg Cahaya Global (Lux)', yAxisID: 'y1', borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', data: cahayaDataList, fill: true, tension: 0.4, spanGaps: true }
     ]
   }
 })
@@ -295,7 +309,11 @@ const suhuChartData = computed(() => {
 const chartOptions = {
   responsive: true, maintainAspectRatio: false,
   plugins: { legend: { position: 'top', labels: { font: { family: 'Inter' } } } },
-  scales: { y: { beginAtZero: true }, x: { ticks: { font: { family: 'Inter' } }, grid: { display: false } } }
+  scales: { 
+    y: { type: 'linear', display: true, position: 'left', beginAtZero: true },
+    y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, grid: { drawOnChartArea: false } },
+    x: { ticks: { font: { family: 'Inter' } }, grid: { display: false } } 
+  }
 }
 const pieOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { family: 'Inter' } } } }, cutout: '70%' }
 
@@ -446,6 +464,7 @@ onMounted(loadDashboard)
 .text-blue { color: #2563eb; }
 .text-green { color: #16a34a; }
 .text-red { color: #dc2626; }
+.text-purple { color: #8b5cf6; }
 
 @media(max-width: 1024px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }

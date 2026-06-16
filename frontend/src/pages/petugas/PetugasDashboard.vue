@@ -77,6 +77,18 @@
               </div>
             </div>
 
+            <div class="metrics-title mt-12">Intensitas Cahaya (Lux)</div>
+            <div class="env-metrics">
+              <div class="metric">
+                <span class="m-label">Terkini</span>
+                <span class="m-value text-purple">{{ b.latestCahaya || '--' }}</span>
+              </div>
+              <div class="metric">
+                <span class="m-label">Target Max</span>
+                <span class="m-value text-success">50k</span>
+              </div>
+            </div>
+
             <div class="insight-panel mt-16" :class="b.insightStatus">
               <span class="insight-icon">
                 <svg v-if="b.insightStatus === 'warning'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01" /></svg>
@@ -235,7 +247,7 @@ const chartData = computed(() => {
 const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
 
 const suhuChartData = computed(() => {
-  const labels = [], suhuDataList = [], kelembapanDataList = []
+  const labels = [], suhuDataList = [], kelembapanDataList = [], cahayaDataList = []
   for(let i=6; i>=0; i--) {
      const d = new Date(); d.setDate(d.getDate() - i)
      labels.push(d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }))
@@ -244,6 +256,7 @@ const suhuChartData = computed(() => {
      
      const suhuRecs = recs.filter(item => item.suhu !== null && item.suhu !== undefined && item.suhu !== '')
      const humidRecs = recs.filter(item => item.kelembaban !== null && item.kelembaban !== undefined && item.kelembaban !== '')
+     const lightRecs = recs.filter(item => item.intensitas_cahaya !== null && item.intensitas_cahaya !== undefined && item.intensitas_cahaya !== '')
 
      if (suhuRecs.length > 0) {
        suhuDataList.push(Math.round(suhuRecs.reduce((s, item) => s + Number(item.suhu), 0) / suhuRecs.length))
@@ -256,17 +269,33 @@ const suhuChartData = computed(() => {
      } else {
        kelembapanDataList.push(null)
      }
+
+     if (lightRecs.length > 0) {
+       cahayaDataList.push(Math.round(lightRecs.reduce((s, item) => s + Number(item.intensitas_cahaya), 0) / lightRecs.length))
+     } else {
+       cahayaDataList.push(null)
+     }
   }
   return {
     labels,
     datasets: [
-      { label: 'Rata-rata Suhu Aktual (°C)', borderColor: '#eab308', backgroundColor: 'rgba(234, 179, 8, 0.1)', data: suhuDataList, fill: true, tension: 0.4, spanGaps: true },
-      { label: 'Rata-rata Kelembapan (%)', borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', data: kelembapanDataList, fill: true, tension: 0.4, spanGaps: true }
+      { label: 'Rata-rata Suhu Aktual (°C)', yAxisID: 'y', borderColor: '#eab308', backgroundColor: 'rgba(234, 179, 8, 0.1)', data: suhuDataList, fill: true, tension: 0.4, spanGaps: true },
+      { label: 'Rata-rata Kelembapan (%)', yAxisID: 'y', borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', data: kelembapanDataList, fill: true, tension: 0.4, spanGaps: true },
+      { label: 'Rata-rata Cahaya (Lux)', yAxisID: 'y1', borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', data: cahayaDataList, fill: true, tension: 0.4, spanGaps: true }
     ]
   }
 })
 
-const suhuChartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+const suhuChartOptions = { 
+  responsive: true, 
+  maintainAspectRatio: false, 
+  plugins: { legend: { position: 'top', labels: { font: { family: 'Inter' } } } }, 
+  scales: { 
+    y: { type: 'linear', display: true, position: 'left', beginAtZero: true },
+    y1: { type: 'linear', display: true, position: 'right', beginAtZero: true, grid: { drawOnChartArea: false } },
+    x: { ticks: { font: { family: 'Inter' } } }
+  } 
+}
 
 const jamurChartData = computed(() => {
   const counts = {}
@@ -337,6 +366,7 @@ async function loadDashboard() {
 
       const latestSuhu = latestEnv ? Number(latestEnv.suhu) : null
       const latestKelembaban = latestEnv ? Number(latestEnv.kelembaban) : null
+      const latestCahaya = latestEnv && latestEnv.intensitas_cahaya ? Number(latestEnv.intensitas_cahaya) : null
       
       let weatherInsight = "Data lingkungan belum lengkap."
       let insightStatus = "normal"
@@ -359,6 +389,7 @@ async function loadDashboard() {
         ...b,
         latestSuhu,
         latestKelembaban,
+        latestCahaya,
         latestFase: latestFase ? latestFase.fase : 'Inisialisasi',
         outsideSuhu: weather.suhu,
         outsideKelembaban: weather.kelembaban,
@@ -437,6 +468,7 @@ onMounted(loadDashboard)
 .text-success { color: #16a34a; }
 .text-primary { color: #2563eb; }
 .text-orange { color: #f97316; }
+.text-purple { color: #8b5cf6; }
 .text-dark { color: #111827; }
 .text-muted { color: #9ca3af; }
 
