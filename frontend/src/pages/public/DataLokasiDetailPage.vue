@@ -105,7 +105,7 @@
         </div>
         <div class="stat-card">
           <span class="stat-label">Total Panen</span>
-          <span class="stat-value text-green">{{ totalPanen }} gram</span>
+          <span class="stat-value text-green">{{ totalPanen }} kg</span>
         </div>
         
         <!-- <div class="stat-card">
@@ -291,7 +291,7 @@ function processData() {
     if (avgKelembapan.value < 70) insight += "Kelembapan keseluruhan kurang dari ideal. "
     else insight += "Kelembapan terjaga dengan baik. "
 
-    if (totalPanen.value > 0) insight += `Total akhir hasil panen mencapai ${totalPanen.value} gram.`
+    if (totalPanen.value > 0) insight += `Total akhir hasil panen mencapai ${totalPanen.value} kg.`
     else insight += "Siklus ini ditutup tanpa ada hasil panen yang dilaporkan."
     
     aiInsight.value = insight
@@ -353,7 +353,7 @@ function processData() {
 
   harvestChartData.value = {
     labels,
-    datasets: [{ label: 'Hasil Panen (gram)', backgroundColor: '#16a34a', data: dailyHarvest, borderRadius: 4 }]
+    datasets: [{ label: 'Hasil Panen (kg)', backgroundColor: '#16a34a', data: dailyHarvest, borderRadius: 4 }]
   }
 }
 
@@ -474,7 +474,7 @@ async function exportCycleExcel() {
     'Suhu_Rata2_C', 
     'Kelembapan_Rata2_Pct', 
     'Cahaya_Rata2_Lux', 
-    'Total_Panen_Gram'
+    'Total_Panen_Kg'
   ]);
 
   for (let i = 0; i < diffDays; i++) {

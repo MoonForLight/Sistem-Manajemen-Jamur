@@ -23,7 +23,7 @@
         </div>
         <div>
           <span class="meta-label">Total Panen</span>
-          <span class="meta-value">{{ totalPanen }} gram</span>
+          <span class="meta-value">{{ totalPanen }} kg</span>
         </div>
         <div>
           <span class="meta-label">Total Pencatatan</span>
@@ -108,7 +108,7 @@
         </div>
         <div class="stat-card">
           <span class="stat-label">Total Panen</span>
-          <span class="stat-value text-green">{{ totalPanen }} gram</span>
+          <span class="stat-value text-green">{{ totalPanen }} kg</span>
         </div>
       </div>
 
@@ -294,7 +294,7 @@ function processMonthlyData() {
     if (avgKelembapan.value < 70) insight += "Kelembapan tergolong rendah, jamur mungkin akan cepat kering. "
     else insight += "Kelembapan terjaga dengan baik. "
 
-    if (totalPanen.value > 0) insight += `Total hasil panen bulan ini mencapai ${totalPanen.value} gram.`
+    if (totalPanen.value > 0) insight += `Total hasil panen bulan ini mencapai ${totalPanen.value} kg.`
     else insight += "Belum ada panen yang tercatat bulan ini."
     
     aiInsight.value = insight
@@ -348,7 +348,7 @@ function processMonthlyData() {
 
   harvestChartData.value = {
     labels,
-    datasets: [{ label: 'Hasil Panen (gram)', backgroundColor: '#16a34a', data: dailyHarvest, borderRadius: 4 }]
+    datasets: [{ label: 'Hasil Panen (kg)', backgroundColor: '#16a34a', data: dailyHarvest, borderRadius: 4 }]
   }
 }
 
@@ -411,11 +411,11 @@ async function buildExcelGlobal(workbook, ym) {
   ws1.addRow([])
   ws1.addRow(['Bulan Acuan', formattedMonth.value]).font = { bold: true }
   ws1.addRow(['Tipe Laporan', 'Bulanan']).font = { bold: true }
-  ws1.addRow(['Total Panen Agregat', harvestRecordsToExport.reduce((a, b) => a + (Number(b.jumlah_panen) || 0), 0) + ' gram']).font = { bold: true }
+  ws1.addRow(['Total Panen Agregat', harvestRecordsToExport.reduce((a, b) => a + (Number(b.jumlah_panen) || 0), 0).toFixed(2) + ' kg']).font = { bold: true }
   ws1.columns = [{width: 30}, {width: 40}]
 
   const ws2 = workbook.addWorksheet('2. Produksi Harian')
-  ws2.addRow(['Tanggal', 'Total Panen (gram)']).font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  ws2.addRow(['Tanggal', 'Total Panen (kg)']).font = { bold: true, color: { argb: 'FFFFFFFF' } }
   ws2.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16A34A' } }
   
   const dailyHarvest = {}
@@ -478,12 +478,12 @@ async function buildExcelSiklus(workbook, idBudidaya) {
   ws1.addRow(['Jenis Jamur', b ? b.nama_jamur : '-']).font = { bold: true }
   ws1.addRow(['Tanggal Mulai', b ? formatDate(b.tanggal_mulai) : '-']).font = { bold: true }
   ws1.addRow(['Tanggal Selesai', b ? formatDate(b.tanggal_selesai) : '-']).font = { bold: true }
-  ws1.addRow(['Total Panen Bersih', harvests.reduce((a, v) => a + (Number(v.jumlah_panen) || 0), 0) + ' gram']).font = { bold: true }
+  ws1.addRow(['Total Panen Bersih', harvests.reduce((a, v) => a + (Number(v.jumlah_panen) || 0), 0).toFixed(2) + ' kg']).font = { bold: true }
   ws1.addRow(['Alasan Selesai', b ? b.alasan_selesai : '-']).font = { bold: true }
   ws1.columns = [{width: 30}, {width: 40}]
 
   const ws2 = workbook.addWorksheet('2. Histori Panen')
-  ws2.addRow(['Panen Ke-', 'Tanggal Panen', 'Jumlah (gram)', 'Petugas']).font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  ws2.addRow(['Panen Ke-', 'Tanggal Panen', 'Jumlah (kg)', 'Petugas']).font = { bold: true, color: { argb: 'FFFFFFFF' } }
   ws2.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB45309' } }
   
   harvests.forEach((h, idx) => {

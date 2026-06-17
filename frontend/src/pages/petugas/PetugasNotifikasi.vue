@@ -187,7 +187,7 @@ async function loadNotifications() {
           list.push({
             type: 'success',
             title: 'Panen Berhasil Dicatat',
-            text: `Panen sebesar ${p.jumlah_panen} gram pada BDY-${String(p.id_budidaya).padStart(3, '0')} telah dimasukkan.`,
+            text: `Panen sebesar ${p.jumlah_panen} kg pada BDY-${String(p.id_budidaya).padStart(3, '0')} telah dimasukkan.`,
             time: getRelativeTimeString(p.tanggal_panen),
             date: pDate,
             weight: 3

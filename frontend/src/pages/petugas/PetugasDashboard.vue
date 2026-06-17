@@ -20,7 +20,7 @@
         <div class="stat-icon bg-yellow-light"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 9h-2V7h-2v7h4v-2zm4 4H8v-2h8v2z"/></svg></div>
         <div class="stat-info">
           <span class="stat-label">Panen Bulan Ini</span>
-          <span class="stat-value">{{ monthlyHarvest }} gram</span>
+          <span class="stat-value">{{ monthlyHarvest }} kg</span>
         </div>
       </div>
     </div>

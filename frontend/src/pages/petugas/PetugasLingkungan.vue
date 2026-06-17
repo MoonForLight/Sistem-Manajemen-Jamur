@@ -56,8 +56,8 @@
 
         <div class="form-card fade-in">
           <h2 class="form-title">Pencatatan Lingkungan Harian</h2>
-          <p class="daily-progress" :class="{ complete: todayEnvironmentCount >= 2 }">
-            Hari ini: {{ todayEnvironmentCount }}/2 pencatatan minimum
+          <p class="daily-progress" :class="{ complete: todayEnvironmentCount >= 3 }">
+            Hari ini: {{ todayEnvironmentCount }}/3 pencatatan minimum
           </p>
           <form @submit.prevent="submitLingkungan">
             <div class="form-grid">
@@ -69,8 +69,9 @@
               <div class="form-group">
                 <label>Waktu Pengukuran <span class="text-danger">*</span></label>
                 <select v-model="formLingkungan.waktu_pengukuran" class="modern-select" required>
-                  <option value="Pagi">Pagi (06:00 - 08:00)</option>
-                  <option value="Sore">Sore (16:00 - 18:00)</option>
+                  <option value="Pagi">Pagi (06:00 - 10:00)</option>
+                  <option value="Siang">Siang (11:00 - 14:00)</option>
+                  <option value="Malam">Malam (18:00 - 21:00)</option>
                 </select>
               </div>
               <div class="form-group">
@@ -201,14 +202,14 @@ function isToday(value) {
 
 function getWaktuClass(waktu) {
   const w = (waktu || 'pagi').toLowerCase()
-  if (w.includes('sore')) return 'sore'
+  if (w.includes('malam') || w.includes('sore')) return 'malam'
   if (w.includes('siang')) return 'siang'
   return 'pagi'
 }
 
 function getWaktuDisplay(waktu) {
   const w = waktu || 'Pagi'
-  if (w === 'Sore/Malam') return 'Sore'
+  if (w.includes('Malam') || w.includes('Sore')) return 'Malam'
   return w
 }
 
@@ -300,7 +301,13 @@ async function submitLingkungan() {
     formLingkungan.value.suhu = ''
     formLingkungan.value.kelembaban = ''
     formLingkungan.value.intensitas_cahaya = ''
-    formLingkungan.value.waktu_pengukuran = formLingkungan.value.waktu_pengukuran.startsWith('Pagi') ? 'Sore' : 'Pagi'
+    if (formLingkungan.value.waktu_pengukuran.startsWith('Pagi')) {
+      formLingkungan.value.waktu_pengukuran = 'Siang';
+    } else if (formLingkungan.value.waktu_pengukuran.startsWith('Siang')) {
+      formLingkungan.value.waktu_pengukuran = 'Malam';
+    } else {
+      formLingkungan.value.waktu_pengukuran = 'Pagi';
+    }
     await loadRiwayat()
   } catch (error) {
     showToast(error.message || 'Gagal menyimpan data lingkungan', 'error')
@@ -584,6 +591,7 @@ onBeforeUnmount(() => {
 
 .waktu-badge.pagi { background: #dbeafe; color: #1e3a8a; }
 .waktu-badge.siang { background: #fef3c7; color: #92400e; }
+.waktu-badge.malam { background: #f3e8ff; color: #581c87; }
 .waktu-badge.sore { background: #f3e8ff; color: #581c87; }
 
 /* Toast */

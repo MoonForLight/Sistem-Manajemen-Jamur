@@ -19,7 +19,7 @@
         <div class="stat-icon bg-yellow-light"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 9h-2V7h-2v7h4v-2zm4 4H8v-2h8v2z"/></svg></div>
         <div class="stat-info">
           <span class="stat-label">Panen Bulan Ini</span>
-          <span class="stat-value">{{ stats.panenBulanIni }} <span class="stat-sub">gram</span></span>
+          <span class="stat-value">{{ stats.panenBulanIni }} <span class="stat-sub">kg</span></span>
         </div>
       </div>
       <div class="stat-card">
@@ -246,7 +246,7 @@ const recentActivities = computed(() => {
     ...harvestRecords.value.map(item => ({ 
       id: `p-${item.id_panen}`, 
       type: 'panen',
-      title: `Panen ${item.jumlah_panen} gram`,
+      title: `Panen ${item.jumlah_panen} kg`,
       desc: `BDY-${String(item.id_budidaya).padStart(3, '0')} - Hasil Panen Bersih`,
       time: formatDate(item.tanggal_panen), 
       icon: '📦', 

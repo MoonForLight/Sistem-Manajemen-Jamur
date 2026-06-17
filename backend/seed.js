@@ -52,19 +52,22 @@ async function run() {
       const e = new Date(end);
       for (let d = s; d <= e; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0];
-        const suhu = (20 + Math.random() * 8).toFixed(1); // 20 - 28
-        const kelembaban = (75 + Math.random() * 15).toFixed(1); // 75 - 90
-        const cahaya = Math.floor(100 + Math.random() * 300); // 100 - 400
-        
-        await db.query(`
-          INSERT INTO lingkungan_harian (id_budidaya, id_petugas, tanggal_pengukuran, suhu, kelembaban, intensitas_cahaya, waktu_pengukuran)
-          VALUES (?, ?, ?, ?, ?, ?, 'Pagi')
-        `, [idBud, id_petugas, dateStr, suhu, kelembaban, cahaya]);
+        const times = ['Pagi', 'Siang', 'Malam'];
+        for (const waktu of times) {
+          const suhu = (20 + Math.random() * 8).toFixed(1); // 20 - 28
+          const kelembaban = (75 + Math.random() * 15).toFixed(1); // 75 - 90
+          const cahaya = Math.floor(100 + Math.random() * 300); // 100 - 400
+          
+          await db.query(`
+            INSERT INTO lingkungan_harian (id_budidaya, id_petugas, tanggal_pengukuran, suhu, kelembaban, intensitas_cahaya, waktu_pengukuran)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          `, [idBud, id_petugas, dateStr, suhu, kelembaban, cahaya, waktu]);
+        }
 
         // Harvest every 4 days after day 40
         const diffDays = Math.floor((d - new Date(start)) / (1000 * 60 * 60 * 24));
         if (diffDays >= 40 && diffDays % 4 === 0) {
-           const panen = Math.floor(1000 + Math.random() * 3000);
+           const panen = (1 + Math.random() * 3).toFixed(2); // 1.00 - 4.00 kg
            await db.query(`
             INSERT INTO panen (id_budidaya, id_petugas, tanggal_panen, jumlah_panen, catatan)
             VALUES (?, ?, ?, ?, 'Panen berjalan lancar')

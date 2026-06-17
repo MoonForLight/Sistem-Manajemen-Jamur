@@ -241,7 +241,7 @@
                 <small class="date-lock-note">Tanggal dikunci ke hari ini untuk pencatatan real-time.</small>
               </div>
               <div class="form-group">
-                <label>Jumlah Panen (gram)</label>
+                <label>Jumlah Panen (kg)</label>
                 <input type="number" step="0.1" min="0.1" max="100000" v-model.number="formPanen.jumlah_panen" placeholder="Misal: 500" required class="modern-input" />
               </div>
               <div class="form-group full-width">

@@ -256,8 +256,8 @@ INSERT INTO `panen` (`id_panen`, `id_budidaya`, `id_petugas`, `tanggal_panen`, `
 (1, 1, 3, '2026-03-10', 3.50, 'Panen pertama'),
 (2, 4, 4, '2026-05-01', 1.00, NULL),
 (3, 4, 4, '2026-05-01', 3.00, NULL),
-(4, 1, 3, '2026-04-24', 250.00, 'Kualitas premium, diameter tudung lebar'),
-(5, 1, 3, '2026-04-28', 500.00, 'Panen kedua');
+(4, 1, 3, '2026-04-24', 2.50, 'Kualitas premium, diameter tudung lebar'),
+(5, 1, 3, '2026-04-28', 5.00, 'Panen kedua');
 
 -- --------------------------------------------------------
 
