@@ -497,7 +497,7 @@ async function buildExcelSiklus(workbook, idBudidaya) {
   ws3.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } }
   envs.forEach(e => {
     ws3.addRow([
-      `${formatDate(e.tanggal_pengukuran)} ${!isNaN(new Date(e.tanggal_pengukuran).getTime()) ? new Date(e.tanggal_pengukuran).toLocaleTimeString('id-ID') : '-'}`, 
+      `${formatDate(e.tanggal_pengukuran)} (${e.waktu_pengukuran || '-'})`, 
       Number(e.suhu) || '-', 
       Number(e.kelembaban) || '-',
       Number(e.intensitas_cahaya) || '-'
