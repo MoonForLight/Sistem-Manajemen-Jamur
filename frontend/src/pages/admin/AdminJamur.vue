@@ -4,6 +4,7 @@
     <header class="page-header-modern">
       <div class="header-text">
         <h1>Jenis Jamur</h1>
+        <p class="page-description">Kelola data jenis jamur komersial dan referensi suhu optimal.</p>
       </div>
       <div class="header-actions">
         <button type="button" class="btn primary modern-btn" @click.prevent="openForm('create')">+ Tambah</button>
@@ -59,7 +60,10 @@
         <span style="grid-column: 1 / -1; text-align: center;">{{ errorMessage }}</span>
       </div>
       <div v-if="!loading && !jenisList.length && !errorMessage" class="table-row-modern jamur-grid empty-row">
-        <span style="grid-column: 1 / -1; text-align: center;">Belum ada data jenis jamur.</span>
+        <div style="grid-column: 1 / -1; text-align: center;">
+          <svg viewBox="0 0 24 24" width="48" height="48" class="text-muted mb-4 mx-auto block"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/></svg>
+          <p>Belum ada data jenis jamur.</p>
+        </div>
       </div>
 
       <div v-for="item in jenisList" :key="item.id_jenis" class="table-row-modern jamur-grid has-divider">
@@ -239,22 +243,6 @@ onMounted(loadJenisJamur)
   gap: 20px;
 }
 
-
-.page-header-modern {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 12px;
-}
-
-.page-header-modern h1 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-  color: #111827;
-}
-
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -336,14 +324,6 @@ onMounted(loadJenisJamur)
   border: 1px solid #d1d5db;
 }
 
-.table-card-modern {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  border: 1px solid #f3f4f6;
-}
-
 .jamur-grid {
   display: grid;
   grid-template-columns: 120px 2fr 2fr 1fr 1.5fr 120px;
@@ -353,26 +333,7 @@ onMounted(loadJenisJamur)
   font-size: 14px;
 }
 
-.green-header {
-  background: #e9fbef;
-  border-bottom: none;
-  font-weight: 800;
-  color: var(--green-dark, #16a34a);
-}
-
-.has-divider {
-  border-top: 1px solid #f3f4f6;
-  background: white;
-}
-
-.empty-row {
-  display: block;
-  padding: 32px;
-  color: #6b7280;
-}
 .err-text { color: #dc2626; }
-
-.id-col { font-weight: 700; color: #111827; }
 .hitam { color: #111827; }
 .fw-600 { font-weight: 600; }
 .fw-700 { font-weight: 700; }
@@ -383,26 +344,6 @@ onMounted(loadJenisJamur)
   justify-content: center;
   gap: 8px;
 }
-
-.icon-btn {
-  background: white;
-  border: 1px solid #e5e7eb;
-  padding: 6px;
-  border-radius: 6px;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-}
-.icon-btn svg { width: 18px; height: 18px; }
-
-
-
-
 
 /* Notification Popup */
 .fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }

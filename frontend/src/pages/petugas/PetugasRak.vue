@@ -58,7 +58,10 @@
               
               <div class="phase-container">
                 <span class="phase-label">Fase Saat Ini:</span>
-                <span :class="['phase-badge', getPhaseClass(budidaya.faseTerkini)]">
+                <span v-if="budidaya.status === 'selesai'" class="phase-badge default">
+                  Selesai
+                </span>
+                <span v-else :class="['phase-badge', getPhaseClass(budidaya.faseTerkini)]">
                   {{ budidaya.faseTerkini || 'Belum ada data' }}
                 </span>
               </div>
@@ -75,6 +78,10 @@
                 <div class="info-row">
                   <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/></svg>
                   <span>Mulai: {{ formatDate(budidaya.tanggal_mulai) }}</span>
+                </div>
+                <div v-if="budidaya.status === 'selesai' && budidaya.alasan_selesai" class="info-row" style="background: #f3f4f6; color: #374151; padding: 8px 12px; border-radius: 8px; font-weight: 600; align-items: flex-start; margin-top: 4px;">
+                  <svg viewBox="0 0 24 24" style="color: #6b7280; flex-shrink: 0; margin-top: 2px;"><path fill="currentColor" d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/></svg>
+                  <span>{{ budidaya.alasan_selesai }}</span>
                 </div>
               </div>
             </div>

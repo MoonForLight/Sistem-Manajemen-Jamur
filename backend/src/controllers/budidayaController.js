@@ -3,6 +3,7 @@ const lokasiModel = require('../models/lokasiModel');
 const jenisJamurModel = require('../models/jenisJamurModel');
 const mediaTanamModel = require('../models/mediaTanamModel');
 const usersModel = require('../models/usersModel');
+const pertumbuhanModel = require('../models/pertumbuhanModel');
 const { db } = require('../config/db');
 const { normalizeISODate } = require('../utils/date');
 
@@ -232,6 +233,17 @@ exports.selesaikan = async (req, res) => {
   if (!affected) {
     return res.status(409).json({ success: false, message: 'Siklus gagal diselesaikan karena statusnya sudah berubah. Muat ulang data dan coba lagi' });
   }
+
+  // Automatically insert a growth record indicating the cycle is finished
+  const todayISO = new Date().toISOString().split('T')[0];
+  await pertumbuhanModel.create({
+    id_budidaya: id,
+    id_petugas: req.user.id_user,
+    tanggal_pengamatan: todayISO,
+    fase: 'Selesai',
+    catatan: `Siklus diselesaikan: ${validation.alasan}`
+  });
+
   const data = await budidayaModel.getById(id);
   res.json({ success: true, message: 'Siklus budidaya berhasil diselesaikan', data });
 };

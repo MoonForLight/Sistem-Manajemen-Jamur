@@ -332,8 +332,9 @@ onBeforeUnmount(() => {
 .daily-progress { margin: -6px 0 18px; font-size: 13px; color: #b45309; font-weight: 700; }
 .daily-progress.complete { color: #15803d; }
 .petugas-operasional {
-  background: #f3f4f6;
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .operasional-header {
@@ -384,9 +385,9 @@ onBeforeUnmount(() => {
 }
 
 .main-content {
-  max-width: 1200px;
-  margin: 40px auto;
-  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .empty-state {

@@ -13,7 +13,7 @@
         <div class="stat-icon bg-green-light"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1-11v6h2v-6h-2zm0-4v2h2V7h-2z"/></svg></div>
         <div class="stat-info">
           <span class="stat-label">Pengamatan Hari Ini</span>
-          <span class="stat-value">{{ todayTasks }} / {{ activeBudidaya }}</span>
+          <span class="stat-value">{{ todayTasks }} / {{ totalTargetPengamatan }}</span>
         </div>
       </div>
       <div class="stat-card">
@@ -188,7 +188,8 @@ function getLocalDateString(d) {
 }
 
 const activeBudidaya = computed(() => assignedBudidaya.value.filter(item => item.status === 'aktif').length)
-const todayTasks = computed(() => envRecords.value.filter(item => getLocalDateString(item.tanggal_pengukuran) === today).length)
+const todayTasks = computed(() => growthRecords.value.filter(item => getLocalDateString(item.tanggal_pengamatan) === today).length)
+const totalTargetPengamatan = computed(() => assignedBudidaya.value.filter(item => item.status === 'aktif').reduce((sum, item) => sum + (Number(item.target_pertumbuhan_harian) || 2), 0))
 const monthlyHarvest = computed(() => {
   const currentMonth = today.slice(0, 7)
   return harvestRecords.value

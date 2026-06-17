@@ -403,7 +403,7 @@ onMounted(loadProfile)
 }
 
 .card-header-clean { margin-bottom: 24px; border-bottom: 1px solid #f3f4f6; padding-bottom: 16px; }
-.card-title-clean { margin: 0 0 6px 0; font-size: 18px; font-weight: 800; color: #111827; }
+.card-title-clean { margin: 0 0 6px 0; font-size: 24px; font-weight: 800; color: #111827; }
 .card-subtitle-clean { margin: 0; color: #6b7280; font-size: 14px; font-weight: 500; }
 
 .flex-between { display: flex; justify-content: space-between; align-items: center; border-bottom: none; padding-bottom: 0; margin-bottom: 0; }

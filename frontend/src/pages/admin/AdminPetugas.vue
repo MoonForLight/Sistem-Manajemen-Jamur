@@ -3,6 +3,7 @@
     <header class="page-header-modern">
       <div class="header-text">
         <h1>Daftar Petugas</h1>
+        <p class="page-description">Kelola data pengguna, peran, dan penugasan lokasi.</p>
       </div>
       <div class="header-actions">
         <div class="search-box">
@@ -59,7 +60,7 @@
     </div>
 
     <div class="table-card-modern">
-      <div class="table-header-modern petugas-grid">
+      <div class="table-header-modern petugas-grid green-header">
         <span>ID</span>
         <span>Username</span>
         <span>Lokasi Bertugas</span>
@@ -71,9 +72,12 @@
         <span style="grid-column: 1 / -1; text-align: center;">Memuat data petugas...</span>
       </div>
       <div v-if="!loading && !filteredPetugasList.length" class="table-row-modern petugas-grid empty-row">
-        <span style="grid-column: 1 / -1; text-align: center;">Belum ada data petugas yang cocok.</span>
+        <div style="grid-column: 1 / -1; text-align: center;">
+          <svg viewBox="0 0 24 24" width="48" height="48" class="text-muted mb-4 mx-auto block"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/></svg>
+          <p>Belum ada data petugas yang cocok.</p>
+        </div>
       </div>
-      <div v-for="(user, index) in filteredPetugasList" :key="user.id_user" :class="['table-row-modern', 'petugas-grid', index % 2 === 0 ? 'even-row' : 'odd-row']">
+      <div v-for="user in filteredPetugasList" :key="user.id_user" class="table-row-modern petugas-grid has-divider">
         <span class="id-col">#{{ user.id_user?.toString().padStart(5, '0') || '00000' }}</span>
         <div class="user-info">
           <span class="fw-600">{{ user.nama }}</span>
@@ -261,7 +265,7 @@ async function executeDelete() {
   if (!idToDelete.value) return
   try {
     await usersService.deletePetugas(idToDelete.value)
-    showNotification('Petugas berhasil dihapus.', 'success')
+    showNotification('Data petugas berhasil dihapus.', 'success')
     await loadPetugas()
     eventBus.emit('refreshBudidayaData')
   } catch (error) {
@@ -272,8 +276,9 @@ async function executeDelete() {
   }
 }
 
-onMounted(async () => {
-  await Promise.all([loadPetugas(), loadLokasi()])
+onMounted(() => {
+  loadPetugas()
+  loadLokasi()
 })
 </script>
 
@@ -281,55 +286,7 @@ onMounted(async () => {
 .admin-page {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-}
-
-.page-header-modern {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   gap: 20px;
-}
-
-.page-header-modern h1 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 800;
-  color: #111827;
-}
-
-.header-actions {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-
-.search-box {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  width: 18px;
-  height: 18px;
-  color: #9ca3af;
-}
-
-.search-box input {
-  padding: 10px 12px 10px 36px;
-  border: 1px solid #d1d5db;
-  border-radius: 999px;
-  font-size: 14px;
-  width: 250px;
-  transition: all 0.2s;
-}
-.search-box input:focus {
-  outline: none;
-  border-color: var(--green-dark, #16a34a);
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 }
 
 .modal-overlay {
@@ -380,8 +337,7 @@ onMounted(async () => {
   color: #4b5563;
 }
 
-.form-group input,
-.modern-select {
+.form-group input {
   width: 100%;
   border: 1px solid #d1d5db;
   border-radius: 8px;
@@ -422,49 +378,10 @@ onMounted(async () => {
   background: #f9fafb;
 }
 
-.table-card-modern {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  border: 1px solid #f3f4f6;
-}
-
-.table-header-modern,
-.table-row-modern {
-  display: grid;
-  gap: 16px;
-  align-items: center;
-  padding: 16px 24px;
-  font-size: 14px;
-}
-
 .petugas-grid {
   grid-template-columns: 100px 2fr 2fr 1fr 100px;
 }
 
-.table-header-modern {
-  font-weight: 800;
-  color: #111827;
-  background: white;
-  border-bottom: 2px solid #f3f4f6;
-}
-
-.even-row { background: #f4fcf6; }
-.odd-row { background: #ffffff; }
-
-.table-row-modern {
-  color: #374151;
-  border-bottom: 1px solid #f9fafb;
-}
-
-.empty-row {
-  display: block;
-  padding: 32px;
-  color: #6b7280;
-}
-
-.id-col { font-weight: 500; color: #4b5563; }
 .user-info { display: flex; flex-direction: column; }
 .fw-600 { font-weight: 600; color: #111827; }
 .sub-text { color: #9ca3af; font-size: 12px; }
@@ -478,30 +395,6 @@ onMounted(async () => {
 }
 .status-chip.active { background: #dcfce7; color: #166534; }
 .status-chip.inactive { background: #fee2e2; color: #991b1b; }
-
-.text-center { text-align: center; }
-
-.actions-modern {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-
-.icon-btn {
-  background: white;
-  border: 1px solid #e5e7eb;
-  padding: 6px;
-  border-radius: 6px;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-}
-.icon-btn svg { width: 18px; height: 18px; }
 
 
 

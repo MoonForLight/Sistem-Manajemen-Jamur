@@ -3,7 +3,7 @@
     <header class="page-header-modern">
       <div class="header-text">
         <h1>Daftar Lokasi Budidaya</h1>
-        <p class="subtitle">Kelola Setiap Lokasi Rumah Jamur.</p>
+        <p class="page-description">Kelola Setiap Lokasi Rumah Jamur.</p>
       </div>
       <div class="header-actions">
         <div class="search-box">
@@ -88,7 +88,7 @@
 
 
     <div class="table-card-modern">
-      <div class="table-header-modern">
+      <div class="table-header-modern lokasi-grid green-header">
         <span>Foto</span>
         <span>ID</span>
         <span>Nama Lokasi</span>
@@ -96,13 +96,16 @@
         <span>Keterangan</span>
         <span class="text-center">Action</span>
       </div>
-      <div v-if="loading" class="table-row-modern empty-row">
+      <div v-if="loading" class="table-row-modern lokasi-grid empty-row">
         <span style="grid-column: 1 / -1; text-align: center;">Memuat data lokasi...</span>
       </div>
-      <div v-if="!loading && !filteredLokasiList.length" class="table-row-modern empty-row">
-        <span style="grid-column: 1 / -1; text-align: center;">Belum ada hasil pencarian / lokasi budidaya.</span>
+      <div v-if="!loading && !filteredLokasiList.length" class="table-row-modern lokasi-grid empty-row">
+        <div style="grid-column: 1 / -1; text-align: center;">
+          <svg viewBox="0 0 24 24" width="48" height="48" class="text-muted mb-4 mx-auto block"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/></svg>
+          <p>Belum ada hasil pencarian / lokasi budidaya.</p>
+        </div>
       </div>
-      <div v-for="(item, index) in filteredLokasiList" :key="item.id_lokasi" :class="['table-row-modern', index % 2 === 0 ? 'even-row' : 'odd-row']">
+      <div v-for="item in filteredLokasiList" :key="item.id_lokasi" class="table-row-modern lokasi-grid has-divider">
         <div class="table-photo-col">
           <img v-if="item.foto_lokasi" :src="'http://localhost:3000/uploads/' + item.foto_lokasi" class="table-thumb" />
           <div v-else class="table-thumb-placeholder">🏞️</div>
@@ -329,54 +332,6 @@ onMounted(loadLokasi)
   gap: 32px;
 }
 
-.page-header-modern {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-}
-
-.page-header-modern h1 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 800;
-  color: #111827;
-}
-
-.header-actions {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-
-.search-box {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  width: 18px;
-  height: 18px;
-  color: #9ca3af;
-}
-
-.search-box input {
-  padding: 10px 12px 10px 36px;
-  border: 1px solid #d1d5db;
-  border-radius: 999px;
-  font-size: 14px;
-  width: 250px;
-  transition: all 0.2s;
-}
-.search-box input:focus {
-  outline: none;
-  border-color: var(--green-dark, #16a34a);
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
-}
-
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -538,16 +493,7 @@ onMounted(loadLokasi)
   background: #f9fafb;
 }
 
-.table-card-modern {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  border: 1px solid #f3f4f6;
-}
-
-.table-header-modern,
-.table-row-modern {
+.lokasi-grid {
   display: grid;
   grid-template-columns: 60px 80px 2fr 2fr 1.5fr 100px;
   gap: 16px;
@@ -577,31 +523,6 @@ onMounted(loadLokasi)
   font-size: 20px;
 }
 
-.table-header-modern {
-  font-weight: 800;
-  color: #111827;
-  background: white;
-  border-bottom: 2px solid #f3f4f6;
-  padding: 16px 24px;
-}
-
-.even-row {
-  background: #f4fcf6;
-}
-.odd-row {
-  background: #ffffff;
-}
-.table-row-modern {
-  color: #374151;
-  border-bottom: 1px solid #f9fafb;
-}
-
-.empty-row {
-  display: block;
-  padding: 32px;
-  color: #6b7280;
-}
-
 .id-col {
   font-weight: 500;
   color: #4b5563;
@@ -620,27 +541,6 @@ onMounted(loadLokasi)
   justify-content: center;
   gap: 8px;
 }
-
-.icon-btn {
-  background: white;
-  border: 1px solid #e5e7eb;
-  padding: 6px;
-  border-radius: 6px;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-}
-.icon-btn svg {
-  width: 20px;
-  height: 20px;
-}
-
-
 
 @media(max-width: 768px) {
   .form-group {
@@ -713,7 +613,6 @@ onMounted(loadLokasi)
   max-width: 500px;
   z-index: 10000;
 }
-
 
 .notification-icon {
   width: 36px;

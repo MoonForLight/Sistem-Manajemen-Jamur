@@ -428,14 +428,6 @@ async function buildExcelGlobal(workbook, ym) {
     ws2.addRow([date, dailyHarvest[date]])
   })
   
-  if (sortedDates.length > 0) {
-    try {
-      ws2.addConditionalFormatting({
-        ref: `B2:B${sortedDates.length + 1}`,
-        rules: [{ type: 'dataBar', cfvo: [{type: 'min'}, {type: 'max'}], color: { argb: 'FF16A34A' } }]
-      })
-    } catch (e) { console.warn(e) }
-  }
   ws2.columns = [{width: 20}, {width: 30}]
 
   const ws3 = workbook.addWorksheet('3. Kondisi Lingkungan')
@@ -498,14 +490,6 @@ async function buildExcelSiklus(workbook, idBudidaya) {
     ws2.addRow([idx + 1, formatDate(h.tanggal_panen), Number(h.jumlah_panen) || 0, h.nama_petugas || '-'])
   })
 
-  if (harvests.length > 0) {
-    try {
-      ws2.addConditionalFormatting({
-        ref: `C2:C${harvests.length + 1}`,
-        rules: [{ type: 'dataBar', cfvo: [{type: 'min'}, {type: 'max'}], color: { argb: 'FF16A34A' } }]
-      })
-    } catch (e) { console.warn(e) }
-  }
   ws2.columns = [{width: 15}, {width: 20}, {width: 25}, {width: 30}]
   
   const ws3 = workbook.addWorksheet('3. Histori Lingkungan')

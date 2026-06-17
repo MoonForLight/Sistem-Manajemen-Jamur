@@ -178,9 +178,9 @@
 
         <div v-if="activeForm === 'pertumbuhan'" class="form-card fade-in">
           <h2 class="form-title">Laporan Fase Pertumbuhan</h2>
-          <p class="daily-progress" :class="{ complete: todayGrowthCount >= (selectedBudidaya.target_pertumbuhan_harian || 2) }">
+          <!-- <p class="daily-progress" :class="{ complete: todayGrowthCount >= (selectedBudidaya.target_pertumbuhan_harian || 2) }">
             Hari ini: {{ todayGrowthCount }}/{{ selectedBudidaya.target_pertumbuhan_harian || 2 }} pencatatan minimum. Input tambahan tetap diperbolehkan.
-          </p>
+          </p> -->
           <form @submit.prevent="submitPertumbuhan">
             <div class="form-grid">
               <div class="form-group">
@@ -200,7 +200,7 @@
               </div>
                             
               <div class="form-group full-width">
-                <label>Upload Foto Pertumbuhan </label>
+                <label>Upload Foto Pertumbuhan <span class="text-muted">- Opsional</span></label>
                 <input :key="growthFileInputKey" type="file" @change="handlePertumbuhanFotoUpload" accept="image/jpeg,image/png,image/webp,image/gif" class="modern-input" />
                 <div v-if="growthPhotoPreview" class="photo-preview-wrap">
                   <img :src="growthPhotoPreview" alt="Preview foto pertumbuhan" class="photo-preview" />

@@ -3,7 +3,7 @@
     <header class="page-header-modern">
       <div class="header-text">
         <h1>Kelola Budidaya Jamur</h1>
-        <p class="subtitle">Buat dan delegasikan tugas budidaya ke petugas di setiap lokasi.</p>
+        <p class="page-description">Buat dan delegasikan tugas budidaya ke petugas di setiap lokasi.</p>
       </div>
       <div class="header-actions">
         <div class="search-box">
@@ -56,14 +56,6 @@
             </span>
           </span>
           <span class="text-center action-buttons">
-            <button
-              v-if="item.status !== 'selesai'"
-              @click="openTargetModal(item)"
-              class="icon-btn target"
-              title="Atur target input harian"
-            >
-              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
-            </button>
             <button 
               v-if="item.status !== 'selesai'" 
               @click="openSelesaiModal(item)" 
@@ -84,27 +76,6 @@
       </div>
     </div>
 
-    <!-- Modal Target Input Harian -->
-    <div v-if="isTargetModalOpen" class="modal-overlay" @click.self="closeTargetModal">
-      <div class="logout-modal fade-in-up target-modal">
-        <h3 class="modal-title">Atur Target Input Harian</h3>
-        <p class="modal-text">Target merupakan jumlah minimum pencatatan per hari. Input tambahan tetap diperbolehkan.</p>
-        <div class="form-group target-field">
-          <label>Lingkungan per hari (2-3 kali)</label>
-          <input v-model.number="targetForm.target_lingkungan_harian" type="number" min="2" max="3" step="1" class="modern-input" />
-        </div>
-        <div class="form-group target-field">
-          <label>Pertumbuhan per hari (2-10 kali)</label>
-          <input v-model.number="targetForm.target_pertumbuhan_harian" type="number" min="2" max="10" step="1" class="modern-input" />
-        </div>
-        <div class="modal-actions">
-          <button class="btn-cancel" @click="closeTargetModal">Batal</button>
-          <button class="btn-confirm" @click="saveDailyTargets" :disabled="isSavingTarget">
-            {{ isSavingTarget ? 'Menyimpan...' : 'Simpan Target' }}
-          </button>
-        </div>
-      </div>
-    </div>
 
     <!-- Modal Konfirmasi Selesai -->
     <div v-if="isSelesaiModalOpen" class="modal-overlay">
@@ -412,79 +383,12 @@ onUnmounted(() => {
   gap: 24px;
 }
 
-.page-header-modern {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.header-text h1 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 800;
-  color: #111827;
-}
-
 .subtitle {
   margin: 4px 0 0;
   font-size: 14px;
   color: #6b7280;
 }
 
-.header-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.search-box {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  left: 14px;
-  width: 16px;
-  height: 16px;
-  color: #9ca3af;
-}
-
-.modern-input {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: inherit;
-  transition: all 0.2s;
-}
-
-.search-box .modern-input {
-  padding-left: 38px;
-  width: 260px;
-}
-
-.modern-input:focus, .modern-select:focus {
-  outline: none;
-  border-color: #16a34a;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
-}
-
-.modern-select {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 14px;
-  background-color: white;
-  font-family: inherit;
-  cursor: pointer;
-}
-.modern-select:disabled { background-color: #f3f4f6; cursor: not-allowed; }
 
 .btn-primary {
   display: inline-flex;
@@ -536,15 +440,6 @@ onUnmounted(() => {
 .text-muted { color: #6b7280; font-size: 12px; }
 .text-center { text-align: center; }
 
-.table-card-modern {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  border: 1px solid #f3f4f6;
-  overflow-x: auto;
-}
-
 .budidaya-grid {
   display: grid;
   grid-template-columns: 90px 1.3fr 1.1fr 80px 130px 1.3fr 90px 100px;
@@ -555,64 +450,15 @@ onUnmounted(() => {
   font-size: 14px;
 }
 
-.green-header {
-  background: #e9fbef;
-  border-bottom: none;
-  font-weight: 800;
-  color: var(--green-dark, #16a34a);
-}
-
-.table-header-modern {
-  background: #f9fafb;
-  font-weight: 700;
-  color: #4b5563;
-  border-bottom: 1px solid #e5e7eb;
-  text-transform: uppercase;
-  font-size: 12px;
-  letter-spacing: 0.05em;
-}
-
-.has-divider {
-  border-top: 1px solid #f3f4f6;
-  background: white;
-}
-
-.table-row-modern {
-  transition: background 0.2s;
-  color: #111827;
-}
-.table-row-modern:last-child { border-bottom: none; }
-.table-row-modern:hover { background: #f9fafb; }
-
-.empty-row { display: block; padding: 48px; text-align: center; color: #6b7280; }
-
 .mx-auto { margin-left: auto; margin-right: auto; }
 .block { display: block; }
 .mb-4 { margin-bottom: 16px; }
 
-.id-col { font-weight: 700; color: #374151; font-size: 13px; }
 .fw-bold { font-weight: 600; }
 .petugas-badge { display: inline-flex; align-items: center; background: #f3f4f6; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; color: #4b5563; }
 
-.icon-btn {
-  background: white;
-  border: 1px solid #e5e7eb;
-  padding: 6px;
-  border-radius: 6px;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-}
-.icon-btn svg { width: 18px; height: 18px; }
-.icon-btn:hover { background: #f9fafb; border-color: #d1d5db; color: #111827; }
 .icon-btn.target:hover { background: #e0f2fe; border-color: #bae6fd; color: #0284c7; }
 .icon-btn.selesai:hover { background: #fef3c7; border-color: #fde68a; color: #d97706; }
-.icon-btn.delete:hover { background: #fee2e2; border-color: #fca5a5; color: #ef4444; }
 
 .action-buttons { display: inline-flex; justify-content: center; gap: 8px; }
 .daily-target-cell { display: flex; flex-direction: column; gap: 2px; color: #374151; }
